@@ -1,0 +1,27 @@
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+
+# HTTP async client (para conectores TI)
+httpx==0.28.1
+
+# Variables de entorno
+python-dotenv==1.0.1
+
+# ORM / base de datos
+sqlmodel==0.0.22
+
+# Validación de datos (ya incluida en FastAPI, pero fijamos versión)
+pydantic==2.10.4
+
+# SDK de Anthropic (IA generativa)
+anthropic==0.40.0
+
+# Utilidades
+python-multipart==0.0.20
+
+# Tests
+pytest==8.3.4
+pytest-asyncio==0.24.0
+respx==0.21.1
+httpx==0.28.1
