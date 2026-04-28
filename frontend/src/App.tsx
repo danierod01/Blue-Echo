@@ -10,7 +10,7 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
           <div className="flex items-center gap-2 text-blue-400 font-bold text-lg">
             <ShieldAlert size={22} />
-            IOC-Correlator
+            Blue-Echo
           </div>
           <nav className="flex gap-4 text-sm">
             <NavLink
@@ -42,7 +42,7 @@ export default function App() {
       </main>
 
       <footer className="border-t border-gray-800 text-center text-xs text-gray-600 py-3">
-        IOC-Correlator · Máster en Ciberseguridad 2025-2026
+        Blue-Echo · Máster en Ciberseguridad 2025-2026
       </footer>
     </div>
   );

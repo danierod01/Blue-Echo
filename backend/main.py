@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="IOC-Correlator",
+    title="Blue-Echo",
     description="Plataforma de correlación de IOCs con Threat Intelligence e IA generativa.",
     version="1.0.0",
     lifespan=lifespan,
