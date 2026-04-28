@@ -1,4 +1,4 @@
-# IOC-Correlator
+# Blue-Echo
 
 Plataforma web de correlación de Indicadores de Compromiso (IOCs) contra múltiples fuentes de Threat Intelligence, con análisis en lenguaje natural generado por IA.
 
@@ -79,8 +79,8 @@ docker compose version  # Docker Compose version v2.x.x
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/danierod01/ioc-correlator.git
-cd ioc-correlator
+git clone https://github.com/danierod01/blue-echo.git
+cd blue-echo
 ```
 
 ### 2. Crear el fichero de variables de entorno
@@ -214,9 +214,8 @@ Respuesta:
   "score": 87,
   "verdict": "critical",
   "results": {
-    "virustotal": { "verdict": "malicious", "summary": "VT: 23 motores detectaron amenaza.", ... },
-    "abuseipdb":  { "verdict": "malicious", "summary": "AbuseIPDB: confianza 95%, 142 reportes.", ... },
-    ...
+    "virustotal": { "verdict": "malicious", "summary": "VT: 23 motores detectaron amenaza." },
+    "abuseipdb":  { "verdict": "malicious", "summary": "AbuseIPDB: confianza 95%, 142 reportes." }
   },
   "ai_summary": "La IP 185.220.101.45 ha sido clasificada como CRÍTICA con un score de 87/100...",
   "scan_id": 42,
@@ -299,7 +298,7 @@ El `vite.config.ts` ya tiene configurado un proxy que redirige `/api/*` a `local
 ```bash
 cd backend
 python -m pytest -v
-# Suite completa (~100 tests)
+# Suite completa
 
 python -m pytest tests/test_virustotal.py -v
 # Un fichero específico
@@ -314,7 +313,7 @@ Ver [deploy.sh](deploy.sh) para el script de despliegue automatizado sobre un VP
 Resumen del proceso:
 1. Crear VPS Ubuntu 24.04 en Hetzner Cloud (CX22, 2 vCPU / 4 GB RAM es suficiente)
 2. Conectarse por SSH y ejecutar `deploy.sh`
-3. Editar `/opt/ioc-correlator/.env` con las API keys reales
+3. Editar `/opt/blue-echo/.env` con las API keys reales
 4. Acceder desde el navegador a la IP pública del VPS
 
 ---
@@ -322,7 +321,7 @@ Resumen del proceso:
 ## Estructura del repositorio
 
 ```
-ioc-correlator/
+blue-echo/
 ├── backend/
 │   ├── Dockerfile
 │   ├── requirements.txt
