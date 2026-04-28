@@ -18,6 +18,7 @@ Dado un IOC (IP, hash, dominio, URL) o un fichero de logs, la plataforma lo cons
 - [Uso de la herramienta](#uso-de-la-herramienta)
 - [API REST](#api-rest)
 - [Despliegue en producción (Hetzner)](#despliegue-en-producción-hetzner)
+  - [Opción C — VPS Hetzner con deploy.sh](#opción-c--vps-hetzner-con-deploysh)
 - [Estructura del repositorio](#estructura-del-repositorio)
 
 ---
@@ -371,13 +372,86 @@ curl http://localhost/api/health
 
 ## Despliegue en producción (Hetzner)
 
-Ver [deploy.sh](deploy.sh) para el script de despliegue automatizado sobre un VPS Hetzner Ubuntu 24.04 limpio.
+### Opción C — VPS Hetzner con deploy.sh
 
-Resumen del proceso:
-1. Crear VPS Ubuntu 24.04 en Hetzner Cloud (CX22, 2 vCPU / 4 GB RAM es suficiente)
-2. Conectarse por SSH y ejecutar `deploy.sh`
-3. Editar `/opt/blue-echo/.env` con las API keys reales
-4. Acceder desde el navegador a la IP pública del VPS
+Pasos para desplegar en un servidor Ubuntu 24.04 limpio accesible desde internet.
+
+#### 1. Crear el VPS en Hetzner Cloud
+
+1. Entra en [console.hetzner.cloud](https://console.hetzner.cloud)
+2. Crea un nuevo servidor con estas opciones:
+   - **Imagen:** Ubuntu 24.04
+   - **Tipo:** CX22 (2 vCPU / 4 GB RAM) — suficiente para el proyecto
+   - **Red:** añade tu clave SSH pública para acceso sin contraseña
+3. Anota la **IP pública** del servidor cuando se cree
+
+#### 2. Conectarse por SSH
+
+```bash
+ssh root@<IP-DEL-SERVIDOR>
+```
+
+#### 3. Descargar y ejecutar el script de despliegue
+
+```bash
+# Descargar el script directamente desde el repositorio
+curl -fsSL https://raw.githubusercontent.com/danierod01/blue-echo/main/deploy.sh -o deploy.sh
+chmod +x deploy.sh
+
+# Ejecutar (instala Docker, clona el repo y arranca los contenedores)
+./deploy.sh
+```
+
+El script se detiene automáticamente si el `.env` no existe y te pide que lo edites:
+
+#### 4. Configurar las API keys en el servidor
+
+```bash
+nano /opt/blue-echo/.env
+```
+
+Rellena las claves igual que en local. Guarda con `Ctrl+O`, sal con `Ctrl+X`.
+
+#### 5. Arrancar la aplicación
+
+```bash
+cd /opt/blue-echo
+docker compose up -d --build
+```
+
+#### 6. Verificar que funciona
+
+```bash
+curl http://localhost/api/health
+# {"status":"ok","version":"1.0.0"}
+```
+
+Abre el navegador en **http://\<IP-DEL-SERVIDOR\>**
+
+#### Comandos útiles en el servidor
+
+```bash
+# Ver logs en tiempo real
+docker compose -C /opt/blue-echo logs -f
+
+# Actualizar a la última versión del repositorio
+git -C /opt/blue-echo pull
+docker compose -C /opt/blue-echo up -d --build
+
+# Parar la aplicación
+docker compose -C /opt/blue-echo down
+```
+
+#### Añadir HTTPS con dominio propio (opcional, suma puntos)
+
+Si tienes un dominio, apunta el DNS (registro A) a la IP del servidor y ejecuta:
+
+```bash
+apt-get install -y certbot python3-certbot-nginx
+certbot --nginx -d tudominio.com
+```
+
+Certbot configura Nginx automáticamente y renueva el certificado cada 90 días.
 
 ---
 
