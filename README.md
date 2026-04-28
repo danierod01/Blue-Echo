@@ -12,10 +12,11 @@ Dado un IOC (IP, hash, dominio, URL) o un fichero de logs, la plataforma lo cons
 - [Fuentes de Threat Intelligence](#fuentes-de-threat-intelligence)
 - [Requisitos previos](#requisitos-previos)
 - [Instalación y arranque](#instalación-y-arranque)
+  - [Opción A — Con Docker](#opción-a--con-docker-recomendada)
+  - [Opción B — Sin Docker](#opción-b--sin-docker-desarrollo-local)
 - [Configuración de API Keys](#configuración-de-api-keys)
 - [Uso de la herramienta](#uso-de-la-herramienta)
 - [API REST](#api-rest)
-- [Desarrollo local sin Docker](#desarrollo-local-sin-docker)
 - [Despliegue en producción (Hetzner)](#despliegue-en-producción-hetzner)
 - [Estructura del repositorio](#estructura-del-repositorio)
 
@@ -76,22 +77,24 @@ docker compose version  # Docker Compose version v2.x.x
 
 ## Instalación y arranque
 
-### 1. Clonar el repositorio
+### Opción A — Con Docker (recomendada)
+
+#### 1. Clonar el repositorio
 
 ```bash
 git clone https://github.com/danierod01/blue-echo.git
 cd blue-echo
 ```
 
-### 2. Crear el fichero de variables de entorno
+#### 2. Crear el fichero de variables de entorno
 
 ```bash
 cp .env.example .env
 ```
 
-Edita `.env` con tu editor favorito y añade las API keys que tengas. Las fuentes sin clave simplemente no se consultarán.
+Edita `.env` con tu editor y añade las API keys que tengas. Las fuentes sin clave se marcan como inactivas pero no impiden el arranque.
 
-### 3. Arrancar con Docker Compose
+#### 3. Arrancar con Docker Compose
 
 ```bash
 docker compose up -d --build
@@ -100,20 +103,124 @@ docker compose up -d --build
 Este comando:
 - Construye las imágenes del backend (Python + FastAPI) y del frontend (React + Nginx)
 - Arranca los dos contenedores en segundo plano
-- Crea el volumen `db_data` donde se almacena la base de datos
+- Crea el volumen `db_data` donde se almacena la base de datos de forma persistente
 
 El primer arranque tarda 2-4 minutos mientras se descargan las imágenes base y se instalan las dependencias.
 
-### 4. Verificar que todo funciona
+#### 4. Verificar que todo funciona
 
 ```bash
 curl http://localhost/api/health
 # Respuesta esperada: {"status":"ok","version":"1.0.0"}
 ```
 
-### 5. Abrir el panel web
+#### 5. Abrir el panel web
 
 Abre el navegador en **http://localhost**
+
+#### Comandos útiles de Docker
+
+```bash
+# Ver logs en tiempo real
+docker compose logs -f
+
+# Ver logs solo del backend
+docker compose logs -f backend
+
+# Reconstruir tras cambios de código
+docker compose up -d --build backend
+
+# Recargar backend tras cambiar .env
+docker compose restart backend
+
+# Parar sin borrar datos
+docker compose down
+
+# Parar Y borrar la base de datos
+docker compose down -v
+```
+
+---
+
+### Opción B — Sin Docker (desarrollo local)
+
+Más cómoda si quieres ver cambios en el código al instante sin reconstruir imágenes.
+
+#### 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/danierod01/blue-echo.git
+cd blue-echo
+```
+
+#### 2. Crear el fichero de variables de entorno
+
+```bash
+cp .env.example .env
+```
+
+Edita `.env` y añade las API keys que tengas.
+
+#### 3. Arrancar el backend
+
+```bash
+cd backend
+
+# Crear entorno virtual
+python -m venv .venv
+
+# Activar el entorno virtual
+source .venv/bin/activate        # Linux / Mac
+.venv\Scripts\activate           # Windows (PowerShell)
+
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Arrancar el servidor en modo desarrollo (recarga automática)
+uvicorn main:app --reload --port 8000
+```
+
+El backend quedará disponible en:
+- API: **http://localhost:8000**
+- Swagger UI: **http://localhost:8000/api/docs**
+
+#### 4. Arrancar el frontend (en otra terminal)
+
+```bash
+cd frontend
+
+# Instalar dependencias (solo la primera vez)
+npm install
+
+# Arrancar en modo desarrollo
+npm run dev
+```
+
+El frontend quedará disponible en **http://localhost:5173**
+
+> El `vite.config.ts` ya tiene un proxy configurado que redirige `/api/*` a `localhost:8000`, así que el frontend de desarrollo se conecta al backend local automáticamente sin problemas de CORS.
+
+#### 5. Verificar que todo funciona
+
+```bash
+curl http://localhost:8000/api/health
+# Respuesta esperada: {"status":"ok","version":"1.0.0"}
+```
+
+#### Ejecutar los tests
+
+```bash
+cd backend
+
+# Suite completa
+python -m pytest -v
+
+# Un conector específico
+python -m pytest tests/test_virustotal.py -v
+
+# Con cobertura
+python -m pytest --tb=short
+```
 
 ---
 
@@ -258,50 +365,6 @@ curl http://localhost/api/sources
 ```bash
 curl http://localhost/api/health
 # {"status":"ok","version":"1.0.0"}
-```
-
----
-
-## Desarrollo local sin Docker
-
-Si prefieres arrancar el backend y frontend por separado (más cómodo para desarrollo activo):
-
-### Backend
-
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate          # Linux/Mac
-# .venv\Scripts\activate           # Windows
-
-pip install -r requirements.txt
-
-# Arrancar el servidor
-uvicorn main:app --reload --port 8000
-# → http://localhost:8000
-# → http://localhost:8000/api/docs  (Swagger UI)
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-# → http://localhost:5173
-```
-
-El `vite.config.ts` ya tiene configurado un proxy que redirige `/api/*` a `localhost:8000`, así que el frontend de desarrollo se conecta al backend local automáticamente.
-
-### Tests del backend
-
-```bash
-cd backend
-python -m pytest -v
-# Suite completa
-
-python -m pytest tests/test_virustotal.py -v
-# Un fichero específico
 ```
 
 ---
