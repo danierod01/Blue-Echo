@@ -1,16 +1,33 @@
 import asyncio
+import logging
 import os
 
 from ioc_correlator.connectors.abuseipdb import AbuseIPDBConnector
 from ioc_correlator.connectors.base import ConnectorResult
+from ioc_correlator.connectors.greynoise import GreyNoiseConnector
+from ioc_correlator.connectors.malwarebazaar import MalwareBazaarConnector
+from ioc_correlator.connectors.otx import OTXConnector
+from ioc_correlator.connectors.shodan import ShodanConnector
+from ioc_correlator.connectors.urlhaus import URLhausConnector
 from ioc_correlator.connectors.virustotal import VirusTotalConnector
+from ioc_correlator.utils.cache import get_cache
 from ioc_correlator.utils.validators import IOCType
 
-# Conectores activos. Los de los módulos 14 se añaden aquí cuando estén listos.
+logger = logging.getLogger(__name__)
+
 _CONNECTORS = [
     VirusTotalConnector(),
     AbuseIPDBConnector(),
+    ShodanConnector(),
+    OTXConnector(),
+    MalwareBazaarConnector(),
+    URLhausConnector(),
+    GreyNoiseConnector(),
 ]
+
+
+def _cache_key(ioc_value: str, ioc_type: IOCType) -> str:
+    return f"{ioc_type.value}:{ioc_value}"
 
 
 async def enrich(
@@ -19,10 +36,19 @@ async def enrich(
 ) -> dict[str, ConnectorResult]:
     """Ejecuta en paralelo todos los conectores que soportan el tipo de IOC.
 
-    Usa un semáforo para respetar MAX_CONCURRENT_REQUESTS. Si un conector
-    falla (excepción no controlada), se captura y se registra como error
-    sin interrumpir el resto.
+    Comprueba la caché antes de lanzar las peticiones. Si el IOC ya fue
+    consultado recientemente, devuelve el resultado almacenado sin llamar
+    a ninguna API externa. El TTL se configura con CACHE_TTL_SECONDS (por
+    defecto 3600 segundos).
+
+    Usa un semáforo para respetar MAX_CONCURRENT_REQUESTS.
     """
+    key = _cache_key(ioc_value, ioc_type)
+    cached = get_cache().get(key)
+    if cached is not None:
+        logger.debug("enricher: cache hit para %s", ioc_value)
+        return cached
+
     max_concurrent = int(os.getenv("MAX_CONCURRENT_REQUESTS", 5))
     sem = asyncio.Semaphore(max_concurrent)
 
@@ -36,7 +62,9 @@ async def enrich(
         *[_run(c) for c in active],
         return_exceptions=False,
     )
-    return {r.source: r for r in results}
+    result_map = {r.source: r for r in results}
+    get_cache().set(key, result_map)
+    return result_map
 
 
 def get_sources_status() -> list[dict]:

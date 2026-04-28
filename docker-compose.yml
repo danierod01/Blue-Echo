@@ -1,0 +1,38 @@
+services:
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Base de datos persistente fuera del contenedor
+      - db_data:/app/data
+    environment:
+      # Sobreescribir la ruta de BD para apuntar al volumen
+      DATABASE_URL: sqlite:////app/data/ioc_correlator.db
+    # El backend NO expone puerto al exterior: solo accesible via Nginx
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/api/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  db_data:
