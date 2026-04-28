@@ -99,6 +99,57 @@ docker compose down -v
 
 ---
 
-## Módulo 17 — deploy.sh (pendiente)
+## Módulo 17 — deploy.sh (completado)
 
-> Se documenta al implementar el script de despliegue automatizado para Hetzner Ubuntu 24.04.
+### Qué se ha construido
+
+Script `deploy.sh` de despliegue automatizado para un VPS Ubuntu 24.04 limpio. Ejecuta en orden:
+
+1. Verifica que corre como root
+2. Actualiza paquetes del sistema (`apt-get upgrade`)
+3. Instala Docker Engine si no está presente (via `get.docker.com`)
+4. Instala git si no está presente
+5. Clona el repositorio en `/opt/blue-echo` (o hace `git pull` si ya existe)
+6. Si no existe `.env`, lo crea desde `.env.example` y **para la ejecución** pidiendo al usuario que rellene las API keys
+7. Ejecuta `docker compose up -d --build`
+8. Espera hasta 45 segundos a que `/api/health` responda (15 reintentos × 3 s)
+9. Muestra la IP pública del servidor y comandos útiles
+
+### Decisiones técnicas tomadas
+
+**`set -euo pipefail`.**
+El script falla inmediatamente ante cualquier error, variable no definida o pipe roto. Evita que un fallo silencioso en un paso deje el sistema a medias.
+
+**Parada explícita si `.env` no existe.**
+En lugar de arrancar la aplicación sin API keys, el script para con un mensaje claro indicando que hay que editar `.env`. Esto evita confusión al ver que los conectores están todos inactivos.
+
+**Health check con reintentos.**
+`docker compose up` retorna inmediatamente sin esperar a que el backend esté listo. El bucle de espera garantiza que el mensaje final de "desplegado correctamente" es real.
+
+**Muestra la IP pública en el resumen final.**
+Usa `curl ipinfo.io/ip` con fallback a `hostname -I` para mostrar la URL accesible desde internet, sin que el usuario tenga que buscarla.
+
+### Flujo de uso en el servidor
+
+```bash
+# Primera vez en un VPS limpio
+ssh root@<IP>
+curl -fsSL https://raw.githubusercontent.com/danierod01/blue-echo/main/deploy.sh -o deploy.sh
+chmod +x deploy.sh && ./deploy.sh
+# → El script para y pide editar .env
+nano /opt/blue-echo/.env
+cd /opt/blue-echo && docker compose up -d --build
+
+# Actualización tras cambios en el repositorio
+git -C /opt/blue-echo pull
+docker compose -C /opt/blue-echo up -d --build
+```
+
+### Estado al terminar este módulo
+
+- [x] `deploy.sh` con `set -euo pipefail` (falla limpiamente)
+- [x] Instalación automática de Docker y git si no están presentes
+- [x] Parada explícita si `.env` no está configurado
+- [x] Health check con reintentos antes de declarar éxito
+- [x] Resumen final con IP pública y comandos útiles
+- [x] README actualizado con Opción C (pasos completos para Hetzner)

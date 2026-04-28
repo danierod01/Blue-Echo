@@ -77,7 +77,7 @@ def _score_greynoise(result: ConnectorResult) -> int:
     return 0
 
 
-_RULES: dict[str, callable] = {
+_RULES: dict[str, object] = {
     "virustotal":    _score_virustotal,
     "abuseipdb":     _score_abuseipdb,
     "shodan":        _score_shodan,

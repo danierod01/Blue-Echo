@@ -12,11 +12,13 @@ Dado un IOC (IP, hash, dominio, URL) o un fichero de logs, la plataforma lo cons
 - [Fuentes de Threat Intelligence](#fuentes-de-threat-intelligence)
 - [Requisitos previos](#requisitos-previos)
 - [Instalación y arranque](#instalación-y-arranque)
+  - [Opción A — Con Docker](#opción-a--con-docker-recomendada)
+  - [Opción B — Sin Docker](#opción-b--sin-docker-desarrollo-local)
 - [Configuración de API Keys](#configuración-de-api-keys)
 - [Uso de la herramienta](#uso-de-la-herramienta)
 - [API REST](#api-rest)
-- [Desarrollo local sin Docker](#desarrollo-local-sin-docker)
 - [Despliegue en producción (Hetzner)](#despliegue-en-producción-hetzner)
+  - [Opción C — VPS Hetzner con deploy.sh](#opción-c--vps-hetzner-con-deploysh)
 - [Estructura del repositorio](#estructura-del-repositorio)
 
 ---
@@ -76,22 +78,24 @@ docker compose version  # Docker Compose version v2.x.x
 
 ## Instalación y arranque
 
-### 1. Clonar el repositorio
+### Opción A — Con Docker (recomendada)
+
+#### 1. Clonar el repositorio
 
 ```bash
 git clone https://github.com/danierod01/blue-echo.git
 cd blue-echo
 ```
 
-### 2. Crear el fichero de variables de entorno
+#### 2. Crear el fichero de variables de entorno
 
 ```bash
 cp .env.example .env
 ```
 
-Edita `.env` con tu editor favorito y añade las API keys que tengas. Las fuentes sin clave simplemente no se consultarán.
+Edita `.env` con tu editor y añade las API keys que tengas. Las fuentes sin clave se marcan como inactivas pero no impiden el arranque.
 
-### 3. Arrancar con Docker Compose
+#### 3. Arrancar con Docker Compose
 
 ```bash
 docker compose up -d --build
@@ -100,20 +104,124 @@ docker compose up -d --build
 Este comando:
 - Construye las imágenes del backend (Python + FastAPI) y del frontend (React + Nginx)
 - Arranca los dos contenedores en segundo plano
-- Crea el volumen `db_data` donde se almacena la base de datos
+- Crea el volumen `db_data` donde se almacena la base de datos de forma persistente
 
 El primer arranque tarda 2-4 minutos mientras se descargan las imágenes base y se instalan las dependencias.
 
-### 4. Verificar que todo funciona
+#### 4. Verificar que todo funciona
 
 ```bash
 curl http://localhost/api/health
 # Respuesta esperada: {"status":"ok","version":"1.0.0"}
 ```
 
-### 5. Abrir el panel web
+#### 5. Abrir el panel web
 
 Abre el navegador en **http://localhost**
+
+#### Comandos útiles de Docker
+
+```bash
+# Ver logs en tiempo real
+docker compose logs -f
+
+# Ver logs solo del backend
+docker compose logs -f backend
+
+# Reconstruir tras cambios de código
+docker compose up -d --build backend
+
+# Recargar backend tras cambiar .env
+docker compose restart backend
+
+# Parar sin borrar datos
+docker compose down
+
+# Parar Y borrar la base de datos
+docker compose down -v
+```
+
+---
+
+### Opción B — Sin Docker (desarrollo local)
+
+Más cómoda si quieres ver cambios en el código al instante sin reconstruir imágenes.
+
+#### 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/danierod01/blue-echo.git
+cd blue-echo
+```
+
+#### 2. Crear el fichero de variables de entorno
+
+```bash
+cp .env.example .env
+```
+
+Edita `.env` y añade las API keys que tengas.
+
+#### 3. Arrancar el backend
+
+```bash
+cd backend
+
+# Crear entorno virtual
+python -m venv .venv
+
+# Activar el entorno virtual
+source .venv/bin/activate        # Linux / Mac
+.venv\Scripts\activate           # Windows (PowerShell)
+
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Arrancar el servidor en modo desarrollo (recarga automática)
+uvicorn main:app --reload --port 8000
+```
+
+El backend quedará disponible en:
+- API: **http://localhost:8000**
+- Swagger UI: **http://localhost:8000/api/docs**
+
+#### 4. Arrancar el frontend (en otra terminal)
+
+```bash
+cd frontend
+
+# Instalar dependencias (solo la primera vez)
+npm install
+
+# Arrancar en modo desarrollo
+npm run dev
+```
+
+El frontend quedará disponible en **http://localhost:5173**
+
+> El `vite.config.ts` ya tiene un proxy configurado que redirige `/api/*` a `localhost:8000`, así que el frontend de desarrollo se conecta al backend local automáticamente sin problemas de CORS.
+
+#### 5. Verificar que todo funciona
+
+```bash
+curl http://localhost:8000/api/health
+# Respuesta esperada: {"status":"ok","version":"1.0.0"}
+```
+
+#### Ejecutar los tests
+
+```bash
+cd backend
+
+# Suite completa
+python -m pytest -v
+
+# Un conector específico
+python -m pytest tests/test_virustotal.py -v
+
+# Con cobertura
+python -m pytest --tb=short
+```
 
 ---
 
@@ -262,59 +370,88 @@ curl http://localhost/api/health
 
 ---
 
-## Desarrollo local sin Docker
-
-Si prefieres arrancar el backend y frontend por separado (más cómodo para desarrollo activo):
-
-### Backend
-
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate          # Linux/Mac
-# .venv\Scripts\activate           # Windows
-
-pip install -r requirements.txt
-
-# Arrancar el servidor
-uvicorn main:app --reload --port 8000
-# → http://localhost:8000
-# → http://localhost:8000/api/docs  (Swagger UI)
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-# → http://localhost:5173
-```
-
-El `vite.config.ts` ya tiene configurado un proxy que redirige `/api/*` a `localhost:8000`, así que el frontend de desarrollo se conecta al backend local automáticamente.
-
-### Tests del backend
-
-```bash
-cd backend
-python -m pytest -v
-# Suite completa
-
-python -m pytest tests/test_virustotal.py -v
-# Un fichero específico
-```
-
----
-
 ## Despliegue en producción (Hetzner)
 
-Ver [deploy.sh](deploy.sh) para el script de despliegue automatizado sobre un VPS Hetzner Ubuntu 24.04 limpio.
+### Opción C — VPS Hetzner con deploy.sh
 
-Resumen del proceso:
-1. Crear VPS Ubuntu 24.04 en Hetzner Cloud (CX22, 2 vCPU / 4 GB RAM es suficiente)
-2. Conectarse por SSH y ejecutar `deploy.sh`
-3. Editar `/opt/blue-echo/.env` con las API keys reales
-4. Acceder desde el navegador a la IP pública del VPS
+Pasos para desplegar en un servidor Ubuntu 24.04 limpio accesible desde internet.
+
+#### 1. Crear el VPS en Hetzner Cloud
+
+1. Entra en [console.hetzner.cloud](https://console.hetzner.cloud)
+2. Crea un nuevo servidor con estas opciones:
+   - **Imagen:** Ubuntu 24.04
+   - **Tipo:** CX22 (2 vCPU / 4 GB RAM) — suficiente para el proyecto
+   - **Red:** añade tu clave SSH pública para acceso sin contraseña
+3. Anota la **IP pública** del servidor cuando se cree
+
+#### 2. Conectarse por SSH
+
+```bash
+ssh root@<IP-DEL-SERVIDOR>
+```
+
+#### 3. Descargar y ejecutar el script de despliegue
+
+```bash
+# Descargar el script directamente desde el repositorio
+curl -fsSL https://raw.githubusercontent.com/danierod01/blue-echo/main/deploy.sh -o deploy.sh
+chmod +x deploy.sh
+
+# Ejecutar (instala Docker, clona el repo y arranca los contenedores)
+./deploy.sh
+```
+
+El script se detiene automáticamente si el `.env` no existe y te pide que lo edites:
+
+#### 4. Configurar las API keys en el servidor
+
+```bash
+nano /opt/blue-echo/.env
+```
+
+Rellena las claves igual que en local. Guarda con `Ctrl+O`, sal con `Ctrl+X`.
+
+#### 5. Arrancar la aplicación
+
+```bash
+cd /opt/blue-echo
+docker compose up -d --build
+```
+
+#### 6. Verificar que funciona
+
+```bash
+curl http://localhost/api/health
+# {"status":"ok","version":"1.0.0"}
+```
+
+Abre el navegador en **http://\<IP-DEL-SERVIDOR\>**
+
+#### Comandos útiles en el servidor
+
+```bash
+# Ver logs en tiempo real
+docker compose -C /opt/blue-echo logs -f
+
+# Actualizar a la última versión del repositorio
+git -C /opt/blue-echo pull
+docker compose -C /opt/blue-echo up -d --build
+
+# Parar la aplicación
+docker compose -C /opt/blue-echo down
+```
+
+#### Añadir HTTPS con dominio propio (opcional, suma puntos)
+
+Si tienes un dominio, apunta el DNS (registro A) a la IP del servidor y ejecuta:
+
+```bash
+apt-get install -y certbot python3-certbot-nginx
+certbot --nginx -d tudominio.com
+```
+
+Certbot configura Nginx automáticamente y renueva el certificado cada 90 días.
 
 ---
 
