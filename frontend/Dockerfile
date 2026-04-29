@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Instalar dependencias primero (capa cacheada si package.json no cambia)
 COPY package.json package-lock.json* ./
-RUN npm ci --prefer-offline
+RUN npm install
 
 # Copiar código y construir
 COPY . .

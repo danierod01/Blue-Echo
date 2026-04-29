@@ -12,13 +12,12 @@ Dado un IOC (IP, hash, dominio, URL) o un fichero de logs, la plataforma lo cons
 - [Fuentes de Threat Intelligence](#fuentes-de-threat-intelligence)
 - [Requisitos previos](#requisitos-previos)
 - [Instalación y arranque](#instalación-y-arranque)
-  - [Opción A — Con Docker](#opción-a--con-docker-recomendada)
-  - [Opción B — Sin Docker](#opción-b--sin-docker-desarrollo-local)
+  - [Con Docker (recomendado)](#con-docker-recomendado)
+  - [Sin Docker (desarrollo local)](#sin-docker-desarrollo-local)
 - [Configuración de API Keys](#configuración-de-api-keys)
 - [Uso de la herramienta](#uso-de-la-herramienta)
 - [API REST](#api-rest)
-- [Despliegue en producción (Hetzner)](#despliegue-en-producción-hetzner)
-  - [Opción C — VPS Hetzner con deploy.sh](#opción-c--vps-hetzner-con-deploysh)
+- [Despliegue en producción](#despliegue-en-producción-opcional)
 - [Estructura del repositorio](#estructura-del-repositorio)
 
 ---
@@ -62,13 +61,12 @@ Los conectores sin API key configurada se marcan como inactivos en el panel pero
 - [Docker Engine](https://docs.docker.com/engine/install/) 24.x o superior
 - [Docker Compose](https://docs.docker.com/compose/) v2 (incluido en Docker Desktop y en instalaciones modernas)
 
-Verificar:
 ```bash
 docker --version        # Docker version 24.x.x
 docker compose version  # Docker Compose version v2.x.x
 ```
 
-### Sin Docker (desarrollo)
+### Sin Docker (desarrollo local)
 
 - Python 3.11 o superior
 - Node.js 22.x LTS
@@ -78,7 +76,7 @@ docker compose version  # Docker Compose version v2.x.x
 
 ## Instalación y arranque
 
-### Opción A — Con Docker (recomendada)
+### Con Docker (recomendado)
 
 #### 1. Clonar el repositorio
 
@@ -93,20 +91,15 @@ cd blue-echo
 cp .env.example .env
 ```
 
-Edita `.env` con tu editor y añade las API keys que tengas. Las fuentes sin clave se marcan como inactivas pero no impiden el arranque.
+Edita `.env` y añade las API keys que tengas. Las fuentes sin clave se marcan como inactivas pero no impiden el arranque. Ver la sección [Configuración de API Keys](#configuración-de-api-keys) para más detalle.
 
-#### 3. Arrancar con Docker Compose
+#### 3. Construir y arrancar
 
 ```bash
 docker compose up -d --build
 ```
 
-Este comando:
-- Construye las imágenes del backend (Python + FastAPI) y del frontend (React + Nginx)
-- Arranca los dos contenedores en segundo plano
-- Crea el volumen `db_data` donde se almacena la base de datos de forma persistente
-
-El primer arranque tarda 2-4 minutos mientras se descargan las imágenes base y se instalan las dependencias.
+Este comando construye las imágenes, arranca los dos contenedores en segundo plano y crea el volumen `db_data` donde se almacena la base de datos de forma persistente. El primer arranque tarda 2-4 minutos.
 
 #### 4. Verificar que todo funciona
 
@@ -119,7 +112,7 @@ curl http://localhost/api/health
 
 Abre el navegador en **http://localhost**
 
-#### Comandos útiles de Docker
+#### Comandos útiles
 
 ```bash
 # Ver logs en tiempo real
@@ -129,7 +122,7 @@ docker compose logs -f
 docker compose logs -f backend
 
 # Reconstruir tras cambios de código
-docker compose up -d --build backend
+docker compose up -d --build
 
 # Recargar backend tras cambiar .env
 docker compose restart backend
@@ -143,9 +136,9 @@ docker compose down -v
 
 ---
 
-### Opción B — Sin Docker (desarrollo local)
+### Sin Docker (desarrollo local)
 
-Más cómoda si quieres ver cambios en el código al instante sin reconstruir imágenes.
+Más cómodo si quieres ver los cambios de código al instante sin reconstruir imágenes.
 
 #### 1. Clonar el repositorio
 
@@ -164,28 +157,30 @@ Edita `.env` y añade las API keys que tengas.
 
 #### 3. Arrancar el backend
 
+Abre una terminal en la carpeta raíz del proyecto:
+
 ```bash
 cd backend
 
-# Crear entorno virtual
+# Crear y activar entorno virtual
 python -m venv .venv
-
-# Activar el entorno virtual
 source .venv/bin/activate        # Linux / Mac
 .venv\Scripts\activate           # Windows (PowerShell)
 
 # Instalar dependencias
 pip install -r requirements.txt
 
-# Arrancar el servidor en modo desarrollo (recarga automática)
+# Arrancar el servidor (recarga automática al guardar cambios)
 uvicorn main:app --reload --port 8000
 ```
 
-El backend quedará disponible en:
+El backend queda disponible en:
 - API: **http://localhost:8000**
-- Swagger UI: **http://localhost:8000/api/docs**
+- Swagger UI (documentación interactiva): **http://localhost:8000/api/docs**
 
-#### 4. Arrancar el frontend (en otra terminal)
+#### 4. Arrancar el frontend
+
+Abre **otra terminal** en la carpeta raíz del proyecto:
 
 ```bash
 cd frontend
@@ -197,9 +192,9 @@ npm install
 npm run dev
 ```
 
-El frontend quedará disponible en **http://localhost:5173**
+El frontend queda disponible en **http://localhost:5173**
 
-> El `vite.config.ts` ya tiene un proxy configurado que redirige `/api/*` a `localhost:8000`, así que el frontend de desarrollo se conecta al backend local automáticamente sin problemas de CORS.
+> El `vite.config.ts` tiene un proxy que redirige `/api/*` a `localhost:8000` automáticamente, por lo que no hay problemas de CORS en desarrollo.
 
 #### 5. Verificar que todo funciona
 
@@ -219,7 +214,7 @@ python -m pytest -v
 # Un conector específico
 python -m pytest tests/test_virustotal.py -v
 
-# Con cobertura
+# Ver resumen de fallos sin traza completa
 python -m pytest --tb=short
 ```
 
@@ -237,8 +232,8 @@ SHODAN_API_KEY=tu_clave_de_shodan
 OTX_API_KEY=tu_clave_de_otx
 GREYNOISE_API_KEY=tu_clave_de_greynoise
 
-# ---- IA Generativa (opcional, pero recomendado) ----
-# Sin esta clave, el análisis se genera localmente con los datos crudos.
+# ---- IA Generativa (opcional) ----
+# Sin esta clave, el análisis se genera localmente con los datos de los conectores.
 ANTHROPIC_API_KEY=tu_clave_de_anthropic
 
 # ---- Backend (valores por defecto válidos para desarrollo) ----
@@ -248,18 +243,20 @@ MAX_CONCURRENT_REQUESTS=5
 CACHE_TTL_SECONDS=3600
 ```
 
-Dónde conseguir las claves gratuitas:
+Dónde conseguir las claves (todas tienen plan gratuito):
 
-| Servicio | URL de registro | Plan gratuito |
+| Servicio | Registro | Plan gratuito |
 |---|---|---|
 | VirusTotal | https://www.virustotal.com/gui/join-us | 4 req/min, 500 req/día |
 | AbuseIPDB | https://www.abuseipdb.com/register | 1.000 req/día |
-| Shodan | https://account.shodan.io/register | 1 req/seg (cuenta gratuita) |
+| Shodan | https://account.shodan.io/register | 1 req/seg |
 | AlienVault OTX | https://otx.alienvault.com/ | Sin límite publicado |
 | GreyNoise | https://www.greynoise.io/plans/community | 1.000 req/día |
 | Anthropic | https://console.anthropic.com/ | Créditos de prueba |
 
-Tras modificar `.env`, recarga el backend:
+> MalwareBazaar y URLhaus son **APIs públicas** — funcionan sin clave desde el primer arranque.
+
+Tras modificar `.env` con Docker:
 ```bash
 docker compose restart backend
 ```
@@ -268,10 +265,10 @@ docker compose restart backend
 
 ## Uso de la herramienta
 
-### Escanear un IOC manualmente
+### Escanear un IOC
 
-1. Abre el panel en **http://localhost**
-2. Escribe el IOC en la barra de búsqueda central:
+1. Abre el panel en **http://localhost** (Docker) o **http://localhost:5173** (sin Docker)
+2. Escribe el IOC en la barra de búsqueda:
    - IP: `185.220.101.45`
    - Dominio: `malware.example.com`
    - Hash MD5: `d41d8cd98f00b204e9800998ecf8427e`
@@ -286,27 +283,27 @@ docker compose restart backend
 
 ### Escanear desde un fichero de logs
 
-1. Pulsa el botón **Subir fichero** (o arrastra el fichero sobre la zona de búsqueda).
-2. Selecciona tu fichero de logs (cualquier formato: Apache, Nginx, syslog, CSV de Windows Event Log, JSON lines o texto libre).
-3. La herramienta extrae automáticamente todos los IOCs únicos y los escanea.
+1. Pulsa el botón **Subir fichero** o arrastra el fichero sobre la barra de búsqueda.
+2. Selecciona tu fichero (Apache, Nginx, syslog, CSV de Windows Event Log, JSON lines o texto libre).
+3. La herramienta extrae automáticamente todos los IOCs únicos y escanea el primero encontrado.
 
 ### Ver el historial
 
 - Haz clic en **Historial** en la barra de navegación superior.
-- Verás la lista de todos los escaneos con IOC, score, veredicto y fecha.
+- Verás todos los escaneos con IOC, score, veredicto y fecha.
 - Haz clic en cualquier fila para recargar el resultado completo en el panel.
 
 ### Estado de los conectores
 
-- Las pills de colores bajo la barra de búsqueda muestran qué conectores están activos (verde) y cuáles no tienen API key configurada (gris).
+- Las pills de colores bajo la barra de búsqueda muestran qué fuentes están activas (verde) y cuáles no tienen API key configurada (gris).
 
 ---
 
 ## API REST
 
-La API está disponible en `http://localhost/api/`. Documentación interactiva (Swagger UI) en **http://localhost/api/docs**.
+Documentación interactiva (Swagger UI) disponible en **http://localhost/api/docs**
 
-### POST /api/scan/json — Escanear un IOC por JSON
+### POST /api/scan/json — Escanear un IOC
 
 ```bash
 curl -X POST http://localhost/api/scan/json \
@@ -317,16 +314,17 @@ curl -X POST http://localhost/api/scan/json \
 Respuesta:
 ```json
 {
-  "ioc": "185.220.101.45",
+  "id": 42,
+  "ioc_value": "185.220.101.45",
   "ioc_type": "ipv4",
   "score": 87,
   "verdict": "critical",
-  "results": {
-    "virustotal": { "verdict": "malicious", "summary": "VT: 23 motores detectaron amenaza." },
-    "abuseipdb":  { "verdict": "malicious", "summary": "AbuseIPDB: confianza 95%, 142 reportes." }
+  "connector_results": {
+    "virustotal": { "verdict": "malicious", "summary": "VT: 23 motores detectaron amenaza.", "success": true },
+    "abuseipdb":  { "verdict": "malicious", "summary": "AbuseIPDB: confianza 95%, 142 reportes.", "success": true }
   },
+  "breakdown": { "virustotal": 30, "abuseipdb": 40 },
   "ai_summary": "La IP 185.220.101.45 ha sido clasificada como CRÍTICA con un score de 87/100...",
-  "scan_id": 42,
   "created_at": "2026-04-28T14:30:00"
 }
 ```
@@ -347,6 +345,7 @@ curl -X POST http://localhost/api/scan \
 
 ```bash
 curl http://localhost/api/history
+curl "http://localhost/api/history?limit=10"
 ```
 
 ### GET /api/history/{id} — Detalle de un escaneo
@@ -370,79 +369,73 @@ curl http://localhost/api/health
 
 ---
 
-## Despliegue en producción (Hetzner)
+## Despliegue en producción (opcional)
 
-### Opción C — VPS Hetzner con deploy.sh
+Esta sección describe cómo publicar Blue-Echo en internet desde un VPS Ubuntu 24.04, usando el script `deploy.sh` incluido en el repositorio. Es necesario si quieres que la herramienta sea accesible desde fuera de tu red local.
 
-Pasos para desplegar en un servidor Ubuntu 24.04 limpio accesible desde internet.
-
-#### 1. Crear el VPS en Hetzner Cloud
+### 1. Crear el VPS en Hetzner Cloud
 
 1. Entra en [console.hetzner.cloud](https://console.hetzner.cloud)
-2. Crea un nuevo servidor con estas opciones:
+2. Crea un nuevo servidor:
    - **Imagen:** Ubuntu 24.04
-   - **Tipo:** CX22 (2 vCPU / 4 GB RAM) — suficiente para el proyecto
+   - **Tipo:** CX22 (2 vCPU / 4 GB RAM)
    - **Red:** añade tu clave SSH pública para acceso sin contraseña
-3. Anota la **IP pública** del servidor cuando se cree
+3. Anota la **IP pública** del servidor
 
-#### 2. Conectarse por SSH
+### 2. Conectarse por SSH
 
 ```bash
 ssh root@<IP-DEL-SERVIDOR>
 ```
 
-#### 3. Descargar y ejecutar el script de despliegue
+### 3. Ejecutar el script de despliegue
 
 ```bash
-# Descargar el script directamente desde el repositorio
 curl -fsSL https://raw.githubusercontent.com/danierod01/blue-echo/main/deploy.sh -o deploy.sh
 chmod +x deploy.sh
-
-# Ejecutar (instala Docker, clona el repo y arranca los contenedores)
 ./deploy.sh
 ```
 
-El script se detiene automáticamente si el `.env` no existe y te pide que lo edites:
+El script instala Docker, clona el repositorio en `/opt/blue-echo` y arranca los contenedores. Si no existe un `.env`, se detiene y te pide que lo configures:
 
-#### 4. Configurar las API keys en el servidor
+### 4. Configurar las API keys en el servidor
 
 ```bash
 nano /opt/blue-echo/.env
 ```
 
-Rellena las claves igual que en local. Guarda con `Ctrl+O`, sal con `Ctrl+X`.
+Rellena las claves y guarda (`Ctrl+O`, `Ctrl+X`).
 
-#### 5. Arrancar la aplicación
+### 5. Arrancar la aplicación
 
 ```bash
 cd /opt/blue-echo
 docker compose up -d --build
 ```
 
-#### 6. Verificar que funciona
+### 6. Verificar y acceder
 
 ```bash
 curl http://localhost/api/health
-# {"status":"ok","version":"1.0.0"}
 ```
 
 Abre el navegador en **http://\<IP-DEL-SERVIDOR\>**
 
-#### Comandos útiles en el servidor
+### Comandos útiles en el servidor
 
 ```bash
-# Ver logs en tiempo real
+# Ver logs
 docker compose -C /opt/blue-echo logs -f
 
-# Actualizar a la última versión del repositorio
+# Actualizar a la última versión
 git -C /opt/blue-echo pull
 docker compose -C /opt/blue-echo up -d --build
 
-# Parar la aplicación
+# Parar
 docker compose -C /opt/blue-echo down
 ```
 
-#### Añadir HTTPS con dominio propio (opcional, suma puntos)
+### HTTPS con dominio propio (suma puntos en la evaluación)
 
 Si tienes un dominio, apunta el DNS (registro A) a la IP del servidor y ejecuta:
 
@@ -461,6 +454,7 @@ Certbot configura Nginx automáticamente y renueva el certificado cada 90 días.
 blue-echo/
 ├── backend/
 │   ├── Dockerfile
+│   ├── .dockerignore
 │   ├── requirements.txt
 │   ├── main.py
 │   └── ioc_correlator/
@@ -474,6 +468,7 @@ blue-echo/
 │       └── database.py     # SQLite con SQLModel
 ├── frontend/
 │   ├── Dockerfile
+│   ├── .dockerignore
 │   ├── nginx.conf
 │   └── src/
 │       ├── components/     # SearchBar, ThreatScore, ResultsTable, AiSummary, HistoryList, SourcesStatus
