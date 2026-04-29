@@ -177,12 +177,12 @@ async def _claude_api_analysis(
     results: dict[str, ConnectorResult],
     api_key: str,
 ) -> str:
-    from anthropic import Anthropic  # import tardío para no fallar si no está instalado
+    from anthropic import AsyncAnthropic  # import tardío para no fallar si no está instalado
 
-    client = Anthropic(api_key=api_key)
+    client = AsyncAnthropic(api_key=api_key)
     user_prompt = _build_user_prompt(ioc_value, ioc_type, scoring, results)
 
-    message = client.messages.create(
+    message = await client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=512,
         system=_SYSTEM_PROMPT,

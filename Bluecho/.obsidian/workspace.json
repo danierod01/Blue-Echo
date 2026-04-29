@@ -13,28 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "IOC-Correlator/00 - Resumen Ejecutivo.md",
+                "file": "IOC-Correlator/03 - Diario de Desarrollo/Fase 08 - Tests y Pulido.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "00 - Resumen Ejecutivo"
-            }
-          }
-        ]
-      },
-      {
-        "id": "5af0a139b72e8438",
-        "type": "tabs",
-        "children": [
-          {
-            "id": "dc133bcdd5f1d600",
-            "type": "leaf",
-            "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Vista gráfica"
+              "title": "Fase 08 - Tests y Pulido"
             }
           }
         ]
@@ -197,13 +181,17 @@
       "bases:Crear nueva base": false
     }
   },
-  "active": "dc133bcdd5f1d600",
+  "active": "dddabeba914556ad",
   "lastOpenFiles": [
+    "IOC-Correlator/03 - Diario de Desarrollo/Fase 07 - Docker y Despliegue.md",
+    "IOC-Correlator/03 - Diario de Desarrollo/Fase 06 - Frontend.md",
+    "IOC-Correlator/03 - Diario de Desarrollo/Fase 04 - Conectores TI.md",
+    "IOC-Correlator/03 - Diario de Desarrollo/Fase 05 - IA Generativa.md",
     "IOC-Correlator/00 - Resumen Ejecutivo.md",
+    "IOC-Correlator/04 - Guía de Despliegue.md",
     "IOC-Correlator/07 - Roadmap Práctica 2.md",
     "IOC-Correlator/06 - Conclusiones y Lecciones.md",
     "IOC-Correlator/05 - Manual de Uso.md",
-    "IOC-Correlator/04 - Guía de Despliegue.md",
     "IOC-Correlator/02 - Arquitectura Técnica.md",
     "IOC-Correlator/01 - Descripción del Problema.md",
     "IOC-Correlator/03 - Diario de Desarrollo",
