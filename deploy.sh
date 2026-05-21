@@ -89,12 +89,11 @@ cd "$INSTALL_DIR"
 if [[ ! -f "$INSTALL_DIR/.env" ]]; then
     cp "$INSTALL_DIR/.env.example" "$INSTALL_DIR/.env"
     warn "Fichero .env creado desde .env.example."
-    warn "IMPORTANTE: edita $INSTALL_DIR/.env y añade tus API keys antes de continuar."
-    warn "  nano $INSTALL_DIR/.env"
-    warn ""
-    warn "Cuando hayas añadido las claves, ejecuta:"
-    warn "  cd $INSTALL_DIR && docker compose up -d --build"
-    exit 0
+    warn "Se abrirá nano para que añadas tus API keys. Guarda con Ctrl+O y cierra con Ctrl+X."
+    warn "El despliegue continuará automáticamente al salir del editor."
+    echo ""
+    read -r -p "Pulsa ENTER para abrir el editor..."
+    nano "$INSTALL_DIR/.env"
 fi
 
 # ---------------------------------------------------------------------------
