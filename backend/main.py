@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from ioc_correlator.api.auth import auth_router
 from ioc_correlator.api.routes import router
 from ioc_correlator.database import create_db_and_tables
 
@@ -35,4 +36,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router, prefix="/api")
 app.include_router(router, prefix="/api")

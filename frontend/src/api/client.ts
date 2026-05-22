@@ -1,8 +1,22 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
-const API_KEY = import.meta.env.VITE_API_KEY ?? "";
+
+const SESSION_KEY = "blueecho_api_key";
+
+export function getStoredApiKey(): string {
+  return localStorage.getItem(SESSION_KEY) ?? "";
+}
+
+export function setStoredApiKey(key: string): void {
+  localStorage.setItem(SESSION_KEY, key);
+}
+
+export function clearStoredApiKey(): void {
+  localStorage.removeItem(SESSION_KEY);
+}
 
 function authHeaders(): HeadersInit {
-  return API_KEY ? { "X-API-Key": API_KEY } : {};
+  const key = getStoredApiKey();
+  return key ? { "X-API-Key": key } : {};
 }
 
 // ---------------------------------------------------------------------------
@@ -50,6 +64,11 @@ export interface SourceStatus {
 // ---------------------------------------------------------------------------
 
 async function handleResponse<T>(res: Response): Promise<T> {
+  if (res.status === 401) {
+    clearStoredApiKey();
+    window.location.href = "/login";
+    throw new Error("Sesión expirada.");
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
     throw new Error(body.detail ?? `HTTP ${res.status}`);
@@ -100,4 +119,15 @@ export async function getSources(): Promise<SourceStatus[]> {
     headers: authHeaders(),
   });
   return handleResponse<SourceStatus[]>(res);
+}
+
+export async function verifyApiKey(apiKey: string): Promise<boolean> {
+  const res = await fetch(`${BASE_URL}/api/auth/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ api_key: apiKey }),
+  });
+  if (!res.ok) return false;
+  const data = await res.json();
+  return data.valid === true;
 }
