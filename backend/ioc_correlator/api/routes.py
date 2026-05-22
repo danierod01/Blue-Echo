@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlmodel import Session
 
+from ioc_correlator.api.auth import require_api_key
 from ioc_correlator.api.schemas import (
     ConnectorResultOut,
     HealthResponse,
@@ -100,7 +101,7 @@ async def health() -> HealthResponse:
     return HealthResponse(status="ok", version=APP_VERSION)
 
 
-@router.post("/scan", response_model=ScanResponse)
+@router.post("/scan", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
 async def scan(
     # Acepta JSON body O multipart/form-data (para subida de ficheros)
     ioc: Optional[str] = Form(default=None),
@@ -129,7 +130,7 @@ async def scan(
     return _build_scan_response(db_scan, breakdown)
 
 
-@router.post("/scan/json", response_model=ScanResponse)
+@router.post("/scan/json", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
 async def scan_json(
     body: ScanRequest,
     session: Session = Depends(get_session),
@@ -139,7 +140,7 @@ async def scan_json(
     return _build_scan_response(db_scan, breakdown)
 
 
-@router.get("/history", response_model=list[HistoryItem])
+@router.get("/history", response_model=list[HistoryItem], dependencies=[Depends(require_api_key)])
 async def history(
     limit: int = 50,
     session: Session = Depends(get_session),
@@ -158,7 +159,7 @@ async def history(
     ]
 
 
-@router.get("/history/{scan_id}", response_model=ScanResponse)
+@router.get("/history/{scan_id}", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
 async def history_detail(
     scan_id: int,
     session: Session = Depends(get_session),
@@ -171,6 +172,6 @@ async def history_detail(
     return _build_scan_response(db_scan, breakdown)
 
 
-@router.get("/sources", response_model=list[SourceStatus])
+@router.get("/sources", response_model=list[SourceStatus], dependencies=[Depends(require_api_key)])
 async def sources() -> list[SourceStatus]:
     return [SourceStatus(**s) for s in get_sources_status()]

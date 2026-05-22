@@ -1,4 +1,9 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+const API_KEY = import.meta.env.VITE_API_KEY ?? "";
+
+function authHeaders(): HeadersInit {
+  return API_KEY ? { "X-API-Key": API_KEY } : {};
+}
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -59,7 +64,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 export async function scanIoc(ioc: string): Promise<ScanResponse> {
   const res = await fetch(`${BASE_URL}/api/scan/json`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ ioc }),
   });
   return handleResponse<ScanResponse>(res);
@@ -68,21 +73,31 @@ export async function scanIoc(ioc: string): Promise<ScanResponse> {
 export async function scanFile(file: File): Promise<ScanResponse> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${BASE_URL}/api/scan`, { method: "POST", body: form });
+  const res = await fetch(`${BASE_URL}/api/scan`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: form,
+  });
   return handleResponse<ScanResponse>(res);
 }
 
 export async function getHistory(limit = 50): Promise<HistoryItem[]> {
-  const res = await fetch(`${BASE_URL}/api/history?limit=${limit}`);
+  const res = await fetch(`${BASE_URL}/api/history?limit=${limit}`, {
+    headers: authHeaders(),
+  });
   return handleResponse<HistoryItem[]>(res);
 }
 
 export async function getScanById(id: number): Promise<ScanResponse> {
-  const res = await fetch(`${BASE_URL}/api/history/${id}`);
+  const res = await fetch(`${BASE_URL}/api/history/${id}`, {
+    headers: authHeaders(),
+  });
   return handleResponse<ScanResponse>(res);
 }
 
 export async function getSources(): Promise<SourceStatus[]> {
-  const res = await fetch(`${BASE_URL}/api/sources`);
+  const res = await fetch(`${BASE_URL}/api/sources`, {
+    headers: authHeaders(),
+  });
   return handleResponse<SourceStatus[]>(res);
 }
