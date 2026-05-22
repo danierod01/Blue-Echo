@@ -2,6 +2,7 @@ import { Routes, Route, NavLink } from "react-router-dom";
 import { ShieldAlert } from "lucide-react";
 import Dashboard from "@/pages/Dashboard";
 import History from "@/pages/History";
+import ScanDetail from "@/pages/ScanDetail";
 
 export default function App() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/history" element={<History />} />
+          <Route path="/history/:id" element={<ScanDetail />} />
         </Routes>
       </main>
 

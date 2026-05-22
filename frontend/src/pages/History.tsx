@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { getHistory } from "@/api/client";
 import { cn, VERDICT_COLOR, VERDICT_LABEL, formatDate } from "@/lib/utils";
 
 export default function History() {
+  const navigate = useNavigate();
   const { data, isLoading, error } = useQuery({
     queryKey: ["history"],
     queryFn: () => getHistory(50),
@@ -49,7 +51,11 @@ export default function History() {
           </thead>
           <tbody className="divide-y divide-gray-800">
             {data.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-900/50 transition">
+              <tr
+                key={item.id}
+                className="hover:bg-gray-900/50 transition cursor-pointer"
+                onClick={() => navigate(`/history/${item.id}`)}
+              >
                 <td className="px-4 py-3 font-mono text-gray-200 max-w-xs truncate">
                   {item.ioc_value}
                 </td>
