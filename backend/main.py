@@ -4,9 +4,9 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from ioc_correlator.api.auth import auth_router
 from ioc_correlator.api.limiter import limiter
@@ -30,8 +30,11 @@ app = FastAPI(
 )
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.add_middleware(SlowAPIMiddleware)
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    return JSONResponse({"error": "Too many requests. Try again later."}, status_code=429)
 
 # CORS: en producción restringe allow_origins al dominio del frontend
 _cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
