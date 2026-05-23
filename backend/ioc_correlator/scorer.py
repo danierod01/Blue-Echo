@@ -77,13 +77,95 @@ def _score_greynoise(result: ConnectorResult) -> int:
     return 0
 
 
+def _score_threatfox(result: ConnectorResult) -> int:
+    if not result.success:
+        return 0
+    return 30 if result.data.get("found", False) else 0
+
+
+def _score_ipinfo(result: ConnectorResult) -> int:
+    if not result.success:
+        return 0
+    if result.data.get("is_tor"):
+        return 20
+    if result.data.get("is_vpn") or result.data.get("is_proxy"):
+        return 10
+    return 0
+
+
+def _score_securitytrails(result: ConnectorResult) -> int:
+    if not result.success:
+        return 0
+    days_old = result.data.get("days_old")
+    if days_old is not None and days_old < 30:
+        return 20
+    return 0
+
+
+def _score_hybrid_analysis(result: ConnectorResult) -> int:
+    if not result.success:
+        return 0
+    if not result.data.get("found"):
+        return 0
+    threat_level: int = result.data.get("threat_level", 0)
+    if threat_level >= 2:
+        return 35
+    if threat_level == 1:
+        return 15
+    return 0
+
+
+def _score_netlas(result: ConnectorResult) -> int:
+    if not result.success:
+        return 0
+    sensitive: list = result.data.get("sensitive_ports", [])
+    return min(len(sensitive) * 10, 20)
+
+
+def _score_criminal_ip(result: ConnectorResult) -> int:
+    if not result.success:
+        return 0
+    worst: str = result.data.get("worst_score", result.data.get("score", ""))
+    score_map = {"critical": 35, "dangerous": 30, "moderate": 15}
+    return score_map.get(worst, 0)
+
+
+def _score_malshare(result: ConnectorResult) -> int:
+    if not result.success:
+        return 0
+    return 35 if result.data.get("found", False) else 0
+
+
+def _score_pulsedive(result: ConnectorResult) -> int:
+    if not result.success:
+        return 0
+    risk_map = {"high": 25, "critical": 35, "medium": 10}
+    return risk_map.get(result.data.get("risk", ""), 0)
+
+
+def _score_censys(result: ConnectorResult) -> int:
+    if not result.success:
+        return 0
+    sensitive: list = result.data.get("sensitive_ports", [])
+    return min(len(sensitive) * 10, 20)
+
+
 _RULES: dict[str, object] = {
-    "virustotal":    _score_virustotal,
-    "abuseipdb":     _score_abuseipdb,
-    "shodan":        _score_shodan,
-    "otx":           _score_otx,
-    "malwarebazaar": _score_malwarebazaar,
-    "greynoise":     _score_greynoise,
+    "virustotal":       _score_virustotal,
+    "abuseipdb":        _score_abuseipdb,
+    "shodan":           _score_shodan,
+    "otx":              _score_otx,
+    "malwarebazaar":    _score_malwarebazaar,
+    "greynoise":        _score_greynoise,
+    "threatfox":        _score_threatfox,
+    "ipinfo":           _score_ipinfo,
+    "securitytrails":   _score_securitytrails,
+    "hybrid_analysis":  _score_hybrid_analysis,
+    "netlas":           _score_netlas,
+    "criminal_ip":      _score_criminal_ip,
+    "malshare":         _score_malshare,
+    "pulsedive":        _score_pulsedive,
+    "censys":           _score_censys,
 }
 
 
