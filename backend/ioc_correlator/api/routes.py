@@ -1,11 +1,13 @@
 import json
 import logging
+import os
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from sqlmodel import Session
 
 from ioc_correlator.api.auth import require_api_key
+from ioc_correlator.api.limiter import limiter
 from ioc_correlator.api.schemas import (
     ConnectorResultOut,
     HealthResponse,
@@ -102,7 +104,9 @@ async def health() -> HealthResponse:
 
 
 @router.post("/scan", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
+@limiter.limit(os.getenv("RATE_LIMIT_SCAN", "10/minute"))
 async def scan(
+    request: Request,
     # Acepta JSON body O multipart/form-data (para subida de ficheros)
     ioc: Optional[str] = Form(default=None),
     file: Optional[UploadFile] = File(default=None),
@@ -131,7 +135,9 @@ async def scan(
 
 
 @router.post("/scan/json", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
+@limiter.limit(os.getenv("RATE_LIMIT_SCAN", "10/minute"))
 async def scan_json(
+    request: Request,
     body: ScanRequest,
     session: Session = Depends(get_session),
 ) -> ScanResponse:
@@ -141,7 +147,9 @@ async def scan_json(
 
 
 @router.get("/history", response_model=list[HistoryItem], dependencies=[Depends(require_api_key)])
+@limiter.limit("30/minute")
 async def history(
+    request: Request,
     limit: int = 50,
     session: Session = Depends(get_session),
 ) -> list[HistoryItem]:
@@ -160,7 +168,9 @@ async def history(
 
 
 @router.get("/history/{scan_id}", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
+@limiter.limit("30/minute")
 async def history_detail(
+    request: Request,
     scan_id: int,
     session: Session = Depends(get_session),
 ) -> ScanResponse:
@@ -173,5 +183,6 @@ async def history_detail(
 
 
 @router.get("/sources", response_model=list[SourceStatus], dependencies=[Depends(require_api_key)])
-async def sources() -> list[SourceStatus]:
+@limiter.limit("30/minute")
+async def sources(request: Request) -> list[SourceStatus]:
     return [SourceStatus(**s) for s in get_sources_status()]
