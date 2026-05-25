@@ -17,6 +17,10 @@ pydantic==2.10.4
 # SDK de Anthropic (IA generativa)
 anthropic==0.40.0
 
+# Rate limiting
+slowapi==0.1.9
+limits==3.14.0
+
 # Utilidades
 python-multipart==0.0.20
 

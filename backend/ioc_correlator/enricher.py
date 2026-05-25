@@ -4,10 +4,19 @@ import os
 
 from ioc_correlator.connectors.abuseipdb import AbuseIPDBConnector
 from ioc_correlator.connectors.base import ConnectorResult
+from ioc_correlator.connectors.censys import CensysConnector
+from ioc_correlator.connectors.criminal_ip import CriminalIPConnector
 from ioc_correlator.connectors.greynoise import GreyNoiseConnector
+from ioc_correlator.connectors.hybrid_analysis import HybridAnalysisConnector
+from ioc_correlator.connectors.ipinfo import IPinfoConnector
+from ioc_correlator.connectors.malshare import MalShareConnector
 from ioc_correlator.connectors.malwarebazaar import MalwareBazaarConnector
+from ioc_correlator.connectors.netlas import NetlasConnector
 from ioc_correlator.connectors.otx import OTXConnector
+from ioc_correlator.connectors.pulsedive import PulsediveConnector
+from ioc_correlator.connectors.securitytrails import SecurityTrailsConnector
 from ioc_correlator.connectors.shodan import ShodanConnector
+from ioc_correlator.connectors.threatfox import ThreatFoxConnector
 from ioc_correlator.connectors.urlhaus import URLhausConnector
 from ioc_correlator.connectors.virustotal import VirusTotalConnector
 from ioc_correlator.utils.cache import get_cache
@@ -16,6 +25,7 @@ from ioc_correlator.utils.validators import IOCType
 logger = logging.getLogger(__name__)
 
 _CONNECTORS = [
+    # Fuentes originales
     VirusTotalConnector(),
     AbuseIPDBConnector(),
     ShodanConnector(),
@@ -23,6 +33,16 @@ _CONNECTORS = [
     MalwareBazaarConnector(),
     URLhausConnector(),
     GreyNoiseConnector(),
+    # Nuevas fuentes
+    ThreatFoxConnector(),
+    IPinfoConnector(),
+    SecurityTrailsConnector(),
+    HybridAnalysisConnector(),
+    NetlasConnector(),
+    CriminalIPConnector(),
+    MalShareConnector(),
+    PulsediveConnector(),
+    CensysConnector(),
 ]
 
 
