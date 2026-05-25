@@ -14,7 +14,10 @@ sqlmodel==0.0.22
 # Validación de datos (ya incluida en FastAPI, pero fijamos versión)
 pydantic==2.10.4
 
-# SDK de Anthropic (IA generativa)
+# SDK de Groq (IA generativa — proveedor principal, tier gratuito)
+groq==0.13.1
+
+# SDK de Anthropic (IA generativa — fallback opcional)
 anthropic==0.40.0
 
 # Rate limiting

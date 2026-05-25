@@ -2,24 +2,31 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Loader2, History } from "lucide-react";
 import SearchBar from "@/components/SearchBar";
+import BulkScanPanel from "@/components/BulkScanPanel";
 import ThreatScore from "@/components/ThreatScore";
 import ResultsTable from "@/components/ResultsTable";
 import AiSummary from "@/components/AiSummary";
+import MitreAttack from "@/components/MitreAttack";
 import HistoryList from "@/components/HistoryList";
 import SourcesStatus from "@/components/SourcesStatus";
+import { cn } from "@/lib/utils";
 import { scanIoc, scanFile, getHistory, getScanById, type ScanResponse } from "@/api/client";
 
+type ScanMode = "single" | "bulk";
+
 export default function Dashboard() {
+  const [mode, setMode]       = useState<ScanMode>("single");
   const [result, setResult]   = useState<ScanResponse | null>(null);
   const [errorMsg, setError]  = useState<string | null>(null);
   const queryClient           = useQueryClient();
 
   // Historial reciente para el sidebar
-  const { data: history = [] } = useQuery({
+  const { data: historyPage } = useQuery({
     queryKey: ["history"],
-    queryFn:  () => getHistory(10),
+    queryFn:  () => getHistory({ limit: 10 }),
     staleTime: 15_000,
   });
+  const history = historyPage?.items ?? [];
 
   const mutation = useMutation({
     mutationFn: async (input: { ioc?: string; file?: File }) =>
@@ -61,18 +68,43 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Barra de búsqueda */}
-        <SearchBar
-          loading={loading}
-          onScanIoc={(ioc) => mutation.mutate({ ioc })}
-          onScanFile={(file) => mutation.mutate({ file })}
-        />
+        {/* Toggle Individual / Masivo */}
+        <div className="flex rounded-lg border border-gray-800 bg-gray-900/50 p-1 w-fit">
+          {(["single", "bulk"] as ScanMode[]).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className={cn(
+                "px-4 py-1.5 rounded-md text-sm font-medium transition",
+                mode === m
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-500 hover:text-gray-300"
+              )}
+            >
+              {m === "single" ? "Individual" : "Masivo"}
+            </button>
+          ))}
+        </div>
+
+        {/* Barra de búsqueda / Panel masivo */}
+        {mode === "single" ? (
+          <SearchBar
+            loading={loading}
+            onScanIoc={(ioc) => mutation.mutate({ ioc })}
+            onScanFile={(file) => mutation.mutate({ file })}
+          />
+        ) : (
+          <BulkScanPanel
+            onComplete={() => queryClient.invalidateQueries({ queryKey: ["history"] })}
+          />
+        )}
 
         {/* Estado de conectores */}
         <SourcesStatus />
 
+        {/* Resultados del modo individual (ocultos en modo masivo) */}
         {/* Error */}
-        {errorMsg && (
+        {mode === "single" && errorMsg && (
           <div className="flex items-center gap-3 rounded-xl border border-red-800 bg-red-900/20 px-4 py-3 text-sm text-red-400">
             <AlertCircle size={16} className="shrink-0" />
             {errorMsg}
@@ -80,7 +112,7 @@ export default function Dashboard() {
         )}
 
         {/* Cargando */}
-        {loading && (
+        {mode === "single" && loading && (
           <div className="flex flex-col items-center justify-center gap-3 py-12 text-gray-500">
             <Loader2 size={32} className="animate-spin text-blue-500" />
             <p className="text-sm">Consultando fuentes de Threat Intelligence…</p>
@@ -88,7 +120,7 @@ export default function Dashboard() {
         )}
 
         {/* Resultados */}
-        {result && !loading && (
+        {mode === "single" && result && !loading && (
           <div className="flex flex-col gap-6">
             {/* Score + Tabla */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
@@ -114,11 +146,14 @@ export default function Dashboard() {
 
             {/* Análisis IA */}
             <AiSummary summary={result.ai_summary} />
+
+            {/* MITRE ATT&CK */}
+            <MitreAttack techniques={result.mitre_techniques} />
           </div>
         )}
 
         {/* Estado vacío */}
-        {!result && !loading && !errorMsg && (
+        {mode === "single" && !result && !loading && !errorMsg && (
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-gray-700">
             <p className="text-sm">Los resultados aparecerán aquí tras el escaneo.</p>
           </div>

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class HealthResponse(BaseModel):
@@ -18,7 +18,7 @@ class ErrorResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 class ScanRequest(BaseModel):
-    ioc: str
+    ioc: str = Field(..., min_length=1, max_length=2048)
 
 
 class ConnectorResultOut(BaseModel):
@@ -28,6 +28,14 @@ class ConnectorResultOut(BaseModel):
     summary: str
     data: dict[str, Any]
     error: Optional[str] = None
+
+
+class MitreTechnique(BaseModel):
+    id: str
+    name: str
+    tactic: str
+    url: str
+    source: str
 
 
 class ScanResponse(BaseModel):
@@ -40,6 +48,7 @@ class ScanResponse(BaseModel):
     connector_results: dict[str, ConnectorResultOut]
     ai_summary: str
     created_at: datetime
+    mitre_techniques: list[MitreTechnique] = []
 
 
 # ---------------------------------------------------------------------------
@@ -53,6 +62,13 @@ class HistoryItem(BaseModel):
     score: int
     verdict: str
     created_at: datetime
+
+
+class HistoryPage(BaseModel):
+    items: list[HistoryItem]
+    total: int
+    limit: int
+    offset: int
 
 
 # ---------------------------------------------------------------------------

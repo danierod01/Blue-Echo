@@ -108,18 +108,6 @@ def _local_analysis(
     if mb and mb.success and mb.data.get("found"):
         sentences.append("MalwareBazaar confirma que el hash está catalogado como malware conocido.")
 
-    # GreyNoise
-    gn = results.get("greynoise")
-    if gn and gn.success:
-        cls = gn.data.get("classification", "")
-        if cls == "malicious":
-            sentences.append("GreyNoise lo clasifica como origen de tráfico malicioso activo.")
-        elif cls == "benign":
-            sentences.append(
-                "GreyNoise lo clasifica como tráfico benigno conocido, "
-                "lo que reduce la probabilidad de amenaza real."
-            )
-
     # Recomendación final
     if scoring.verdict == "critical":
         sentences.append(
@@ -146,7 +134,7 @@ def _local_analysis(
 
 
 # ---------------------------------------------------------------------------
-# Análisis vía API de Claude — se usa cuando ANTHROPIC_API_KEY está configurada
+# Construcción del prompt de usuario (compartida por todos los proveedores)
 # ---------------------------------------------------------------------------
 
 def _build_user_prompt(
@@ -169,6 +157,38 @@ def _build_user_prompt(
             lines.append(f"    Datos: {r.data}")
     return "\n".join(lines)
 
+
+# ---------------------------------------------------------------------------
+# Proveedor 1 — Groq (LLaMA 3.3 70B, tier gratuito)
+# ---------------------------------------------------------------------------
+
+async def _groq_analysis(
+    ioc_value: str,
+    ioc_type: str,
+    scoring: ScoringResult,
+    results: dict[str, ConnectorResult],
+    api_key: str,
+) -> str:
+    from groq import AsyncGroq  # import tardío para no fallar si no está instalado
+
+    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    client = AsyncGroq(api_key=api_key)
+    user_prompt = _build_user_prompt(ioc_value, ioc_type, scoring, results)
+
+    response = await client.chat.completions.create(
+        model=model,
+        max_tokens=512,
+        messages=[
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user",   "content": user_prompt},
+        ],
+    )
+    return response.choices[0].message.content.strip()
+
+
+# ---------------------------------------------------------------------------
+# Proveedor 2 — Anthropic Claude (fallback si ANTHROPIC_API_KEY está definida)
+# ---------------------------------------------------------------------------
 
 async def _claude_api_analysis(
     ioc_value: str,
@@ -193,6 +213,7 @@ async def _claude_api_analysis(
 
 # ---------------------------------------------------------------------------
 # Punto de entrada público
+# Orden de prioridad: Groq → Anthropic → análisis local
 # ---------------------------------------------------------------------------
 
 async def generate_summary(
@@ -203,18 +224,22 @@ async def generate_summary(
 ) -> str:
     """Genera el resumen ejecutivo del IOC en español.
 
-    Si ANTHROPIC_API_KEY está configurada, llama a la API de Claude.
-    Si no, genera el análisis localmente con la misma lógica.
-    En cualquier caso, nunca lanza excepción: devuelve siempre un string.
+    Prueba los proveedores en orden hasta obtener respuesta.
+    Nunca lanza excepción: devuelve siempre un string.
     """
-    api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    groq_key      = os.getenv("GROQ_API_KEY",      "").strip()
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
 
-    if api_key:
+    if groq_key:
         try:
-            return await _claude_api_analysis(ioc_value, ioc_type, scoring, results, api_key)
+            return await _groq_analysis(ioc_value, ioc_type, scoring, results, groq_key)
         except Exception as exc:
-            logger.warning(
-                "ai_analyst: fallo en Claude API, usando análisis local — %s", exc
-            )
+            logger.warning("ai_analyst: fallo en Groq API — %s", exc)
+
+    if anthropic_key:
+        try:
+            return await _claude_api_analysis(ioc_value, ioc_type, scoring, results, anthropic_key)
+        except Exception as exc:
+            logger.warning("ai_analyst: fallo en Anthropic API — %s", exc)
 
     return _local_analysis(ioc_value, ioc_type, scoring, results)
