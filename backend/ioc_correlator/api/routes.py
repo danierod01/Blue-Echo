@@ -15,11 +15,15 @@ from ioc_correlator.api.schemas import (
     HistoryItem,
     HistoryPage,
     MitreTechnique,
+    PcapIocItem,
+    PcapScanResponse,
+    PcapTrafficStats,
     ScanRequest,
     ScanResponse,
     SourceStatus,
 )
-from ioc_correlator.ai_analyst import generate_summary
+from ioc_correlator.ai_analyst import generate_pcap_summary, generate_summary
+from ioc_correlator.pcap_analyzer import analyze_pcap, is_pcap
 from ioc_correlator.database import get_history, get_scan_by_id, get_session, save_scan
 from ioc_correlator.mitre_mapper import map_to_mitre
 from ioc_correlator.enricher import enrich, get_sources_status
@@ -129,6 +133,11 @@ async def scan(
                 status_code=413,
                 detail=f"Fichero demasiado grande. Máximo permitido: {max_bytes // (1024 * 1024)} MB.",
             )
+        if is_pcap(content):
+            raise HTTPException(
+                status_code=422,
+                detail="Fichero PCAP detectado. Usa el endpoint /api/scan/pcap para analizar capturas de red.",
+            )
         extracted = extract_iocs_from_bytes(content)
         if not extracted:
             raise HTTPException(
@@ -161,6 +170,47 @@ async def scan_json(
     """Variante que acepta JSON puro (útil para peticiones desde código)."""
     db_scan, breakdown = await _run_scan(body.ioc, session)
     return _build_scan_response(db_scan, breakdown)
+
+
+@router.post("/scan/pcap", response_model=PcapScanResponse, dependencies=[Depends(require_api_key)])
+@limiter.limit(os.getenv("RATE_LIMIT_SCAN", "10/minute"))
+async def scan_pcap(
+    request: Request,
+    file: UploadFile = File(...),
+) -> PcapScanResponse:
+    """Analiza un fichero PCAP/PCAPNG con IA y extrae IOCs del tráfico de red."""
+    content = await file.read()
+    max_bytes = int(os.getenv("MAX_UPLOAD_SIZE_MB", "10")) * 1024 * 1024
+    if len(content) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Fichero demasiado grande. Máximo permitido: {max_bytes // (1024 * 1024)} MB.",
+        )
+    if not is_pcap(content):
+        raise HTTPException(
+            status_code=422,
+            detail="El fichero no es un PCAP o PCAPNG válido.",
+        )
+
+    try:
+        iocs, stats = await analyze_pcap(content)
+    except Exception as exc:
+        logger.error("scan_pcap: error al analizar — %s", exc)
+        raise HTTPException(status_code=500, detail=f"Error al analizar el PCAP: {exc}")
+
+    filename = file.filename or "capture.pcap"
+    ai_summary = await generate_pcap_summary(filename, stats)
+
+    return PcapScanResponse(
+        filename=filename,
+        ai_summary=ai_summary,
+        iocs_found=[
+            PcapIocItem(value=ioc.value, ioc_type=ioc.ioc_type.value)
+            for ioc in iocs
+        ],
+        total_iocs=len(iocs),
+        stats=PcapTrafficStats(**stats),
+    )
 
 
 @router.get("/history", response_model=HistoryPage, dependencies=[Depends(require_api_key)])

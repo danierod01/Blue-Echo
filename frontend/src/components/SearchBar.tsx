@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 interface Props {
   onScanIoc: (ioc: string) => void;
   onScanFile: (file: File) => void;
+  onScanPcap: (file: File) => void;
   loading: boolean;
 }
 
@@ -15,7 +16,7 @@ const PLACEHOLDER_EXAMPLES = [
   "https://evil.com/payload.exe",
 ];
 
-export default function SearchBar({ onScanIoc, onScanFile, loading }: Props) {
+export default function SearchBar({ onScanIoc, onScanFile, onScanPcap, loading }: Props) {
   const [value, setValue] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -30,7 +31,12 @@ export default function SearchBar({ onScanIoc, onScanFile, loading }: Props) {
   }
 
   function handleFile(file: File | undefined) {
-    if (file) onScanFile(file);
+    if (!file) return;
+    if (/\.pcap(ng)?$/i.test(file.name)) {
+      onScanPcap(file);
+    } else {
+      onScanFile(file);
+    }
   }
 
   return (
@@ -72,7 +78,7 @@ export default function SearchBar({ onScanIoc, onScanFile, loading }: Props) {
         <input
           ref={fileRef}
           type="file"
-          accept=".log,.txt,.csv,.json"
+          accept=".log,.txt,.csv,.json,.pcap,.pcapng"
           className="hidden"
           onChange={(e) => handleFile(e.target.files?.[0])}
         />
@@ -93,7 +99,7 @@ export default function SearchBar({ onScanIoc, onScanFile, loading }: Props) {
 
       {dragOver && (
         <p className="mt-2 text-center text-xs text-blue-400">
-          Suelta el fichero de logs para escanear
+          Suelta el fichero (.log, .txt, .csv, .json, .pcap, .pcapng)
         </p>
       )}
     </form>

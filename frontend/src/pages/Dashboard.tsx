@@ -9,16 +9,18 @@ import AiSummary from "@/components/AiSummary";
 import MitreAttack from "@/components/MitreAttack";
 import HistoryList from "@/components/HistoryList";
 import SourcesStatus from "@/components/SourcesStatus";
+import PcapAnalysisView from "@/components/PcapAnalysisView";
 import { cn } from "@/lib/utils";
-import { scanIoc, scanFile, getHistory, getScanById, type ScanResponse } from "@/api/client";
+import { scanIoc, scanFile, scanPcap, getHistory, getScanById, type ScanResponse, type PcapScanResponse } from "@/api/client";
 
 type ScanMode = "single" | "bulk";
 
 export default function Dashboard() {
-  const [mode, setMode]       = useState<ScanMode>("single");
-  const [result, setResult]   = useState<ScanResponse | null>(null);
-  const [errorMsg, setError]  = useState<string | null>(null);
-  const queryClient           = useQueryClient();
+  const [mode, setMode]             = useState<ScanMode>("single");
+  const [result, setResult]         = useState<ScanResponse | null>(null);
+  const [pcapResult, setPcapResult] = useState<PcapScanResponse | null>(null);
+  const [errorMsg, setError]        = useState<string | null>(null);
+  const queryClient                 = useQueryClient();
 
   // Historial reciente para el sidebar
   const { data: historyPage } = useQuery({
@@ -33,11 +35,27 @@ export default function Dashboard() {
       input.file ? scanFile(input.file) : scanIoc(input.ioc!),
     onSuccess: (data) => {
       setResult(data);
+      setPcapResult(null);
       setError(null);
       queryClient.invalidateQueries({ queryKey: ["history"] });
     },
     onError: (err: Error) => {
       setError(err.message);
+      setResult(null);
+      setPcapResult(null);
+    },
+  });
+
+  const pcapMutation = useMutation({
+    mutationFn: (file: File) => scanPcap(file),
+    onSuccess: (data) => {
+      setPcapResult(data);
+      setResult(null);
+      setError(null);
+    },
+    onError: (err: Error) => {
+      setError(err.message);
+      setPcapResult(null);
       setResult(null);
     },
   });
@@ -52,7 +70,7 @@ export default function Dashboard() {
     }
   }
 
-  const loading = mutation.isPending;
+  const loading = mutation.isPending || pcapMutation.isPending;
 
   return (
     <div className="flex gap-6">
@@ -92,6 +110,7 @@ export default function Dashboard() {
             loading={loading}
             onScanIoc={(ioc) => mutation.mutate({ ioc })}
             onScanFile={(file) => mutation.mutate({ file })}
+            onScanPcap={(file) => pcapMutation.mutate(file)}
           />
         ) : (
           <BulkScanPanel
@@ -115,7 +134,11 @@ export default function Dashboard() {
         {mode === "single" && loading && (
           <div className="flex flex-col items-center justify-center gap-3 py-12 text-gray-500">
             <Loader2 size={32} className="animate-spin text-blue-500" />
-            <p className="text-sm">Consultando fuentes de Threat Intelligence…</p>
+            <p className="text-sm">
+              {pcapMutation.isPending
+                ? "Analizando tráfico PCAP con IA…"
+                : "Consultando fuentes de Threat Intelligence…"}
+            </p>
           </div>
         )}
 
@@ -152,8 +175,13 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Resultados PCAP */}
+        {mode === "single" && pcapResult && !loading && (
+          <PcapAnalysisView result={pcapResult} />
+        )}
+
         {/* Estado vacío */}
-        {mode === "single" && !result && !loading && !errorMsg && (
+        {mode === "single" && !result && !pcapResult && !loading && !errorMsg && (
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-gray-700">
             <p className="text-sm">Los resultados aparecerán aquí tras el escaneo.</p>
           </div>

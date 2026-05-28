@@ -83,6 +83,31 @@ export interface SourceStatus {
   supported_types: string[];
 }
 
+export interface PcapIocItem {
+  value: string;
+  ioc_type: string;
+}
+
+export interface PcapTrafficStats {
+  total_packets: number;
+  total_bytes: number;
+  unique_src_ips: string[];
+  unique_dst_ips: string[];
+  top_connections: Array<{ src: string; dst: string; packets: number }>;
+  dns_queries: string[];
+  http_hosts: string[];
+  tls_sni: string[];
+  protocols: Record<string, number>;
+}
+
+export interface PcapScanResponse {
+  filename: string;
+  ai_summary: string;
+  iocs_found: PcapIocItem[];
+  total_iocs: number;
+  stats: PcapTrafficStats;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -142,6 +167,17 @@ export async function getScanById(id: number): Promise<ScanResponse> {
     headers: authHeaders(),
   });
   return handleResponse<ScanResponse>(res);
+}
+
+export async function scanPcap(file: File): Promise<PcapScanResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE_URL}/api/scan/pcap`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: form,
+  });
+  return handleResponse<PcapScanResponse>(res);
 }
 
 export async function getSources(): Promise<SourceStatus[]> {
