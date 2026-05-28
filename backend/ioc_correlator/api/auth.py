@@ -1,8 +1,11 @@
+import hmac
 import os
 
-from fastapi import APIRouter, HTTPException, Security
+from fastapi import APIRouter, HTTPException, Request, Security
 from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel
+
+from ioc_correlator.api.limiter import limiter
 
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
@@ -18,7 +21,8 @@ class VerifyResponse(BaseModel):
 
 
 @auth_router.post("/auth/verify", response_model=VerifyResponse)
-async def verify(body: VerifyRequest) -> VerifyResponse:
+@limiter.limit("5/minute")
+async def verify(request: Request, body: VerifyRequest) -> VerifyResponse:
     """Endpoint público: comprueba si la API key es válida.
 
     El frontend lo llama en la pantalla de login. No requiere header previo.
@@ -28,7 +32,9 @@ async def verify(body: VerifyRequest) -> VerifyResponse:
     expected = os.getenv("BLUE_ECHO_API_KEY", "").strip()
     if not expected:
         return VerifyResponse(valid=True)
-    return VerifyResponse(valid=body.api_key == expected)
+    return VerifyResponse(
+        valid=hmac.compare_digest(body.api_key.encode(), expected.encode())
+    )
 
 
 async def require_api_key(api_key: str = Security(_api_key_header)) -> None:
@@ -36,5 +42,5 @@ async def require_api_key(api_key: str = Security(_api_key_header)) -> None:
     expected = os.getenv("BLUE_ECHO_API_KEY", "").strip()
     if not expected:
         return  # Sin clave configurada, acceso libre (modo dev)
-    if api_key != expected:
+    if not api_key or not hmac.compare_digest(api_key.encode(), expected.encode()):
         raise HTTPException(status_code=401, detail="API key inválida o ausente.")

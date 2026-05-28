@@ -3,7 +3,8 @@ import os
 from datetime import datetime, timezone
 from typing import Generator, Optional
 
-from sqlmodel import Field, Session, SQLModel, create_engine, select
+from sqlalchemy import func
+from sqlmodel import Field, Session, SQLModel, col, create_engine, select
 
 
 # ---------------------------------------------------------------------------
@@ -84,13 +85,35 @@ def save_scan(
     return scan
 
 
-def get_history(session: Session, limit: int = 50) -> list[ScanResult]:
-    stmt = (
-        select(ScanResult)
-        .order_by(ScanResult.created_at.desc(), ScanResult.id.desc())
-        .limit(limit)
+def get_history(
+    session: Session,
+    limit: int = 20,
+    offset: int = 0,
+    ioc_types: list[str] | None = None,
+    verdict: str | None = None,
+    search: str | None = None,
+) -> tuple[list[ScanResult], int]:
+    base = select(ScanResult)
+
+    if ioc_types:
+        base = base.where(col(ScanResult.ioc_type).in_(ioc_types))
+    if verdict:
+        base = base.where(ScanResult.verdict == verdict)
+    if search:
+        base = base.where(col(ScanResult.ioc_value).contains(search))
+
+    total: int = session.exec(
+        select(func.count()).select_from(base.subquery())
+    ).one()
+
+    items = list(
+        session.exec(
+            base.order_by(ScanResult.created_at.desc(), ScanResult.id.desc())
+            .offset(offset)
+            .limit(limit)
+        ).all()
     )
-    return list(session.exec(stmt).all())
+    return items, total
 
 
 def get_scan_by_id(session: Session, scan_id: int) -> Optional[ScanResult]:

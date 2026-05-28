@@ -3,21 +3,25 @@ import logging
 import os
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from sqlmodel import Session
 
 from ioc_correlator.api.auth import require_api_key
 from ioc_correlator.api.limiter import limiter
+from ioc_correlator.connectors.base import ConnectorResult
 from ioc_correlator.api.schemas import (
     ConnectorResultOut,
     HealthResponse,
     HistoryItem,
+    HistoryPage,
+    MitreTechnique,
     ScanRequest,
     ScanResponse,
     SourceStatus,
 )
 from ioc_correlator.ai_analyst import generate_summary
 from ioc_correlator.database import get_history, get_scan_by_id, get_session, save_scan
+from ioc_correlator.mitre_mapper import map_to_mitre
 from ioc_correlator.enricher import enrich, get_sources_status
 from ioc_correlator.extractor import extract_iocs_from_bytes
 from ioc_correlator.scorer import compute_score
@@ -38,6 +42,10 @@ def _build_scan_response(db_scan, breakdown: dict[str, int]) -> ScanResponse:
         name: ConnectorResultOut(**data)
         for name, data in raw_results.items()
     }
+    mitre = [
+        MitreTechnique(**vars(t))
+        for t in map_to_mitre(raw_results)
+    ]
     return ScanResponse(
         id=db_scan.id,
         ioc_value=db_scan.ioc_value,
@@ -48,6 +56,7 @@ def _build_scan_response(db_scan, breakdown: dict[str, int]) -> ScanResponse:
         connector_results=connector_out,
         ai_summary=db_scan.ai_summary,
         created_at=db_scan.created_at,
+        mitre_techniques=mitre,
     )
 
 
@@ -114,6 +123,12 @@ async def scan(
 ) -> ScanResponse:
     if file is not None:
         content = await file.read()
+        max_bytes = int(os.getenv("MAX_UPLOAD_SIZE_MB", "10")) * 1024 * 1024
+        if len(content) > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Fichero demasiado grande. Máximo permitido: {max_bytes // (1024 * 1024)} MB.",
+            )
         extracted = extract_iocs_from_bytes(content)
         if not extracted:
             raise HTTPException(
@@ -123,6 +138,8 @@ async def scan(
         # Escanea el primer IOC extraído. Multi-IOC se implementa en el frontend.
         ioc_value = extracted[0].value
     elif ioc:
+        if len(ioc) > 2048:
+            raise HTTPException(status_code=422, detail="El campo 'ioc' es demasiado largo (máx. 2048 caracteres).")
         ioc_value = ioc
     else:
         raise HTTPException(
@@ -146,25 +163,42 @@ async def scan_json(
     return _build_scan_response(db_scan, breakdown)
 
 
-@router.get("/history", response_model=list[HistoryItem], dependencies=[Depends(require_api_key)])
+@router.get("/history", response_model=HistoryPage, dependencies=[Depends(require_api_key)])
 @limiter.limit("30/minute")
 async def history(
     request: Request,
-    limit: int = 50,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    ioc_type: Optional[str] = None,   # valores separados por coma: "ipv4,ipv6"
+    verdict: Optional[str] = None,
+    search: Optional[str] = None,
     session: Session = Depends(get_session),
-) -> list[HistoryItem]:
-    scans = get_history(session, limit=limit)
-    return [
-        HistoryItem(
-            id=s.id,
-            ioc_value=s.ioc_value,
-            ioc_type=s.ioc_type,
-            score=s.score,
-            verdict=s.verdict,
-            created_at=s.created_at,
-        )
-        for s in scans
-    ]
+) -> HistoryPage:
+    ioc_types = [t.strip() for t in ioc_type.split(",")] if ioc_type else None
+    scans, total = get_history(
+        session,
+        limit=limit,
+        offset=offset,
+        ioc_types=ioc_types,
+        verdict=verdict,
+        search=search.strip() if search else None,
+    )
+    return HistoryPage(
+        items=[
+            HistoryItem(
+                id=s.id,
+                ioc_value=s.ioc_value,
+                ioc_type=s.ioc_type,
+                score=s.score,
+                verdict=s.verdict,
+                created_at=s.created_at,
+            )
+            for s in scans
+        ],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get("/history/{scan_id}", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
@@ -178,8 +212,9 @@ async def history_detail(
     if db_scan is None:
         raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
     raw = json.loads(db_scan.connector_results)
-    breakdown = {name: data.get("score", 0) for name, data in raw.items()}
-    return _build_scan_response(db_scan, breakdown)
+    connector_objs = {name: ConnectorResult(**d) for name, d in raw.items()}
+    scoring = compute_score(connector_objs)
+    return _build_scan_response(db_scan, scoring.breakdown)
 
 
 @router.get("/sources", response_model=list[SourceStatus], dependencies=[Depends(require_api_key)])

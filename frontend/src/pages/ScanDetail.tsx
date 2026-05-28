@@ -5,6 +5,7 @@ import { getScanById } from "@/api/client";
 import ThreatScore from "@/components/ThreatScore";
 import ResultsTable from "@/components/ResultsTable";
 import AiSummary from "@/components/AiSummary";
+import MitreAttack from "@/components/MitreAttack";
 import { formatDate } from "@/lib/utils";
 
 export default function ScanDetail() {
@@ -61,6 +62,7 @@ export default function ScanDetail() {
             breakdown={data.breakdown}
           />
           {data.ai_summary && <AiSummary summary={data.ai_summary} />}
+          <MitreAttack techniques={data.mitre_techniques ?? []} />
         </div>
       </div>
     </div>

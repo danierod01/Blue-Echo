@@ -66,15 +66,11 @@ def _score_malwarebazaar(result: ConnectorResult) -> int:
     return 40 if result.data.get("found", False) else 0
 
 
-def _score_greynoise(result: ConnectorResult) -> int:
+def _score_urlhaus(result: ConnectorResult) -> int:
     if not result.success:
         return 0
-    classification = result.data.get("classification", "")
-    if classification == "malicious":
-        return 30
-    if classification == "benign":
-        return -10
-    return 0
+    # Alinear con el veredicto del conector: solo puntúa si hay URLs activas
+    return 30 if result.data.get("urls_count", 0) > 0 or result.verdict == "malicious" else 0
 
 
 def _score_threatfox(result: ConnectorResult) -> int:
@@ -143,6 +139,19 @@ def _score_pulsedive(result: ConnectorResult) -> int:
     return risk_map.get(result.data.get("risk", ""), 0)
 
 
+def _score_rdap(result: ConnectorResult) -> int:
+    if not result.success or not result.data.get("found"):
+        return 0
+    days_old = result.data.get("days_old")
+    if days_old is None:
+        return 0
+    if days_old < 7:
+        return 25
+    if days_old < 30:
+        return 10
+    return 0
+
+
 def _score_censys(result: ConnectorResult) -> int:
     if not result.success:
         return 0
@@ -156,7 +165,7 @@ _RULES: dict[str, object] = {
     "shodan":           _score_shodan,
     "otx":              _score_otx,
     "malwarebazaar":    _score_malwarebazaar,
-    "greynoise":        _score_greynoise,
+    "urlhaus":          _score_urlhaus,
     "threatfox":        _score_threatfox,
     "ipinfo":           _score_ipinfo,
     "securitytrails":   _score_securitytrails,
@@ -166,6 +175,7 @@ _RULES: dict[str, object] = {
     "malshare":         _score_malshare,
     "pulsedive":        _score_pulsedive,
     "censys":           _score_censys,
+    "rdap":             _score_rdap,
 }
 
 

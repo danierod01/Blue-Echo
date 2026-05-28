@@ -6,7 +6,6 @@ from ioc_correlator.connectors.abuseipdb import AbuseIPDBConnector
 from ioc_correlator.connectors.base import ConnectorResult
 from ioc_correlator.connectors.censys import CensysConnector
 from ioc_correlator.connectors.criminal_ip import CriminalIPConnector
-from ioc_correlator.connectors.greynoise import GreyNoiseConnector
 from ioc_correlator.connectors.hybrid_analysis import HybridAnalysisConnector
 from ioc_correlator.connectors.ipinfo import IPinfoConnector
 from ioc_correlator.connectors.malshare import MalShareConnector
@@ -14,6 +13,7 @@ from ioc_correlator.connectors.malwarebazaar import MalwareBazaarConnector
 from ioc_correlator.connectors.netlas import NetlasConnector
 from ioc_correlator.connectors.otx import OTXConnector
 from ioc_correlator.connectors.pulsedive import PulsediveConnector
+from ioc_correlator.connectors.rdap import RDAPConnector
 from ioc_correlator.connectors.securitytrails import SecurityTrailsConnector
 from ioc_correlator.connectors.shodan import ShodanConnector
 from ioc_correlator.connectors.threatfox import ThreatFoxConnector
@@ -32,7 +32,6 @@ _CONNECTORS = [
     OTXConnector(),
     MalwareBazaarConnector(),
     URLhausConnector(),
-    GreyNoiseConnector(),
     # Nuevas fuentes
     ThreatFoxConnector(),
     IPinfoConnector(),
@@ -43,6 +42,7 @@ _CONNECTORS = [
     MalShareConnector(),
     PulsediveConnector(),
     CensysConnector(),
+    RDAPConnector(),
 ]
 
 

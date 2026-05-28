@@ -8,13 +8,22 @@ interface Props {
 }
 
 const SOURCE_LABEL: Record<string, string> = {
-  virustotal:    "VirusTotal",
-  abuseipdb:     "AbuseIPDB",
-  shodan:        "Shodan",
-  otx:           "AlienVault OTX",
-  malwarebazaar: "MalwareBazaar",
-  urlhaus:       "URLhaus",
-  greynoise:     "GreyNoise",
+  virustotal:       "VirusTotal",
+  abuseipdb:        "AbuseIPDB",
+  shodan:           "Shodan",
+  otx:              "AlienVault OTX",
+  malwarebazaar:    "MalwareBazaar",
+  urlhaus:          "URLhaus",
+  threatfox:        "ThreatFox",
+  ipinfo:           "IPinfo",
+  securitytrails:   "SecurityTrails",
+  hybrid_analysis:  "Hybrid Analysis",
+  netlas:           "Netlas",
+  criminal_ip:      "Criminal IP",
+  malshare:         "MalShare",
+  pulsedive:        "Pulsedive",
+  censys:           "Censys",
+  rdap:             "RDAP / WHOIS",
 };
 
 function KeyFinding({ result }: { result: ConnectorResult }): JSX.Element {
@@ -42,12 +51,50 @@ function KeyFinding({ result }: { result: ConnectorResult }): JSX.Element {
   if (result.source === "malwarebazaar") {
     return <span>{d.found ? "Hash conocido" : "No encontrado"}</span>;
   }
-  if (result.source === "greynoise") {
-    const cls = d.classification as string ?? "unknown";
-    return <span className="capitalize">{cls}</span>;
-  }
   if (result.source === "urlhaus") {
     return <span>{d.found ? "URL conocida" : "No encontrada"}</span>;
+  }
+  if (result.source === "threatfox") {
+    return <span>{d.found ? (d.malware as string) : "No encontrado"}</span>;
+  }
+  if (result.source === "ipinfo") {
+    const flags = [
+      d.is_tor && "Tor",
+      d.is_vpn && "VPN",
+      d.is_proxy && "Proxy",
+    ].filter(Boolean).join(", ");
+    return <span>{flags || (d.org as string) || "—"}</span>;
+  }
+  if (result.source === "hybrid_analysis") {
+    return <span>{d.found ? (d.vx_family as string || `score ${d.threat_score}`) : "No encontrado"}</span>;
+  }
+  if (result.source === "rdap") {
+    if (!d.found) return <span className="text-gray-500">Sin datos RDAP</span>;
+    const age = d.days_old as number | null;
+    return <span>{age !== null && age !== undefined ? `${age} días de antigüedad` : "Fecha desconocida"}</span>;
+  }
+  if (result.source === "securitytrails") {
+    const age = d.days_old as number | null;
+    return <span>{age !== null && age !== undefined ? `${age} días de antigüedad` : "—"}</span>;
+  }
+  if (result.source === "netlas") {
+    const ports = (d.sensitive_ports as number[] ?? d.open_ports as number[] ?? []).join(", ");
+    return <span>{ports || "Sin puertos sensibles"}</span>;
+  }
+  if (result.source === "criminal_ip") {
+    const score = (d.worst_score as string) || (d.score as string) || "—";
+    return <span className="capitalize">{score}</span>;
+  }
+  if (result.source === "malshare") {
+    return <span>{d.found ? "Hash conocido" : "No encontrado"}</span>;
+  }
+  if (result.source === "pulsedive") {
+    const risk = (d.risk as string) || "—";
+    return <span className="capitalize">{risk}</span>;
+  }
+  if (result.source === "censys") {
+    const ports = (d.sensitive_ports as number[] ?? d.open_ports as number[] ?? []).join(", ");
+    return <span>{ports || "Sin puertos sensibles"}</span>;
   }
   return <span className="text-gray-500">—</span>;
 }
@@ -67,8 +114,16 @@ function VerdictBadge({ verdict }: { verdict: string }) {
   );
 }
 
+function isInactive(result: ConnectorResult) {
+  return result.error === "missing_api_key" || result.error === "unsupported_ioc_type";
+}
+
 export default function ResultsTable({ connectorResults, breakdown }: Props) {
-  const entries = Object.entries(connectorResults);
+  const entries = Object.entries(connectorResults).sort(([, a], [, b]) => {
+    const aInactive = isInactive(a) ? 1 : 0;
+    const bInactive = isInactive(b) ? 1 : 0;
+    return aInactive - bInactive;
+  });
 
   if (entries.length === 0) {
     return <p className="text-sm text-gray-600 italic">Sin resultados de conectores.</p>;

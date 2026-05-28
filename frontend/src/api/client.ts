@@ -23,6 +23,14 @@ function authHeaders(): HeadersInit {
 // Tipos
 // ---------------------------------------------------------------------------
 
+export interface MitreTechnique {
+  id: string;
+  name: string;
+  tactic: string;
+  url: string;
+  source: string;
+}
+
 export interface ConnectorResult {
   source: string;
   success: boolean;
@@ -42,6 +50,7 @@ export interface ScanResponse {
   connector_results: Record<string, ConnectorResult>;
   ai_summary: string;
   created_at: string;
+  mitre_techniques: MitreTechnique[];
 }
 
 export interface HistoryItem {
@@ -51,6 +60,21 @@ export interface HistoryItem {
   score: number;
   verdict: "clean" | "suspicious" | "malicious" | "critical";
   created_at: string;
+}
+
+export interface HistoryPage {
+  items: HistoryItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface HistoryParams {
+  limit?: number;
+  offset?: number;
+  ioc_type?: string;   // valores separados por coma
+  verdict?: string;
+  search?: string;
 }
 
 export interface SourceStatus {
@@ -100,11 +124,17 @@ export async function scanFile(file: File): Promise<ScanResponse> {
   return handleResponse<ScanResponse>(res);
 }
 
-export async function getHistory(limit = 50): Promise<HistoryItem[]> {
-  const res = await fetch(`${BASE_URL}/api/history?limit=${limit}`, {
+export async function getHistory(params: HistoryParams = {}): Promise<HistoryPage> {
+  const q = new URLSearchParams();
+  if (params.limit   !== undefined) q.set("limit",    String(params.limit));
+  if (params.offset  !== undefined) q.set("offset",   String(params.offset));
+  if (params.ioc_type)              q.set("ioc_type", params.ioc_type);
+  if (params.verdict)               q.set("verdict",  params.verdict);
+  if (params.search)                q.set("search",   params.search);
+  const res = await fetch(`${BASE_URL}/api/history?${q}`, {
     headers: authHeaders(),
   });
-  return handleResponse<HistoryItem[]>(res);
+  return handleResponse<HistoryPage>(res);
 }
 
 export async function getScanById(id: number): Promise<ScanResponse> {

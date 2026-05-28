@@ -1,4 +1,4 @@
-import { Routes, Route, NavLink, useNavigate } from "react-router-dom";
+import { Routes, Route, NavLink, useNavigate, useLocation, Link } from "react-router-dom";
 import { ShieldAlert, LogOut } from "lucide-react";
 import Dashboard from "@/pages/Dashboard";
 import History from "@/pages/History";
@@ -19,10 +19,13 @@ function Header() {
   return (
     <header className="border-b border-gray-800 bg-gray-900">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
-        <div className="flex items-center gap-2 text-blue-400 font-bold text-lg">
+        <Link
+          to="/"
+          className="flex items-center gap-2 text-blue-400 font-bold text-lg hover:text-blue-300 transition"
+        >
           <ShieldAlert size={22} />
           Blue-Echo
-        </div>
+        </Link>
 
         {hasSession && (
           <>
@@ -61,6 +64,8 @@ function Header() {
 }
 
 export default function App() {
+  const location = useLocation();
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -72,7 +77,7 @@ export default function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <Dashboard key={location.key} />
               </ProtectedRoute>
             }
           />

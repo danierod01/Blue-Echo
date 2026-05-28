@@ -1,3 +1,4 @@
+import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -15,10 +16,18 @@ from ioc_correlator.database import create_db_and_tables
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    if not os.getenv("BLUE_ECHO_API_KEY", "").strip():
+        logger.warning(
+            "BLUE_ECHO_API_KEY no está configurada — "
+            "todos los endpoints de la API están abiertos sin autenticación. "
+            "Define la variable en .env antes de desplegar en producción."
+        )
     yield
 
 
@@ -42,9 +51,9 @@ _cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
 
 app.include_router(auth_router, prefix="/api")

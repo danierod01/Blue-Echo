@@ -52,14 +52,6 @@ def malwarebazaar_result(found: bool = False, success: bool = True) -> Connector
     )
 
 
-def greynoise_result(classification: str = "", success: bool = True) -> ConnectorResult:
-    return ConnectorResult(
-        source="greynoise",
-        success=success,
-        data={"classification": classification},
-        verdict="unknown",
-    )
-
 
 # ---------------------------------------------------------------------------
 # Tests de veredicto por score
@@ -183,20 +175,6 @@ def test_malwarebazaar_not_found_gives_0():
     assert r.breakdown["malwarebazaar"] == 0
 
 
-def test_greynoise_malicious_gives_30():
-    r = compute_score({"greynoise": greynoise_result(classification="malicious")})
-    assert r.breakdown["greynoise"] == 30
-
-
-def test_greynoise_benign_gives_minus_10():
-    r = compute_score({"greynoise": greynoise_result(classification="benign")})
-    assert r.breakdown["greynoise"] == -10
-
-
-def test_greynoise_unknown_gives_0():
-    r = compute_score({"greynoise": greynoise_result(classification="unknown")})
-    assert r.breakdown["greynoise"] == 0
-
 
 # ---------------------------------------------------------------------------
 # Tests de acumulación y acotamiento
@@ -204,12 +182,11 @@ def test_greynoise_unknown_gives_0():
 
 def test_score_capped_at_100():
     results = {
-        "virustotal":    vt_result(malicious=50),        # +30
-        "abuseipdb":     abuse_result(confidence=95),    # +40
-        "malwarebazaar": malwarebazaar_result(found=True),  # +40
-        "otx":           otx_result(pulse_count=5),      # +20
-        "shodan":        shodan_result(ports=[22, 3389, 445]),  # +30
-        "greynoise":     greynoise_result(classification="malicious"),  # +30
+        "virustotal":    vt_result(malicious=50),             # +30
+        "abuseipdb":     abuse_result(confidence=95),         # +40
+        "malwarebazaar": malwarebazaar_result(found=True),    # +40
+        "otx":           otx_result(pulse_count=5),           # +20
+        "shodan":        shodan_result(ports=[22, 3389, 445]), # +30
     }
     r = compute_score(results)
     assert r.score == 100
@@ -218,7 +195,7 @@ def test_score_capped_at_100():
 
 def test_score_floor_at_0():
     results = {
-        "greynoise": greynoise_result(classification="benign"),  # -10
+        "virustotal": vt_result(malicious=0),  # +0
     }
     r = compute_score(results)
     assert r.score == 0
