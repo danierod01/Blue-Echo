@@ -11,6 +11,7 @@ from ioc_correlator.api.limiter import limiter
 from ioc_correlator.connectors.base import ConnectorResult
 from ioc_correlator.api.schemas import (
     ConnectorResultOut,
+    GeoLocation,
     HealthResponse,
     HistoryItem,
     HistoryPage,
@@ -23,6 +24,7 @@ from ioc_correlator.api.schemas import (
     SourceStatus,
 )
 from ioc_correlator.ai_analyst import generate_pcap_summary, generate_summary
+from ioc_correlator.geolocator import geolocate
 from ioc_correlator.pcap_analyzer import analyze_pcap, is_pcap
 from ioc_correlator.database import get_history, get_scan_by_id, get_session, save_scan
 from ioc_correlator.mitre_mapper import map_to_mitre
@@ -40,7 +42,7 @@ APP_VERSION = "1.0.0"
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _build_scan_response(db_scan, breakdown: dict[str, int]) -> ScanResponse:
+def _build_scan_response(db_scan, breakdown: dict[str, int], geolocation=None) -> ScanResponse:
     raw_results: dict = json.loads(db_scan.connector_results)
     connector_out = {
         name: ConnectorResultOut(**data)
@@ -50,6 +52,19 @@ def _build_scan_response(db_scan, breakdown: dict[str, int]) -> ScanResponse:
         MitreTechnique(**vars(t))
         for t in map_to_mitre(raw_results)
     ]
+    geo_out = None
+    if geolocation is not None:
+        geo_out = GeoLocation(
+            lat=geolocation.lat,
+            lon=geolocation.lon,
+            city=geolocation.city,
+            region=geolocation.region,
+            country=geolocation.country,
+            country_code=geolocation.country_code,
+            org=geolocation.org,
+            resolved_ip=geolocation.resolved_ip,
+        )
+
     return ScanResponse(
         id=db_scan.id,
         ioc_value=db_scan.ioc_value,
@@ -61,6 +76,7 @@ def _build_scan_response(db_scan, breakdown: dict[str, int]) -> ScanResponse:
         ai_summary=db_scan.ai_summary,
         created_at=db_scan.created_at,
         mitre_techniques=mitre,
+        geolocation=geo_out,
     )
 
 
@@ -157,7 +173,8 @@ async def scan(
         )
 
     db_scan, breakdown = await _run_scan(ioc_value, session)
-    return _build_scan_response(db_scan, breakdown)
+    geo = await geolocate(ioc_value, db_scan.ioc_type)
+    return _build_scan_response(db_scan, breakdown, geolocation=geo)
 
 
 @router.post("/scan/json", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
@@ -169,7 +186,8 @@ async def scan_json(
 ) -> ScanResponse:
     """Variante que acepta JSON puro (útil para peticiones desde código)."""
     db_scan, breakdown = await _run_scan(body.ioc, session)
-    return _build_scan_response(db_scan, breakdown)
+    geo = await geolocate(body.ioc, db_scan.ioc_type)
+    return _build_scan_response(db_scan, breakdown, geolocation=geo)
 
 
 @router.post("/scan/pcap", response_model=PcapScanResponse, dependencies=[Depends(require_api_key)])

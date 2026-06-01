@@ -40,6 +40,17 @@ export interface ConnectorResult {
   error?: string;
 }
 
+export interface GeoLocation {
+  lat: number;
+  lon: number;
+  city: string;
+  region: string;
+  country: string;
+  country_code: string;
+  org?: string;
+  resolved_ip?: string;
+}
+
 export interface ScanResponse {
   id: number;
   ioc_value: string;
@@ -51,6 +62,7 @@ export interface ScanResponse {
   ai_summary: string;
   created_at: string;
   mitre_techniques: MitreTechnique[];
+  geolocation?: GeoLocation | null;
 }
 
 export interface HistoryItem {

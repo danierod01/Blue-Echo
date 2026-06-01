@@ -38,6 +38,17 @@ class MitreTechnique(BaseModel):
     source: str
 
 
+class GeoLocation(BaseModel):
+    lat: float
+    lon: float
+    city: str
+    region: str
+    country: str
+    country_code: str
+    org: Optional[str] = None
+    resolved_ip: Optional[str] = None
+
+
 class ScanResponse(BaseModel):
     id: int
     ioc_value: str
@@ -49,6 +60,7 @@ class ScanResponse(BaseModel):
     ai_summary: str
     created_at: datetime
     mitre_techniques: list[MitreTechnique] = []
+    geolocation: Optional[GeoLocation] = None
 
 
 # ---------------------------------------------------------------------------

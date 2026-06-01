@@ -7,6 +7,7 @@ import ThreatScore from "@/components/ThreatScore";
 import ResultsTable from "@/components/ResultsTable";
 import AiSummary from "@/components/AiSummary";
 import MitreAttack from "@/components/MitreAttack";
+import GeoMap from "@/components/GeoMap";
 import HistoryList from "@/components/HistoryList";
 import SourcesStatus from "@/components/SourcesStatus";
 import PcapAnalysisView from "@/components/PcapAnalysisView";
@@ -172,6 +173,17 @@ export default function Dashboard() {
 
             {/* MITRE ATT&CK */}
             <MitreAttack techniques={result.mitre_techniques} />
+
+            {/* Geolocalización */}
+            {result.geolocation ? (
+              <GeoMap geo={result.geolocation} iocValue={result.ioc_value} />
+            ) : (
+              ["ipv4", "ipv6", "domain", "url"].includes(result.ioc_type) && (
+                <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-5 text-sm text-gray-500">
+                  No se ha podido determinar la geolocalización.
+                </div>
+              )
+            )}
           </div>
         )}
 
