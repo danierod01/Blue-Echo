@@ -1,9 +1,10 @@
 import asyncio
+import base64
 import logging
 import os
 import tempfile
 import warnings
-from collections import Counter
+from collections import Counter, defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,151 @@ _PCAP_MAGIC = {
 }
 
 MAX_PACKETS = 50_000
+MAX_EXTRACTED_OBJECTS = 10
+MAX_OBJECT_BYTES = 5 * 1024 * 1024  # 5 MB por fichero
+
+# (magic_bytes, extension, is_suspicious)
+_MAGIC_SIGNATURES: list[tuple[bytes, str, bool]] = [
+    (b"\x4d\x5a",                         "exe",   True),   # Windows PE (MZ)
+    (b"\x7fELF",                           "elf",   True),   # Linux ELF
+    (b"PK\x03\x04",                        "zip",   True),   # ZIP/JAR/DOCX/XLSX
+    (b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", "doc",   True),   # OLE2 (Office antiguo/MSI)
+    (b"Rar!\x1a\x07",                      "rar",   True),   # RAR
+    (b"\x37\x7a\xbc\xaf\x27\x1c",         "7z",    True),   # 7-Zip
+    (b"\xca\xfe\xba\xbe",                  "class", True),   # Java class
+    (b"\xfe\xed\xfa\xce",                  "macho", True),   # Mach-O 32-bit
+    (b"\xfe\xed\xfa\xcf",                  "macho", True),   # Mach-O 64-bit
+    (b"%PDF",                              "pdf",   False),  # PDF
+]
+
+_BORING_CONTENT_TYPES = {
+    "text/html", "text/css", "application/javascript", "text/javascript",
+    "image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml",
+    "application/json", "text/plain", "font/woff", "font/woff2",
+    "application/x-font-woff",
+}
+
+
+def _detect_file_type(data: bytes) -> tuple[str, bool]:
+    """Devuelve (extensión, es_sospechoso) por magic bytes."""
+    for magic, ext, suspicious in _MAGIC_SIGNATURES:
+        if data[:len(magic)] == magic:
+            return ext, suspicious
+    return "bin", False
+
+
+def _decode_chunked(data: bytes) -> bytes:
+    """Descodifica HTTP Transfer-Encoding: chunked."""
+    result = bytearray()
+    pos = 0
+    try:
+        while pos < len(data):
+            end = data.find(b"\r\n", pos)
+            if end == -1:
+                break
+            chunk_size = int(data[pos:end].split(b";")[0], 16)
+            if chunk_size == 0:
+                break
+            pos = end + 2
+            if pos + chunk_size > len(data):
+                result += data[pos:]
+                break
+            result += data[pos:pos + chunk_size]
+            pos += chunk_size + 2
+    except (ValueError, OverflowError):
+        pass
+    return bytes(result)
+
+
+def _extract_http_objects(streams: dict) -> list[dict]:
+    """Extrae ficheros de respuestas HTTP en los streams TCP reensamblados."""
+    objects: list[dict] = []
+
+    for stream_key, data in streams.items():
+        pos = 0
+        while pos < len(data) and len(objects) < MAX_EXTRACTED_OBJECTS:
+            idx = data.find(b"HTTP/1.", pos)
+            if idx == -1:
+                break
+
+            hdr_end = data.find(b"\r\n\r\n", idx)
+            if hdr_end == -1:
+                break
+
+            try:
+                headers_raw = data[idx:hdr_end].decode("latin-1")
+            except Exception:
+                pos = idx + 7
+                continue
+
+            lines = headers_raw.split("\r\n")
+            status = lines[0] if lines else ""
+
+            if " 200 " not in status and " 206 " not in status:
+                pos = hdr_end + 4
+                continue
+
+            hdrs: dict[str, str] = {}
+            for line in lines[1:]:
+                if ":" in line:
+                    k, _, v = line.partition(":")
+                    hdrs[k.strip().lower()] = v.strip()
+
+            ct = hdrs.get("content-type", "").split(";")[0].strip().lower()
+            cl_str = hdrs.get("content-length", "")
+            te = hdrs.get("transfer-encoding", "").lower()
+            cd = hdrs.get("content-disposition", "")
+
+            body_start = hdr_end + 4
+            body = b""
+
+            if "chunked" in te:
+                body = _decode_chunked(data[body_start:])
+                pos = len(data)
+            elif cl_str.isdigit():
+                cl = int(cl_str)
+                if cl > MAX_OBJECT_BYTES:
+                    pos = body_start + cl
+                    continue
+                body = data[body_start:body_start + cl]
+                pos = body_start + cl
+            else:
+                pos = hdr_end + 5
+                continue
+
+            if len(body) < 4:
+                continue
+
+            ext, suspicious = _detect_file_type(body)
+
+            if ct in _BORING_CONTENT_TYPES and not suspicious:
+                continue
+
+            filename = ""
+            if "filename=" in cd:
+                try:
+                    part = cd.split("filename=")[1].split(";")[0].strip().strip("\"'")
+                    filename = part
+                except Exception:
+                    pass
+            if not filename:
+                src_ip, src_port, dst_ip, dst_port = stream_key
+                filename = f"object_{dst_ip}_{dst_port}.{ext}"
+
+            src_ip, _, dst_ip, dst_port = stream_key
+
+            objects.append({
+                "filename":     filename,
+                "content_type": ct or f"application/{ext}",
+                "size":         len(body),
+                "extension":    ext,
+                "suspicious":   suspicious,
+                "src_ip":       src_ip,
+                "dst_ip":       dst_ip,
+                "data_b64":     base64.b64encode(body).decode("ascii"),
+            })
+
+    return objects
 
 
 def is_pcap(content: bytes) -> bool:
@@ -62,7 +208,7 @@ def _extract_tls_sni(payload: bytes) -> str | None:
     return None
 
 
-def _parse_pcap_sync(tmp_path: str) -> tuple[list, dict]:
+def _parse_pcap_sync(tmp_path: str) -> tuple[list, dict, list]:
     """Parseo síncrono del PCAP — se ejecuta en un thread pool."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -78,6 +224,7 @@ def _parse_pcap_sync(tmp_path: str) -> tuple[list, dict]:
     tls_sni:     set = set()
     proto_counts: Counter = Counter()
     total_bytes = 0
+    tcp_streams: dict = defaultdict(bytearray)  # stream → payload acumulado
 
     for pkt in packets[:MAX_PACKETS]:
         total_bytes += len(pkt)
@@ -109,6 +256,9 @@ def _parse_pcap_sync(tmp_path: str) -> tuple[list, dict]:
                 sni = _extract_tls_sni(payload)
                 if sni:
                     tls_sni.add(sni)
+                # Acumular payload para extracción de objetos HTTP
+                stream_key = (src, sport, dst, dport)
+                tcp_streams[stream_key] += payload
         elif UDP in pkt:
             proto_counts["UDP"] += 1
             if DNS in pkt and DNSQR in pkt:
@@ -153,10 +303,14 @@ def _parse_pcap_sync(tmp_path: str) -> tuple[list, dict]:
         "protocols": dict(proto_counts),
     }
 
-    return iocs, stats
+    # Extraer objetos HTTP de los streams reensamblados
+    streams_bytes = {k: bytes(v) for k, v in tcp_streams.items()}
+    extracted_objects = _extract_http_objects(streams_bytes)
+
+    return iocs, stats, extracted_objects
 
 
-async def analyze_pcap(content: bytes) -> tuple[list, dict]:
+async def analyze_pcap(content: bytes) -> tuple[list, dict, list]:
     """Parsea un PCAP/PCAPNG y devuelve (iocs, stats).
 
     El parseo con scapy es CPU-bound, se ejecuta en un thread pool

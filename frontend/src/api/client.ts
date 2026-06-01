@@ -112,12 +112,24 @@ export interface PcapTrafficStats {
   protocols: Record<string, number>;
 }
 
+export interface ExtractedObject {
+  filename: string;
+  content_type: string;
+  size: number;
+  extension: string;
+  suspicious: boolean;
+  src_ip: string;
+  dst_ip: string;
+  data_b64: string;
+}
+
 export interface PcapScanResponse {
   filename: string;
   ai_summary: string;
   iocs_found: PcapIocItem[];
   total_iocs: number;
   stats: PcapTrafficStats;
+  extracted_objects: ExtractedObject[];
 }
 
 // ---------------------------------------------------------------------------

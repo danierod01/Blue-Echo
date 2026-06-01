@@ -16,6 +16,7 @@ from ioc_correlator.api.schemas import (
     HistoryItem,
     HistoryPage,
     MitreTechnique,
+    ExtractedObject,
     PcapIocItem,
     PcapScanResponse,
     PcapTrafficStats,
@@ -212,7 +213,7 @@ async def scan_pcap(
         )
 
     try:
-        iocs, stats = await analyze_pcap(content)
+        iocs, stats, extracted_objects = await analyze_pcap(content)
     except Exception as exc:
         logger.error("scan_pcap: error al analizar — %s", exc)
         raise HTTPException(status_code=500, detail=f"Error al analizar el PCAP: {exc}")
@@ -253,6 +254,7 @@ async def scan_pcap(
         ],
         total_iocs=len(iocs),
         stats=PcapTrafficStats(**stats),
+        extracted_objects=[ExtractedObject(**obj) for obj in extracted_objects],
     )
 
 

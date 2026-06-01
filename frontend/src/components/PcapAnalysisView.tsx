@@ -1,6 +1,7 @@
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { Network, FileSearch, Shield, Activity } from "lucide-react";
-import type { PcapScanResponse } from "@/api/client";
+import { Network, FileSearch, Shield, Activity, Download, AlertTriangle, X } from "lucide-react";
+import type { PcapScanResponse, ExtractedObject } from "@/api/client";
 
 interface Props {
   result: PcapScanResponse;
@@ -17,8 +18,74 @@ const IOC_COLORS: Record<string, string> = {
   sha256: "text-purple-400 border-purple-800/60 bg-purple-950/20",
 };
 
+function DownloadWarningModal({
+  obj,
+  onConfirm,
+  onCancel,
+}: {
+  obj: ExtractedObject;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+      <div className="w-full max-w-md rounded-2xl border border-red-800 bg-gray-950 p-6 shadow-2xl">
+        <div className="flex items-center gap-3 mb-4">
+          <AlertTriangle size={20} className="text-red-400 shrink-0" />
+          <h3 className="text-base font-semibold text-red-400">
+            Advertencia — Fichero potencialmente malicioso
+          </h3>
+          <button onClick={onCancel} className="ml-auto text-gray-600 hover:text-gray-400">
+            <X size={16} />
+          </button>
+        </div>
+        <p className="text-sm text-gray-300 mb-2">
+          Estás a punto de descargar un fichero extraído de tráfico de red:
+        </p>
+        <div className="rounded-lg bg-gray-900 border border-gray-800 px-3 py-2 mb-4 text-xs font-mono text-gray-300 space-y-1">
+          <div><span className="text-gray-500">Nombre:</span> {obj.filename}</div>
+          <div><span className="text-gray-500">Tipo:</span> {obj.content_type}</div>
+          <div><span className="text-gray-500">Tamaño:</span> {(obj.size / 1024).toFixed(1)} KB</div>
+          <div><span className="text-gray-500">Origen:</span> {obj.src_ip} → {obj.dst_ip}</div>
+        </div>
+        <p className="text-xs text-red-400 mb-5">
+          Este fichero puede contener malware. Ábrelo únicamente en un entorno controlado (sandbox, VM aislada).
+        </p>
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-gray-200 border border-gray-700 hover:border-gray-500 transition"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-red-900 text-red-200 hover:bg-red-800 border border-red-700 transition"
+          >
+            Entendido — Descargar igualmente
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function downloadObject(obj: ExtractedObject) {
+  const binary = atob(obj.data_b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const blob = new Blob([bytes], { type: obj.content_type || "application/octet-stream" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = obj.filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function PcapAnalysisView({ result, onScanIoc }: Props) {
   const { stats } = result;
+  const [pendingDownload, setPendingDownload] = useState<ExtractedObject | null>(null);
 
   return (
     <div className="flex flex-col gap-6">
@@ -169,6 +236,60 @@ export default function PcapAnalysisView({ result, onScanIoc }: Props) {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Objetos HTTP extraídos */}
+      {result.extracted_objects.length > 0 && (
+        <div className="rounded-2xl border border-red-900/60 bg-gradient-to-br from-red-950/30 to-gray-900 p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Download size={16} className="text-red-400 shrink-0" />
+            <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wider">
+              Objetos extraídos del tráfico ({result.extracted_objects.length})
+            </h2>
+          </div>
+          <p className="text-xs text-gray-500 mb-4">
+            Ficheros transferidos por HTTP sin cifrar detectados en la captura. Pueden contener malware.
+          </p>
+          <div className="flex flex-col gap-2">
+            {result.extracted_objects.map((obj, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between gap-4 rounded-xl border border-gray-800 bg-gray-900/60 px-4 py-3"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  {obj.suspicious && (
+                    <AlertTriangle size={14} className="text-red-400 shrink-0" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-mono text-gray-200 truncate">{obj.filename}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {obj.content_type} · {(obj.size / 1024).toFixed(1)} KB · {obj.src_ip} → {obj.dst_ip}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPendingDownload(obj)}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-950 text-red-300 border border-red-800 hover:bg-red-900 transition"
+                >
+                  <Download size={12} />
+                  Descargar
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de aviso antes de descargar */}
+      {pendingDownload && (
+        <DownloadWarningModal
+          obj={pendingDownload}
+          onConfirm={() => {
+            downloadObject(pendingDownload);
+            setPendingDownload(null);
+          }}
+          onCancel={() => setPendingDownload(null)}
+        />
       )}
 
     </div>

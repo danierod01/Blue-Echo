@@ -114,9 +114,21 @@ class PcapTrafficStats(BaseModel):
     protocols: dict[str, int]
 
 
+class ExtractedObject(BaseModel):
+    filename: str
+    content_type: str
+    size: int
+    extension: str
+    suspicious: bool
+    src_ip: str
+    dst_ip: str
+    data_b64: str  # contenido en base64 para descarga desde el frontend
+
+
 class PcapScanResponse(BaseModel):
     filename: str
     ai_summary: str
     iocs_found: list[PcapIocItem]
     total_iocs: int
     stats: PcapTrafficStats
+    extracted_objects: list[ExtractedObject] = []
