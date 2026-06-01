@@ -221,6 +221,9 @@ async def scan_pcap(
     filename = file.filename or "capture.pcap"
     ai_summary = await generate_pcap_summary(filename, stats)
 
+    iocs_serialized = [
+        {"value": ioc.value, "ioc_type": ioc.ioc_type.value} for ioc in iocs
+    ]
     save_scan(
         session,
         ioc_value=filename,
@@ -240,7 +243,12 @@ async def scan_pcap(
                     "ioc_count": len(iocs),
                 },
                 "error": None,
-            }
+            },
+            "__pcap_data__": {
+                "iocs_found": iocs_serialized,
+                "stats": stats,
+                "extracted_objects": extracted_objects,
+            },
         },
         ai_summary=ai_summary,
     )
@@ -293,6 +301,35 @@ async def history(
         total=total,
         limit=limit,
         offset=offset,
+    )
+
+
+@router.get("/history/{scan_id}/pcap", response_model=PcapScanResponse, dependencies=[Depends(require_api_key)])
+@limiter.limit("30/minute")
+async def history_pcap_detail(
+    request: Request,
+    scan_id: int,
+    session: Session = Depends(get_session),
+) -> PcapScanResponse:
+    db_scan = get_scan_by_id(session, scan_id)
+    if db_scan is None:
+        raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
+    if db_scan.ioc_type != "pcap":
+        raise HTTPException(status_code=422, detail="Este escaneo no es un PCAP.")
+
+    raw = json.loads(db_scan.connector_results)
+    pcap_data = raw.get("__pcap_data__", {})
+
+    return PcapScanResponse(
+        filename=db_scan.ioc_value,
+        ai_summary=db_scan.ai_summary,
+        iocs_found=[PcapIocItem(**ioc) for ioc in pcap_data.get("iocs_found", [])],
+        total_iocs=len(pcap_data.get("iocs_found", [])),
+        stats=PcapTrafficStats(**pcap_data["stats"]) if pcap_data.get("stats") else PcapTrafficStats(
+            total_packets=0, total_bytes=0, unique_src_ips=[], unique_dst_ips=[],
+            top_connections=[], dns_queries=[], http_hosts=[], tls_sni=[], protocols={},
+        ),
+        extracted_objects=[ExtractedObject(**obj) for obj in pcap_data.get("extracted_objects", [])],
     )
 
 

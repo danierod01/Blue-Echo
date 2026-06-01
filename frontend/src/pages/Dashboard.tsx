@@ -12,7 +12,7 @@ import HistoryList from "@/components/HistoryList";
 import SourcesStatus from "@/components/SourcesStatus";
 import PcapAnalysisView from "@/components/PcapAnalysisView";
 import { cn } from "@/lib/utils";
-import { scanIoc, scanFile, scanPcap, getHistory, getScanById, type ScanResponse, type PcapScanResponse } from "@/api/client";
+import { scanIoc, scanFile, scanPcap, getHistory, getScanById, getPcapScanById, type ScanResponse, type PcapScanResponse, type HistoryItem } from "@/api/client";
 
 type ScanMode = "single" | "bulk";
 
@@ -61,10 +61,17 @@ export default function Dashboard() {
     },
   });
 
-  async function handleHistorySelect(item: { id: number }) {
+  async function handleHistorySelect(item: HistoryItem) {
     try {
-      const data = await getScanById(item.id);
-      setResult(data);
+      if (item.ioc_type === "pcap") {
+        const data = await getPcapScanById(item.id);
+        setPcapResult(data);
+        setResult(null);
+      } else {
+        const data = await getScanById(item.id);
+        setResult(data);
+        setPcapResult(null);
+      }
       setError(null);
     } catch {
       setError("No se pudo cargar el escaneo.");

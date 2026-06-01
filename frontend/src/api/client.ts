@@ -193,6 +193,13 @@ export async function getScanById(id: number): Promise<ScanResponse> {
   return handleResponse<ScanResponse>(res);
 }
 
+export async function getPcapScanById(id: number): Promise<PcapScanResponse> {
+  const res = await fetch(`${BASE_URL}/api/history/${id}/pcap`, {
+    headers: authHeaders(),
+  });
+  return handleResponse<PcapScanResponse>(res);
+}
+
 export async function scanPcap(file: File): Promise<PcapScanResponse> {
   const form = new FormData();
   form.append("file", file);

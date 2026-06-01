@@ -14,6 +14,7 @@ const IOC_TYPE_FILTERS: { label: string; value: string | null }[] = [
   { label: "Hash",    value: "md5,sha1,sha256" },
   { label: "Dominio", value: "domain" },
   { label: "URL",     value: "url" },
+  { label: "PCAP",    value: "pcap" },
 ];
 
 const VERDICT_FILTERS: { label: string; value: string | null }[] = [
