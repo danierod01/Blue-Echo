@@ -4,6 +4,7 @@ import type { PcapScanResponse } from "@/api/client";
 
 interface Props {
   result: PcapScanResponse;
+  onScanIoc?: (ioc: string) => void;
 }
 
 const IOC_COLORS: Record<string, string> = {
@@ -16,7 +17,7 @@ const IOC_COLORS: Record<string, string> = {
   sha256: "text-purple-400 border-purple-800/60 bg-purple-950/20",
 };
 
-export default function PcapAnalysisView({ result }: Props) {
+export default function PcapAnalysisView({ result, onScanIoc }: Props) {
   const { stats } = result;
 
   return (
@@ -154,15 +155,17 @@ export default function PcapAnalysisView({ result }: Props) {
           </div>
           <div className="flex flex-wrap gap-2">
             {result.iocs_found.map((ioc) => (
-              <span
+              <button
                 key={ioc.value}
-                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-mono ${
+                onClick={() => onScanIoc?.(ioc.value)}
+                title={onScanIoc ? `Escanear ${ioc.value}` : undefined}
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-mono transition-opacity ${
                   IOC_COLORS[ioc.ioc_type] ?? "text-gray-300 border-gray-700 bg-gray-800"
-                }`}
+                } ${onScanIoc ? "cursor-pointer hover:opacity-70" : "cursor-default"}`}
               >
                 <span className="opacity-60 text-[10px] uppercase">{ioc.ioc_type}</span>
                 {ioc.value}
-              </span>
+              </button>
             ))}
           </div>
         </div>

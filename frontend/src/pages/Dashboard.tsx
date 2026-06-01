@@ -189,7 +189,10 @@ export default function Dashboard() {
 
         {/* Resultados PCAP */}
         {mode === "single" && pcapResult && !loading && (
-          <PcapAnalysisView result={pcapResult} />
+          <PcapAnalysisView
+            result={pcapResult}
+            onScanIoc={(ioc) => mutation.mutate({ ioc })}
+          />
         )}
 
         {/* Estado vacío */}
