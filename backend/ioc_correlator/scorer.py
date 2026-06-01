@@ -159,6 +159,16 @@ def _score_censys(result: ConnectorResult) -> int:
     return min(len(sensitive) * 10, 20)
 
 
+def _score_urlscan(result: ConnectorResult) -> int:
+    if not result.success:
+        return 0
+    if result.data.get("malicious_count", 0) > 0:
+        return 30
+    if result.data.get("max_score", 0) > 50:
+        return 15
+    return 0
+
+
 _RULES: dict[str, object] = {
     "virustotal":       _score_virustotal,
     "abuseipdb":        _score_abuseipdb,
@@ -176,6 +186,7 @@ _RULES: dict[str, object] = {
     "pulsedive":        _score_pulsedive,
     "censys":           _score_censys,
     "rdap":             _score_rdap,
+    "urlscan":          _score_urlscan,
 }
 
 

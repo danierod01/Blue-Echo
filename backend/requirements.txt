@@ -24,6 +24,9 @@ anthropic==0.40.0
 slowapi==0.1.9
 limits==3.14.0
 
+# Análisis de PCAPs
+scapy==2.6.1
+
 # Utilidades
 python-multipart==0.0.20
 

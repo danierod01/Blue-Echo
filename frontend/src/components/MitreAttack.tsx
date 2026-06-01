@@ -1,4 +1,5 @@
-import { Shield } from "lucide-react";
+import { useState } from "react";
+import { Shield, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import type { MitreTechnique } from "@/api/client";
 
 interface Props {
@@ -20,10 +21,61 @@ const TACTIC_COLOR: Record<string, string> = {
 
 const DEFAULT_COLOR = "bg-gray-500/15 text-gray-300 border-gray-500/30";
 
+function TechniqueCard({ t }: { t: MitreTechnique }) {
+  const [expanded, setExpanded] = useState(false);
+  const color = TACTIC_COLOR[t.tactic] ?? DEFAULT_COLOR;
+  const hasDetail = !!(t.reason || t.description);
+
+  return (
+    <div className={`rounded-lg border text-xs ${color}`}>
+      {/* Cabecera siempre visible */}
+      <div className="flex items-center gap-2 px-3 py-2">
+        <span className="font-mono font-bold shrink-0">{t.id}</span>
+        <span className="font-sans font-medium flex-1">{t.name}</span>
+        <a
+          href={t.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="opacity-50 hover:opacity-100 transition shrink-0"
+          title="Ver en attack.mitre.org"
+        >
+          <ExternalLink size={11} />
+        </a>
+        {hasDetail && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="opacity-50 hover:opacity-100 transition shrink-0"
+          >
+            {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </button>
+        )}
+      </div>
+
+      {/* Detalle expandible */}
+      {expanded && hasDetail && (
+        <div className="border-t border-current/20 px-3 py-2 space-y-2 font-sans">
+          {t.reason && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wider opacity-60 mb-0.5">Por qué se detectó</p>
+              <p className="opacity-90 leading-snug">{t.reason}</p>
+            </div>
+          )}
+          {t.description && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wider opacity-60 mb-0.5">En qué consiste</p>
+              <p className="opacity-75 leading-snug">{t.description}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MitreAttack({ techniques }: Props) {
   if (!techniques || techniques.length === 0) return null;
 
-  // Agrupar por táctica para mostrarlas ordenadas
   const byTactic: Record<string, MitreTechnique[]> = {};
   for (const t of techniques) {
     if (!byTactic[t.tactic]) byTactic[t.tactic] = [];
@@ -37,26 +89,18 @@ export default function MitreAttack({ techniques }: Props) {
         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
           MITRE ATT&CK — Técnicas identificadas
         </h2>
-        <span className="ml-auto text-xs text-gray-600">{techniques.length} técnica{techniques.length !== 1 ? "s" : ""}</span>
+        <span className="ml-auto text-xs text-gray-600">
+          {techniques.length} técnica{techniques.length !== 1 ? "s" : ""}
+        </span>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         {Object.entries(byTactic).map(([tactic, techs]) => (
           <div key={tactic}>
-            <p className="text-xs text-gray-600 mb-1.5">{tactic}</p>
-            <div className="flex flex-wrap gap-2">
+            <p className="text-xs text-gray-600 mb-2">{tactic}</p>
+            <div className="flex flex-col gap-1.5">
               {techs.map((t) => (
-                <a
-                  key={t.id}
-                  href={t.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={t.source}
-                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-mono transition hover:opacity-80 ${TACTIC_COLOR[tactic] ?? DEFAULT_COLOR}`}
-                >
-                  <span className="font-bold">{t.id}</span>
-                  <span className="font-sans font-normal opacity-80">{t.name}</span>
-                </a>
+                <TechniqueCard key={t.id} t={t} />
               ))}
             </div>
           </div>
@@ -64,7 +108,7 @@ export default function MitreAttack({ techniques }: Props) {
       </div>
 
       <p className="mt-3 text-xs text-gray-700">
-        Atribución basada en hallazgos de conectores TI. Haz clic en cualquier técnica para verla en attack.mitre.org.
+        Haz clic en <ChevronDown size={10} className="inline" /> para ver la evidencia y descripción de cada técnica.
       </p>
     </div>
   );

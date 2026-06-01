@@ -11,15 +11,22 @@ from ioc_correlator.api.limiter import limiter
 from ioc_correlator.connectors.base import ConnectorResult
 from ioc_correlator.api.schemas import (
     ConnectorResultOut,
+    GeoLocation,
     HealthResponse,
     HistoryItem,
     HistoryPage,
     MitreTechnique,
+    ExtractedObject,
+    PcapIocItem,
+    PcapScanResponse,
+    PcapTrafficStats,
     ScanRequest,
     ScanResponse,
     SourceStatus,
 )
-from ioc_correlator.ai_analyst import generate_summary
+from ioc_correlator.ai_analyst import generate_pcap_summary, generate_summary
+from ioc_correlator.geolocator import geolocate
+from ioc_correlator.pcap_analyzer import analyze_pcap, is_pcap
 from ioc_correlator.database import get_history, get_scan_by_id, get_session, save_scan
 from ioc_correlator.mitre_mapper import map_to_mitre
 from ioc_correlator.enricher import enrich, get_sources_status
@@ -36,7 +43,7 @@ APP_VERSION = "1.0.0"
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _build_scan_response(db_scan, breakdown: dict[str, int]) -> ScanResponse:
+def _build_scan_response(db_scan, breakdown: dict[str, int], geolocation=None) -> ScanResponse:
     raw_results: dict = json.loads(db_scan.connector_results)
     connector_out = {
         name: ConnectorResultOut(**data)
@@ -46,6 +53,19 @@ def _build_scan_response(db_scan, breakdown: dict[str, int]) -> ScanResponse:
         MitreTechnique(**vars(t))
         for t in map_to_mitre(raw_results)
     ]
+    geo_out = None
+    if geolocation is not None:
+        geo_out = GeoLocation(
+            lat=geolocation.lat,
+            lon=geolocation.lon,
+            city=geolocation.city,
+            region=geolocation.region,
+            country=geolocation.country,
+            country_code=geolocation.country_code,
+            org=geolocation.org,
+            resolved_ip=geolocation.resolved_ip,
+        )
+
     return ScanResponse(
         id=db_scan.id,
         ioc_value=db_scan.ioc_value,
@@ -57,6 +77,7 @@ def _build_scan_response(db_scan, breakdown: dict[str, int]) -> ScanResponse:
         ai_summary=db_scan.ai_summary,
         created_at=db_scan.created_at,
         mitre_techniques=mitre,
+        geolocation=geo_out,
     )
 
 
@@ -129,6 +150,11 @@ async def scan(
                 status_code=413,
                 detail=f"Fichero demasiado grande. Máximo permitido: {max_bytes // (1024 * 1024)} MB.",
             )
+        if is_pcap(content):
+            raise HTTPException(
+                status_code=422,
+                detail="Fichero PCAP detectado. Usa el endpoint /api/scan/pcap para analizar capturas de red.",
+            )
         extracted = extract_iocs_from_bytes(content)
         if not extracted:
             raise HTTPException(
@@ -148,7 +174,8 @@ async def scan(
         )
 
     db_scan, breakdown = await _run_scan(ioc_value, session)
-    return _build_scan_response(db_scan, breakdown)
+    geo = await geolocate(ioc_value, db_scan.ioc_type)
+    return _build_scan_response(db_scan, breakdown, geolocation=geo)
 
 
 @router.post("/scan/json", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
@@ -160,7 +187,83 @@ async def scan_json(
 ) -> ScanResponse:
     """Variante que acepta JSON puro (útil para peticiones desde código)."""
     db_scan, breakdown = await _run_scan(body.ioc, session)
-    return _build_scan_response(db_scan, breakdown)
+    geo = await geolocate(body.ioc, db_scan.ioc_type)
+    return _build_scan_response(db_scan, breakdown, geolocation=geo)
+
+
+@router.post("/scan/pcap", response_model=PcapScanResponse, dependencies=[Depends(require_api_key)])
+@limiter.limit(os.getenv("RATE_LIMIT_SCAN", "10/minute"))
+async def scan_pcap(
+    request: Request,
+    file: UploadFile = File(...),
+    session: Session = Depends(get_session),
+) -> PcapScanResponse:
+    """Analiza un fichero PCAP/PCAPNG con IA y extrae IOCs del tráfico de red."""
+    content = await file.read()
+    max_bytes = int(os.getenv("MAX_UPLOAD_SIZE_MB", "10")) * 1024 * 1024
+    if len(content) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Fichero demasiado grande. Máximo permitido: {max_bytes // (1024 * 1024)} MB.",
+        )
+    if not is_pcap(content):
+        raise HTTPException(
+            status_code=422,
+            detail="El fichero no es un PCAP o PCAPNG válido.",
+        )
+
+    try:
+        iocs, stats, extracted_objects = await analyze_pcap(content)
+    except Exception as exc:
+        logger.error("scan_pcap: error al analizar — %s", exc)
+        raise HTTPException(status_code=500, detail=f"Error al analizar el PCAP: {exc}")
+
+    filename = file.filename or "capture.pcap"
+    ai_summary = await generate_pcap_summary(filename, stats)
+
+    iocs_serialized = [
+        {"value": ioc.value, "ioc_type": ioc.ioc_type.value} for ioc in iocs
+    ]
+    save_scan(
+        session,
+        ioc_value=filename,
+        ioc_type="pcap",
+        score=0,
+        verdict="pcap",
+        connector_results={
+            "pcap_analyzer": {
+                "source": "pcap_analyzer",
+                "success": True,
+                "verdict": "info",
+                "summary": f"{len(iocs)} IOCs extraídos de {stats.get('total_packets', 0)} paquetes",
+                "data": {
+                    "total_packets": stats.get("total_packets", 0),
+                    "total_bytes": stats.get("total_bytes", 0),
+                    "protocols": stats.get("protocols", {}),
+                    "ioc_count": len(iocs),
+                },
+                "error": None,
+            },
+            "__pcap_data__": {
+                "iocs_found": iocs_serialized,
+                "stats": stats,
+                "extracted_objects": extracted_objects,
+            },
+        },
+        ai_summary=ai_summary,
+    )
+
+    return PcapScanResponse(
+        filename=filename,
+        ai_summary=ai_summary,
+        iocs_found=[
+            PcapIocItem(value=ioc.value, ioc_type=ioc.ioc_type.value)
+            for ioc in iocs
+        ],
+        total_iocs=len(iocs),
+        stats=PcapTrafficStats(**stats),
+        extracted_objects=[ExtractedObject(**obj) for obj in extracted_objects],
+    )
 
 
 @router.get("/history", response_model=HistoryPage, dependencies=[Depends(require_api_key)])
@@ -198,6 +301,35 @@ async def history(
         total=total,
         limit=limit,
         offset=offset,
+    )
+
+
+@router.get("/history/{scan_id}/pcap", response_model=PcapScanResponse, dependencies=[Depends(require_api_key)])
+@limiter.limit("30/minute")
+async def history_pcap_detail(
+    request: Request,
+    scan_id: int,
+    session: Session = Depends(get_session),
+) -> PcapScanResponse:
+    db_scan = get_scan_by_id(session, scan_id)
+    if db_scan is None:
+        raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
+    if db_scan.ioc_type != "pcap":
+        raise HTTPException(status_code=422, detail="Este escaneo no es un PCAP.")
+
+    raw = json.loads(db_scan.connector_results)
+    pcap_data = raw.get("__pcap_data__", {})
+
+    return PcapScanResponse(
+        filename=db_scan.ioc_value,
+        ai_summary=db_scan.ai_summary,
+        iocs_found=[PcapIocItem(**ioc) for ioc in pcap_data.get("iocs_found", [])],
+        total_iocs=len(pcap_data.get("iocs_found", [])),
+        stats=PcapTrafficStats(**pcap_data["stats"]) if pcap_data.get("stats") else PcapTrafficStats(
+            total_packets=0, total_bytes=0, unique_src_ips=[], unique_dst_ips=[],
+            top_connections=[], dns_queries=[], http_hosts=[], tls_sni=[], protocols={},
+        ),
+        extracted_objects=[ExtractedObject(**obj) for obj in pcap_data.get("extracted_objects", [])],
     )
 
 

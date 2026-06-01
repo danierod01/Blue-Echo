@@ -36,6 +36,19 @@ class MitreTechnique(BaseModel):
     tactic: str
     url: str
     source: str
+    reason: str = ""
+    description: str = ""
+
+
+class GeoLocation(BaseModel):
+    lat: float
+    lon: float
+    city: str
+    region: str
+    country: str
+    country_code: str
+    org: Optional[str] = None
+    resolved_ip: Optional[str] = None
 
 
 class ScanResponse(BaseModel):
@@ -49,6 +62,7 @@ class ScanResponse(BaseModel):
     ai_summary: str
     created_at: datetime
     mitre_techniques: list[MitreTechnique] = []
+    geolocation: Optional[GeoLocation] = None
 
 
 # ---------------------------------------------------------------------------
@@ -79,3 +93,44 @@ class SourceStatus(BaseModel):
     name: str
     available: bool
     supported_types: list[str]
+
+
+# ---------------------------------------------------------------------------
+# PCAP analysis
+# ---------------------------------------------------------------------------
+
+class PcapIocItem(BaseModel):
+    value: str
+    ioc_type: str
+
+
+class PcapTrafficStats(BaseModel):
+    total_packets: int
+    total_bytes: int
+    unique_src_ips: list[str]
+    unique_dst_ips: list[str]
+    top_connections: list[dict[str, Any]]
+    dns_queries: list[str]
+    http_hosts: list[str]
+    tls_sni: list[str]
+    protocols: dict[str, int]
+
+
+class ExtractedObject(BaseModel):
+    filename: str
+    content_type: str
+    size: int
+    extension: str
+    suspicious: bool
+    src_ip: str
+    dst_ip: str
+    data_b64: str  # contenido en base64 para descarga desde el frontend
+
+
+class PcapScanResponse(BaseModel):
+    filename: str
+    ai_summary: str
+    iocs_found: list[PcapIocItem]
+    total_iocs: int
+    stats: PcapTrafficStats
+    extracted_objects: list[ExtractedObject] = []

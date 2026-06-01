@@ -265,6 +265,165 @@ async def _claude_api_analysis(
 # Orden de prioridad: Groq → Anthropic → análisis local
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Análisis de tráfico PCAP
+# ---------------------------------------------------------------------------
+
+_PCAP_SYSTEM_PROMPT = (
+    "Eres un analista forense de red experto en ciberseguridad blue team. "
+    "Recibes estadísticas de tráfico extraídas de un fichero PCAP y debes generar "
+    "un informe estructurado en español con estas secciones exactas en Markdown:\n\n"
+    "## Resumen del tráfico\n"
+    "Dos o tres frases sobre volumen, protocolos dominantes y perfil general del capture.\n\n"
+    "## Indicadores sospechosos\n"
+    "Lista de IPs, dominios o patrones que llaman la atención, con el motivo concreto "
+    "(alto volumen de conexiones, puerto inusual, dominio DGA, patrón de beacon, "
+    "tráfico no cifrado sensible, etc.).\n\n"
+    "## Vector de ataque probable\n"
+    "Dos o tres frases sobre qué tipo de actividad maliciosa sugieren los datos: "
+    "C2 callback, exfiltración, lateral movement, escaneo, malware dropper, phishing...\n\n"
+    "## Recomendaciones de respuesta\n"
+    "Lista de 3 a 5 acciones inmediatas ordenadas por prioridad.\n\n"
+    "Sé directo y técnico. Basa todo en los datos concretos. "
+    "Si el tráfico parece limpio, dilo en el Resumen. "
+    "No añadas texto fuera de las secciones."
+)
+
+
+def _build_pcap_user_prompt(filename: str, stats: dict) -> str:
+    lines = [
+        f"Fichero PCAP: {filename}",
+        f"Paquetes capturados: {stats['total_packets']:,}",
+        f"Bytes totales: {stats['total_bytes']:,}",
+        f"Distribución de protocolos: {stats.get('protocols', {})}",
+    ]
+    if stats.get("unique_src_ips"):
+        lines.append(f"\nIPs origen (top {len(stats['unique_src_ips'])}): {', '.join(stats['unique_src_ips'][:15])}")
+    if stats.get("unique_dst_ips"):
+        lines.append(f"IPs destino (top {len(stats['unique_dst_ips'])}): {', '.join(stats['unique_dst_ips'][:15])}")
+    if stats.get("top_connections"):
+        lines.append(f"\nConexiones más activas (top {min(10, len(stats['top_connections']))}):")
+        for c in stats["top_connections"][:10]:
+            lines.append(f"  {c['src']} → {c['dst']}: {c['packets']} paquetes")
+    if stats.get("dns_queries"):
+        lines.append(f"\nConsultas DNS ({len(stats['dns_queries'])} únicas):")
+        for q in stats["dns_queries"][:25]:
+            lines.append(f"  - {q}")
+    if stats.get("http_hosts"):
+        lines.append(f"\nHosts HTTP ({len(stats['http_hosts'])} únicos):")
+        for h in stats["http_hosts"][:15]:
+            lines.append(f"  - {h}")
+    if stats.get("tls_sni"):
+        lines.append(f"\nSNI TLS ({len(stats['tls_sni'])} únicos):")
+        for s in stats["tls_sni"][:15]:
+            lines.append(f"  - {s}")
+    return "\n".join(lines)
+
+
+async def _groq_pcap_analysis(filename: str, stats: dict, api_key: str) -> str:
+    from groq import AsyncGroq
+
+    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    client = AsyncGroq(api_key=api_key)
+    response = await client.chat.completions.create(
+        model=model,
+        max_tokens=1500,
+        messages=[
+            {"role": "system", "content": _PCAP_SYSTEM_PROMPT},
+            {"role": "user",   "content": _build_pcap_user_prompt(filename, stats)},
+        ],
+    )
+    return response.choices[0].message.content.strip()
+
+
+async def _claude_pcap_analysis(filename: str, stats: dict, api_key: str) -> str:
+    from anthropic import AsyncAnthropic
+
+    client = AsyncAnthropic(api_key=api_key)
+    message = await client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=1500,
+        system=_PCAP_SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": _build_pcap_user_prompt(filename, stats)}],
+    )
+    return message.content[0].text.strip()
+
+
+def _local_pcap_analysis(filename: str, stats: dict) -> str:
+    total_pkts  = stats.get("total_packets", 0)
+    total_bytes = stats.get("total_bytes", 0)
+    protos      = stats.get("protocols", {})
+    proto_str   = ", ".join(f"{k}: {v}" for k, v in sorted(protos.items(), key=lambda x: -x[1]))
+    sections: list[str] = []
+
+    sections.append(
+        f"## Resumen del tráfico\n"
+        f"El capture `{filename}` contiene **{total_pkts:,} paquetes** "
+        f"({total_bytes / 1024:.1f} KB). "
+        f"Distribución de protocolos: {proto_str or 'no determinada'}."
+    )
+
+    indicators: list[str] = []
+    top_conns = stats.get("top_connections", [])
+    if top_conns:
+        top = top_conns[0]
+        indicators.append(f"- **{top['dst']}**: destino con mayor tráfico ({top['packets']} paquetes desde {top['src']}).")
+    if stats.get("dns_queries"):
+        indicators.append(f"- **DNS**: {len(stats['dns_queries'])} dominios únicos consultados.")
+    if stats.get("tls_sni"):
+        indicators.append(f"- **TLS**: conexiones cifradas a {len(stats['tls_sni'])} hosts distintos.")
+    if stats.get("http_hosts"):
+        indicators.append(f"- **HTTP**: tráfico no cifrado hacia {len(stats['http_hosts'])} hosts.")
+    sections.append(
+        "## Indicadores sospechosos\n"
+        + ("\n".join(indicators) if indicators else "Sin análisis de IA no es posible determinar indicadores con certeza.")
+    )
+
+    sections.append(
+        "## Vector de ataque probable\n"
+        "Sin análisis de IA disponible, no es posible determinar el vector. "
+        "Revisar manualmente los indicadores listados, especialmente conexiones de mayor "
+        "volumen y consultas DNS a dominios desconocidos."
+    )
+
+    sections.append(
+        "## Recomendaciones de respuesta\n"
+        "1. Investigar las IPs destino más activas en fuentes de Threat Intelligence.\n"
+        "2. Analizar las consultas DNS en busca de dominios DGA o recién registrados.\n"
+        "3. Revisar conexiones HTTP no cifradas en busca de exfiltración.\n"
+        "4. Configurar alertas en el SIEM para las IPs identificadas."
+    )
+
+    return "\n\n".join(sections)
+
+
+async def generate_pcap_summary(filename: str, stats: dict) -> str:
+    """Genera el análisis forense de tráfico de red para un PCAP.
+
+    Prueba los proveedores de IA en orden y siempre devuelve un string.
+    """
+    groq_key      = os.getenv("GROQ_API_KEY",      "").strip()
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+
+    if groq_key:
+        try:
+            return await _groq_pcap_analysis(filename, stats, groq_key)
+        except Exception as exc:
+            logger.warning("ai_analyst: fallo en Groq para PCAP — %s", exc)
+
+    if anthropic_key:
+        try:
+            return await _claude_pcap_analysis(filename, stats, anthropic_key)
+        except Exception as exc:
+            logger.warning("ai_analyst: fallo en Anthropic para PCAP — %s", exc)
+
+    return _local_pcap_analysis(filename, stats)
+
+
+# ---------------------------------------------------------------------------
+# Punto de entrada público — IOC individual
+# ---------------------------------------------------------------------------
+
 async def generate_summary(
     ioc_value: str,
     ioc_type: str,

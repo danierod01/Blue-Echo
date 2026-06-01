@@ -29,6 +29,8 @@ export interface MitreTechnique {
   tactic: string;
   url: string;
   source: string;
+  reason?: string;
+  description?: string;
 }
 
 export interface ConnectorResult {
@@ -38,6 +40,17 @@ export interface ConnectorResult {
   summary: string;
   data: Record<string, unknown>;
   error?: string;
+}
+
+export interface GeoLocation {
+  lat: number;
+  lon: number;
+  city: string;
+  region: string;
+  country: string;
+  country_code: string;
+  org?: string;
+  resolved_ip?: string;
 }
 
 export interface ScanResponse {
@@ -51,6 +64,7 @@ export interface ScanResponse {
   ai_summary: string;
   created_at: string;
   mitre_techniques: MitreTechnique[];
+  geolocation?: GeoLocation | null;
 }
 
 export interface HistoryItem {
@@ -81,6 +95,43 @@ export interface SourceStatus {
   name: string;
   available: boolean;
   supported_types: string[];
+}
+
+export interface PcapIocItem {
+  value: string;
+  ioc_type: string;
+}
+
+export interface PcapTrafficStats {
+  total_packets: number;
+  total_bytes: number;
+  unique_src_ips: string[];
+  unique_dst_ips: string[];
+  top_connections: Array<{ src: string; dst: string; packets: number }>;
+  dns_queries: string[];
+  http_hosts: string[];
+  tls_sni: string[];
+  protocols: Record<string, number>;
+}
+
+export interface ExtractedObject {
+  filename: string;
+  content_type: string;
+  size: number;
+  extension: string;
+  suspicious: boolean;
+  src_ip: string;
+  dst_ip: string;
+  data_b64: string;
+}
+
+export interface PcapScanResponse {
+  filename: string;
+  ai_summary: string;
+  iocs_found: PcapIocItem[];
+  total_iocs: number;
+  stats: PcapTrafficStats;
+  extracted_objects: ExtractedObject[];
 }
 
 // ---------------------------------------------------------------------------
@@ -142,6 +193,24 @@ export async function getScanById(id: number): Promise<ScanResponse> {
     headers: authHeaders(),
   });
   return handleResponse<ScanResponse>(res);
+}
+
+export async function getPcapScanById(id: number): Promise<PcapScanResponse> {
+  const res = await fetch(`${BASE_URL}/api/history/${id}/pcap`, {
+    headers: authHeaders(),
+  });
+  return handleResponse<PcapScanResponse>(res);
+}
+
+export async function scanPcap(file: File): Promise<PcapScanResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE_URL}/api/scan/pcap`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: form,
+  });
+  return handleResponse<PcapScanResponse>(res);
 }
 
 export async function getSources(): Promise<SourceStatus[]> {
