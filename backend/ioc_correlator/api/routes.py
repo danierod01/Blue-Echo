@@ -177,6 +177,7 @@ async def scan_json(
 async def scan_pcap(
     request: Request,
     file: UploadFile = File(...),
+    session: Session = Depends(get_session),
 ) -> PcapScanResponse:
     """Analiza un fichero PCAP/PCAPNG con IA y extrae IOCs del tráfico de red."""
     content = await file.read()
@@ -200,6 +201,30 @@ async def scan_pcap(
 
     filename = file.filename or "capture.pcap"
     ai_summary = await generate_pcap_summary(filename, stats)
+
+    save_scan(
+        session,
+        ioc_value=filename,
+        ioc_type="pcap",
+        score=0,
+        verdict="clean",
+        connector_results={
+            "pcap_analyzer": {
+                "source": "pcap_analyzer",
+                "success": True,
+                "verdict": "info",
+                "summary": f"{len(iocs)} IOCs extraídos de {stats.get('total_packets', 0)} paquetes",
+                "data": {
+                    "total_packets": stats.get("total_packets", 0),
+                    "total_bytes": stats.get("total_bytes", 0),
+                    "protocols": stats.get("protocols", {}),
+                    "ioc_count": len(iocs),
+                },
+                "error": None,
+            }
+        },
+        ai_summary=ai_summary,
+    )
 
     return PcapScanResponse(
         filename=filename,

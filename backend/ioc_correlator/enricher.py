@@ -18,6 +18,7 @@ from ioc_correlator.connectors.securitytrails import SecurityTrailsConnector
 from ioc_correlator.connectors.shodan import ShodanConnector
 from ioc_correlator.connectors.threatfox import ThreatFoxConnector
 from ioc_correlator.connectors.urlhaus import URLhausConnector
+from ioc_correlator.connectors.urlscan import URLScanConnector
 from ioc_correlator.connectors.virustotal import VirusTotalConnector
 from ioc_correlator.utils.cache import get_cache
 from ioc_correlator.utils.validators import IOCType
@@ -32,6 +33,7 @@ _CONNECTORS = [
     OTXConnector(),
     MalwareBazaarConnector(),
     URLhausConnector(),
+    URLScanConnector(),
     # Nuevas fuentes
     ThreatFoxConnector(),
     IPinfoConnector(),
