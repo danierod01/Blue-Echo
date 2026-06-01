@@ -29,6 +29,8 @@ export interface MitreTechnique {
   tactic: string;
   url: string;
   source: string;
+  reason?: string;
+  description?: string;
 }
 
 export interface ConnectorResult {

@@ -36,6 +36,8 @@ class MitreTechnique(BaseModel):
     tactic: str
     url: str
     source: str
+    reason: str = ""
+    description: str = ""
 
 
 class GeoLocation(BaseModel):
