@@ -229,7 +229,7 @@ async def scan_pcap(
         ioc_value=filename,
         ioc_type="pcap",
         score=0,
-        verdict="clean",
+        verdict="pcap",
         connector_results={
             "pcap_analyzer": {
                 "source": "pcap_analyzer",

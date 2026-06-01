@@ -30,6 +30,7 @@ const VERDICT_CHIP: Record<string, string> = {
   suspicious: "border-yellow-800 bg-yellow-950/40 text-yellow-400",
   malicious:  "border-orange-800 bg-orange-950/40 text-orange-400",
   critical:   "border-red-800    bg-red-950/40    text-red-400",
+  pcap:       "border-purple-800 bg-purple-950/40 text-purple-400",
 };
 
 export default function History() {

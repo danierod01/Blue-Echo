@@ -10,6 +10,7 @@ export const VERDICT_LABEL: Record<string, string> = {
   suspicious: "SOSPECHOSO",
   malicious:  "MALICIOSO",
   critical:   "CRÍTICO",
+  pcap:       "CAPTURA DE RED",
 };
 
 export const VERDICT_COLOR: Record<string, string> = {
@@ -17,6 +18,7 @@ export const VERDICT_COLOR: Record<string, string> = {
   malicious:  "text-orange-400",
   suspicious: "text-yellow-400",
   clean:      "text-green-400",
+  pcap:       "text-purple-400",
 };
 
 export const VERDICT_BORDER: Record<string, string> = {
@@ -24,6 +26,7 @@ export const VERDICT_BORDER: Record<string, string> = {
   malicious:  "border-orange-500",
   suspicious: "border-yellow-500",
   clean:      "border-green-500",
+  pcap:       "border-purple-500",
 };
 
 export const VERDICT_BG: Record<string, string> = {
@@ -31,6 +34,7 @@ export const VERDICT_BG: Record<string, string> = {
   malicious:  "bg-orange-500/10",
   suspicious: "bg-yellow-500/10",
   clean:      "bg-green-500/10",
+  pcap:       "bg-purple-500/10",
 };
 
 export function formatDate(iso: string): string {
