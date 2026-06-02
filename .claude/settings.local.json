@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(.venv/Scripts/python -m pytest tests/test_abuseipdb.py -v)"
+      "Bash(.venv/Scripts/python -m pytest tests/test_abuseipdb.py -v)",
+      "Bash(rtk git *)",
+      "Bash(rtk gh pr create --title 'feat: Práctica 2 — bulk scan, MITRE ATT&CK, nuevos conectores, Groq AI, HTTPS' --body ' *)",
+      "Bash(git checkout *)",
+      "Bash(git cherry-pick *)"
     ]
   }
 }
