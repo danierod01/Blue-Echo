@@ -115,19 +115,30 @@ function isInactive(r: ConnectorResult) {
   return r.error === "missing_api_key" || r.error === "unsupported_ioc_type";
 }
 
+const VERDICT_LEFT_BORDER: Record<string, string> = {
+  malicious:  "border-l-orange-500",
+  suspicious: "border-l-yellow-500",
+  clean:      "border-l-green-600",
+  unknown:    "border-l-gray-700",
+  error:      "border-l-red-700",
+  info:       "border-l-purple-600",
+};
+
 function ConnectorCard({
   name, result, points, index,
 }: { name: string; result: ConnectorResult; points: number | undefined; index: number }) {
   const inactive = isInactive(result);
   const badgeClass = VERDICT_BADGE[result.verdict] ?? VERDICT_BADGE.unknown;
+  const leftBorder = inactive ? "border-l-gray-800" : (VERDICT_LEFT_BORDER[result.verdict] ?? "border-l-gray-700");
 
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-300",
+        "flex items-center gap-3 rounded-xl border border-l-2 px-4 py-3 transition-all duration-200",
+        leftBorder,
         inactive
-          ? "border-gray-800/40 bg-gray-900/20 opacity-50"
-          : "border-gray-800 bg-gray-900/40 hover:bg-gray-900/70"
+          ? "border-gray-800/40 bg-gray-900/20 opacity-40"
+          : "border-gray-800/60 bg-gray-900/40 hover:bg-gray-800/60 hover:scale-[1.005] hover:shadow-sm"
       )}
       style={{ animationDelay: `${index * 50}ms` }}
     >

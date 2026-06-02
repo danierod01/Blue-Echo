@@ -33,12 +33,9 @@ const ARC_COLOR: Record<string, string> = {
   pcap:       "#a855f7",
 };
 
-const GLOW: Record<string, string> = {
-  critical:   "shadow-[0_0_40px_rgba(239,68,68,0.25)]",
-  malicious:  "shadow-[0_0_40px_rgba(249,115,22,0.2)]",
-  suspicious: "shadow-[0_0_40px_rgba(234,179,8,0.15)]",
-  clean:      "",
-  pcap:       "",
+const RING_GLOW: Record<string, string> = {
+  critical:  "rgba(239,68,68,0.4)",
+  malicious: "rgba(249,115,22,0.3)",
 };
 
 export default function ThreatScore({ score, verdict, iocValue, iocType }: Props) {
@@ -47,23 +44,49 @@ export default function ThreatScore({ score, verdict, iocValue, iocType }: Props
   const border = VERDICT_BORDER[verdict] ?? "border-gray-600";
   const bg     = VERDICT_BG[verdict]     ?? "bg-gray-800";
   const label  = VERDICT_LABEL[verdict]  ?? verdict.toUpperCase();
-  const glow   = GLOW[verdict] ?? "";
   const stroke = ARC_COLOR[verdict] ?? "#6b7280";
+  const glowColor = RING_GLOW[verdict];
 
   const radius = 54;
   const circ   = 2 * Math.PI * radius;
-  const pct    = Math.min(animated, 100) / 100;
-  const dash   = circ * pct;
+  const dash   = circ * Math.min(animated, 100) / 100;
+
+  const isThreat = verdict === "critical" || verdict === "malicious";
 
   return (
     <div className={cn(
-      "rounded-2xl border p-6 flex flex-col items-center gap-4 transition-shadow duration-700",
-      border, bg, glow
+      "rounded-2xl border p-6 flex flex-col items-center gap-4 transition-all duration-700 relative overflow-hidden",
+      border, bg,
+      glowColor && `shadow-[0_0_40px_${glowColor}]`
     )}>
-      {/* Gauge animado */}
+      {/* Fondo decorativo */}
+      <div
+        className="absolute inset-0 opacity-30 pointer-events-none"
+        style={{
+          background: `radial-gradient(ellipse at 50% 0%, ${stroke}15 0%, transparent 70%)`,
+        }}
+      />
+
+      {/* Gauge */}
       <div className="relative w-36 h-36">
+        {/* Anillos de pulso para crítico/malicioso */}
+        {isThreat && (
+          <>
+            <div
+              className="absolute inset-0 rounded-full animate-radarPing border"
+              style={{ borderColor: `${stroke}50` }}
+            />
+            <div
+              className="absolute inset-0 rounded-full animate-radarPing border"
+              style={{ borderColor: `${stroke}30`, animationDelay: "1s" }}
+            />
+          </>
+        )}
+
         <svg viewBox="0 0 128 128" className="w-full h-full -rotate-90">
+          {/* Track */}
           <circle cx="64" cy="64" r={radius} fill="none" stroke="#1f2937" strokeWidth="10" />
+          {/* Glow track */}
           <circle
             cx="64" cy="64" r={radius}
             fill="none"
@@ -71,27 +94,27 @@ export default function ThreatScore({ score, verdict, iocValue, iocType }: Props
             strokeWidth="10"
             strokeLinecap="round"
             strokeDasharray={`${dash} ${circ - dash}`}
+            style={{ filter: `drop-shadow(0 0 6px ${stroke}80)` }}
           />
         </svg>
+
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={cn("text-4xl font-bold tabular-nums transition-all duration-100", color)}>
-            {animated}
-          </span>
-          <span className="text-xs text-gray-500">/100</span>
+          <span className={cn("text-4xl font-bold tabular-nums", color)}>{animated}</span>
+          <span className="text-xs text-gray-600">/100</span>
         </div>
       </div>
 
-      {/* Veredicto con pulso en crítico */}
+      {/* Veredicto */}
       <span className={cn(
-        "text-lg font-bold tracking-widest",
+        "text-lg font-bold tracking-widest relative z-10",
         color,
-        verdict === "critical" && "animate-pulse"
+        isThreat && "animate-borderPulse"
       )}>
         {label}
       </span>
 
-      {/* IOC info */}
-      <div className="text-center">
+      {/* IOC */}
+      <div className="text-center relative z-10">
         <p className="text-sm font-mono text-gray-200 break-all">{iocValue}</p>
         <p className="text-xs text-gray-500 mt-0.5 uppercase tracking-wider">{iocType}</p>
       </div>

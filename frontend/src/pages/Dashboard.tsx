@@ -8,6 +8,7 @@ import AiSummary from "@/components/AiSummary";
 import HistoryList from "@/components/HistoryList";
 import SourcesStatus from "@/components/SourcesStatus";
 import SkeletonResults from "@/components/SkeletonResults";
+import EmptyState from "@/components/EmptyState";
 import { scanIoc, scanFile, getHistory, getScanById, type ScanResponse } from "@/api/client";
 
 export default function Dashboard() {
@@ -55,11 +56,19 @@ export default function Dashboard() {
       {/* ---------------------------------------------------------------- */}
       <div className="flex-1 flex flex-col gap-6 min-w-0">
         {/* Cabecera */}
-        <div>
-          <h1 className="text-2xl font-bold text-white">Threat Intelligence Correlator</h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Introduce una IP, hash, dominio o URL — o sube un fichero de logs.
-          </p>
+        <div className="flex items-start justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+              Threat Intelligence
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Introduce una IP, hash, dominio o URL — o sube un fichero.
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 rounded-full border border-green-800/60 bg-green-950/30 px-3 py-1 text-xs text-green-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            Online
+          </div>
         </div>
 
         {/* Barra de búsqueda */}
@@ -80,8 +89,23 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Cargando */}
-        {loading && <SkeletonResults />}
+        {/* Escaneando */}
+        {loading && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-3">
+              <div className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.8)] animate-pulse" />
+              <span className="text-sm text-blue-300 font-mono">
+                Consultando fuentes de Threat Intelligence
+                <span className="inline-flex gap-0.5 ml-1">
+                  {[0,1,2].map(i => (
+                    <span key={i} className="animate-terminalDot" style={{ animationDelay: `${i * 0.2}s` }}>.</span>
+                  ))}
+                </span>
+              </span>
+            </div>
+            <SkeletonResults />
+          </div>
+        )}
 
         {/* Resultados */}
         {result && !loading && (
@@ -110,11 +134,7 @@ export default function Dashboard() {
         )}
 
         {/* Estado vacío */}
-        {!result && !loading && !errorMsg && (
-          <div className="flex flex-col items-center justify-center gap-2 py-16 text-gray-700">
-            <p className="text-sm">Los resultados aparecerán aquí tras el escaneo.</p>
-          </div>
-        )}
+        {!result && !loading && !errorMsg && <EmptyState />}
       </div>
 
       {/* ---------------------------------------------------------------- */}
