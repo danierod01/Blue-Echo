@@ -33,7 +33,7 @@ export default function SearchBar({ onScanIoc, onScanFile, onScanPcap, loading }
   function handleFile(file: File | undefined) {
     if (!file) return;
     if (/\.pcap(ng)?$/i.test(file.name)) {
-      onScanPcap(file);
+      onScanPcap?.(file);
     } else {
       onScanFile(file);
     }
