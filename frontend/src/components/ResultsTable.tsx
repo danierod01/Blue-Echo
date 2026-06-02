@@ -1,5 +1,6 @@
+import type { ReactNode } from "react";
 import { CheckCircle2, XCircle, AlertCircle, Globe, Server, Shield, FileSearch, Link } from "lucide-react";
-import { cn, VERDICT_COLOR } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { ConnectorResult } from "@/api/client";
 
 interface Props {
@@ -44,7 +45,7 @@ const VERDICT_LABELS: Record<string, string> = {
 };
 
 // Agrupación por tipo de IOC
-type Group = { label: string; icon: React.ReactNode; connectors: string[] };
+type Group = { label: string; icon: ReactNode; connectors: string[] };
 
 const GROUPS: Record<string, Group[]> = {
   ipv4: [
