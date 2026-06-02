@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Loader2, History } from "lucide-react";
+import { AlertCircle, History } from "lucide-react";
 import SearchBar from "@/components/SearchBar";
 import ThreatScore from "@/components/ThreatScore";
 import ResultsTable from "@/components/ResultsTable";
 import AiSummary from "@/components/AiSummary";
 import HistoryList from "@/components/HistoryList";
 import SourcesStatus from "@/components/SourcesStatus";
+import SkeletonResults from "@/components/SkeletonResults";
 import { scanIoc, scanFile, getHistory, getScanById, type ScanResponse } from "@/api/client";
 
 export default function Dashboard() {
@@ -80,40 +81,31 @@ export default function Dashboard() {
         )}
 
         {/* Cargando */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center gap-3 py-12 text-gray-500">
-            <Loader2 size={32} className="animate-spin text-blue-500" />
-            <p className="text-sm">Consultando fuentes de Threat Intelligence…</p>
-          </div>
-        )}
+        {loading && <SkeletonResults />}
 
         {/* Resultados */}
         {result && !loading && (
           <div className="flex flex-col gap-6">
-            {/* Score + Tabla */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-              <ThreatScore
-                score={result.score}
-                verdict={result.verdict}
-                iocValue={result.ioc_value}
-                iocType={result.ioc_type}
-              />
-
-              <div className="md:col-span-2 flex flex-col gap-4">
-                <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-5">
-                  <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                    Resultados por fuente
-                  </h2>
-                  <ResultsTable
-                    connectorResults={result.connector_results}
-                    breakdown={result.breakdown}
-                  />
-                </div>
+              <div className="animate-[fadeSlideIn_0.4s_ease_forwards]">
+                <ThreatScore
+                  score={result.score}
+                  verdict={result.verdict}
+                  iocValue={result.ioc_value}
+                  iocType={result.ioc_type}
+                />
+              </div>
+              <div className="md:col-span-2 animate-[fadeSlideIn_0.4s_ease_0.1s_forwards] opacity-0">
+                <ResultsTable
+                  connectorResults={result.connector_results}
+                  breakdown={result.breakdown}
+                  iocType={result.ioc_type}
+                />
               </div>
             </div>
-
-            {/* Análisis IA */}
-            <AiSummary summary={result.ai_summary} />
+            <div className="animate-[fadeSlideIn_0.4s_ease_0.2s_forwards] opacity-0">
+              <AiSummary summary={result.ai_summary} />
+            </div>
           </div>
         )}
 

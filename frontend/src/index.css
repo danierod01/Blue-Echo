@@ -4,6 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-gray-950 text-gray-100 antialiased;
+    background-color: #0a0a12;
+    @apply text-gray-100 antialiased;
   }
 }
