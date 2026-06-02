@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 interface Props {
   onScanIoc: (ioc: string) => void;
   onScanFile: (file: File) => void;
-  onScanPcap: (file: File) => void;
+  onScanPcap?: (file: File) => void;
   loading: boolean;
 }
 
