@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Loader2, History } from "lucide-react";
+import { AlertCircle, History } from "lucide-react";
+import SkeletonResults from "@/components/SkeletonResults";
+import EmptyState from "@/components/EmptyState";
 import SearchBar from "@/components/SearchBar";
 import BulkScanPanel from "@/components/BulkScanPanel";
 import ThreatScore from "@/components/ThreatScore";
@@ -87,11 +89,19 @@ export default function Dashboard() {
       {/* ---------------------------------------------------------------- */}
       <div className="flex-1 flex flex-col gap-6 min-w-0">
         {/* Cabecera */}
-        <div>
-          <h1 className="text-2xl font-bold text-white">Threat Intelligence Correlator</h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Introduce una IP, hash, dominio o URL — o sube un fichero de logs.
-          </p>
+        <div className="flex items-start justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+              Threat Intelligence
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Introduce una IP, hash, dominio o URL — o sube un fichero.
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 rounded-full border border-green-800/60 bg-green-950/30 px-3 py-1 text-xs text-green-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            Online
+          </div>
         </div>
 
         {/* Toggle Individual / Masivo */}
@@ -140,57 +150,62 @@ export default function Dashboard() {
 
         {/* Cargando */}
         {mode === "single" && loading && (
-          <div className="flex flex-col items-center justify-center gap-3 py-12 text-gray-500">
-            <Loader2 size={32} className="animate-spin text-blue-500" />
-            <p className="text-sm">
-              {pcapMutation.isPending
-                ? "Analizando tráfico PCAP con IA…"
-                : "Consultando fuentes de Threat Intelligence…"}
-            </p>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-3">
+              <div className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.8)] animate-pulse" />
+              <span className="text-sm text-blue-300 font-mono">
+                {pcapMutation.isPending ? "Analizando tráfico PCAP con IA" : "Consultando fuentes de Threat Intelligence"}
+                <span className="inline-flex gap-0.5 ml-1">
+                  {[0,1,2].map(i => (
+                    <span key={i} className="animate-terminalDot" style={{ animationDelay: `${i * 0.2}s` }}>.</span>
+                  ))}
+                </span>
+              </span>
+            </div>
+            {!pcapMutation.isPending && <SkeletonResults />}
           </div>
         )}
 
         {/* Resultados */}
         {mode === "single" && result && !loading && (
           <div className="flex flex-col gap-6">
-            {/* Score + Tabla */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-              <ThreatScore
-                score={result.score}
-                verdict={result.verdict}
-                iocValue={result.ioc_value}
-                iocType={result.ioc_type}
-              />
-
-              <div className="md:col-span-2 flex flex-col gap-4">
-                <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-5">
-                  <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                    Resultados por fuente
-                  </h2>
-                  <ResultsTable
-                    connectorResults={result.connector_results}
-                    breakdown={result.breakdown}
-                  />
-                </div>
+              <div className="animate-[fadeSlideIn_0.4s_ease_forwards]">
+                <ThreatScore
+                  score={result.score}
+                  verdict={result.verdict}
+                  iocValue={result.ioc_value}
+                  iocType={result.ioc_type}
+                />
+              </div>
+              <div className="md:col-span-2 animate-[fadeSlideIn_0.4s_ease_0.1s_forwards] opacity-0">
+                <ResultsTable
+                  connectorResults={result.connector_results}
+                  breakdown={result.breakdown}
+                  iocType={result.ioc_type}
+                />
               </div>
             </div>
 
-            {/* Análisis IA */}
-            <AiSummary summary={result.ai_summary} />
+            <div className="animate-[fadeSlideIn_0.4s_ease_0.2s_forwards] opacity-0">
+              <AiSummary summary={result.ai_summary} />
+            </div>
 
-            {/* MITRE ATT&CK */}
-            <MitreAttack techniques={result.mitre_techniques} />
+            <div className="animate-[fadeSlideIn_0.4s_ease_0.3s_forwards] opacity-0">
+              <MitreAttack techniques={result.mitre_techniques} />
+            </div>
 
-            {/* Geolocalización */}
-            {result.geolocation ? (
-              <GeoMap geo={result.geolocation} iocValue={result.ioc_value} />
-            ) : (
-              ["ipv4", "ipv6", "domain", "url"].includes(result.ioc_type) && (
-                <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-5 text-sm text-gray-500">
-                  No se ha podido determinar la geolocalización.
-                </div>
-              )
-            )}
+            <div className="animate-[fadeSlideIn_0.4s_ease_0.4s_forwards] opacity-0">
+              {result.geolocation ? (
+                <GeoMap geo={result.geolocation} iocValue={result.ioc_value} />
+              ) : (
+                ["ipv4", "ipv6", "domain", "url"].includes(result.ioc_type) && (
+                  <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-5 text-sm text-gray-500">
+                    No se ha podido determinar la geolocalización.
+                  </div>
+                )
+              )}
+            </div>
           </div>
         )}
 
@@ -204,9 +219,7 @@ export default function Dashboard() {
 
         {/* Estado vacío */}
         {mode === "single" && !result && !pcapResult && !loading && !errorMsg && (
-          <div className="flex flex-col items-center justify-center gap-2 py-16 text-gray-700">
-            <p className="text-sm">Los resultados aparecerán aquí tras el escaneo.</p>
-          </div>
+          <EmptyState />
         )}
       </div>
 

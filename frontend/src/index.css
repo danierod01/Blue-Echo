@@ -4,6 +4,20 @@
 
 @layer base {
   body {
-    @apply bg-gray-950 text-gray-100 antialiased;
+    background-color: #0a0a12;
+    background-image: radial-gradient(rgba(59,130,246,0.06) 1px, transparent 1px);
+    background-size: 28px 28px;
+    @apply text-gray-100 antialiased;
   }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-gray-700 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-gray-500; }
+}
+
+@layer utilities {
+  .border-glow-blue  { box-shadow: 0 0 16px rgba(59,130,246,0.25); }
+  .border-glow-red   { box-shadow: 0 0 20px rgba(239,68,68,0.3); }
+  .border-glow-orange{ box-shadow: 0 0 20px rgba(249,115,22,0.25); }
 }

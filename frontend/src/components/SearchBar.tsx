@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 interface Props {
   onScanIoc: (ioc: string) => void;
   onScanFile: (file: File) => void;
-  onScanPcap: (file: File) => void;
+  onScanPcap?: (file: File) => void;
   loading: boolean;
 }
 
@@ -33,7 +33,7 @@ export default function SearchBar({ onScanIoc, onScanFile, onScanPcap, loading }
   function handleFile(file: File | undefined) {
     if (!file) return;
     if (/\.pcap(ng)?$/i.test(file.name)) {
-      onScanPcap(file);
+      onScanPcap?.(file);
     } else {
       onScanFile(file);
     }
@@ -43,8 +43,10 @@ export default function SearchBar({ onScanIoc, onScanFile, onScanPcap, loading }
     <form onSubmit={handleSubmit} className="w-full">
       <div
         className={cn(
-          "flex items-center gap-2 rounded-xl border bg-gray-900 px-4 py-3 transition",
-          dragOver ? "border-blue-400" : "border-gray-700 focus-within:border-blue-500"
+          "flex items-center gap-2 rounded-xl border bg-gray-900/60 backdrop-blur-sm px-4 py-3 transition shadow-lg",
+          dragOver
+            ? "border-blue-400 shadow-blue-500/20"
+            : "border-gray-700/60 focus-within:border-blue-500/60 focus-within:shadow-blue-500/10"
         )}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
