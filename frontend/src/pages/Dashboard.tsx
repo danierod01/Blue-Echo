@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Loader2, History } from "lucide-react";
+import { AlertCircle, History } from "lucide-react";
+import SkeletonResults from "@/components/SkeletonResults";
 import SearchBar from "@/components/SearchBar";
 import BulkScanPanel from "@/components/BulkScanPanel";
 import ThreatScore from "@/components/ThreatScore";
@@ -139,58 +140,57 @@ export default function Dashboard() {
         )}
 
         {/* Cargando */}
-        {mode === "single" && loading && (
+        {mode === "single" && loading && !pcapMutation.isPending && (
+          <SkeletonResults />
+        )}
+        {mode === "single" && pcapMutation.isPending && (
           <div className="flex flex-col items-center justify-center gap-3 py-12 text-gray-500">
-            <Loader2 size={32} className="animate-spin text-blue-500" />
-            <p className="text-sm">
-              {pcapMutation.isPending
-                ? "Analizando tráfico PCAP con IA…"
-                : "Consultando fuentes de Threat Intelligence…"}
-            </p>
+            <div className="w-8 h-8 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
+            <p className="text-sm">Analizando tráfico PCAP con IA…</p>
           </div>
         )}
 
         {/* Resultados */}
         {mode === "single" && result && !loading && (
           <div className="flex flex-col gap-6">
-            {/* Score + Tabla */}
+            {/* Score + Conectores agrupados */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-              <ThreatScore
-                score={result.score}
-                verdict={result.verdict}
-                iocValue={result.ioc_value}
-                iocType={result.ioc_type}
-              />
-
-              <div className="md:col-span-2 flex flex-col gap-4">
-                <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-5">
-                  <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                    Resultados por fuente
-                  </h2>
-                  <ResultsTable
-                    connectorResults={result.connector_results}
-                    breakdown={result.breakdown}
-                  />
-                </div>
+              <div className="animate-[fadeSlideIn_0.4s_ease_forwards]">
+                <ThreatScore
+                  score={result.score}
+                  verdict={result.verdict}
+                  iocValue={result.ioc_value}
+                  iocType={result.ioc_type}
+                />
+              </div>
+              <div className="md:col-span-2 animate-[fadeSlideIn_0.4s_ease_0.1s_forwards] opacity-0">
+                <ResultsTable
+                  connectorResults={result.connector_results}
+                  breakdown={result.breakdown}
+                  iocType={result.ioc_type}
+                />
               </div>
             </div>
 
-            {/* Análisis IA */}
-            <AiSummary summary={result.ai_summary} />
+            <div className="animate-[fadeSlideIn_0.4s_ease_0.2s_forwards] opacity-0">
+              <AiSummary summary={result.ai_summary} />
+            </div>
 
-            {/* MITRE ATT&CK */}
-            <MitreAttack techniques={result.mitre_techniques} />
+            <div className="animate-[fadeSlideIn_0.4s_ease_0.3s_forwards] opacity-0">
+              <MitreAttack techniques={result.mitre_techniques} />
+            </div>
 
-            {/* Geolocalización */}
-            {result.geolocation ? (
-              <GeoMap geo={result.geolocation} iocValue={result.ioc_value} />
-            ) : (
-              ["ipv4", "ipv6", "domain", "url"].includes(result.ioc_type) && (
-                <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-5 text-sm text-gray-500">
-                  No se ha podido determinar la geolocalización.
-                </div>
-              )
-            )}
+            <div className="animate-[fadeSlideIn_0.4s_ease_0.4s_forwards] opacity-0">
+              {result.geolocation ? (
+                <GeoMap geo={result.geolocation} iocValue={result.ioc_value} />
+              ) : (
+                ["ipv4", "ipv6", "domain", "url"].includes(result.ioc_type) && (
+                  <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-5 text-sm text-gray-500">
+                    No se ha podido determinar la geolocalización.
+                  </div>
+                )
+              )}
+            </div>
           </div>
         )}
 
