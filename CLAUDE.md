@@ -404,3 +404,54 @@ Cada nota de Obsidian corresponde directamente a una sección del PDF requerido:
 - Al terminar el módulo de Docker y despliegue (paso 17), **dictar el contenido** de `04 - Guía de Despliegue.md` con los pasos exactos que se han ejecutado.
 - Al terminar el proyecto, **generar el contenido** de `05 - Manual de Uso.md` con ejemplos reales de uso de la herramienta.
 - El `07 - Roadmap Práctica 2.md` se redacta al final con al menos 5 nuevas funcionalidades planificadas, mejoras de rendimiento, seguridad e integraciones, con estimación de tiempo para cada una.
+
+---
+
+## Estado actual del proyecto
+
+> **Actualizar esta sección al final de cada sesión.**
+
+### Rama activa
+`main` — todo el desarrollo va aquí desde ahora.
+
+### Qué hay implementado
+
+**Práctica 1** (base de `main`):
+- 7 conectores: VirusTotal, AbuseIPDB, Shodan, OTX, MalwareBazaar, URLhaus, GreyNoise
+- Scoring 0-100, 4 veredictos (LIMPIO / SOSPECHOSO / MALICIOSO / CRÍTICO)
+- Análisis IA con Claude (AsyncAnthropic)
+- Caché TTL, Docker multi-stage, Nginx, deploy.sh
+
+**Práctica 2** (mergeado en `main`):
+- Auth X-API-Key + rate limiting (slowapi)
+- HTTPS con Let's Encrypt en blueecho.es
+- 10+ conectores nuevos: ThreatFox, URLScan, IPInfo, RDAP, SecurityTrails, Hybrid Analysis, Netlas, Criminal IP, MalShare, Pulsedive, Censys
+- Bulk scan (múltiples IOCs a la vez)
+- MITRE ATT&CK mapping con reason + description
+- Análisis PCAP: upload .pcap, reconstrucción TCP con scapy, extracción de objetos HTTP maliciosos
+- Geolocalización con mapa react-leaflet (ipwho.is)
+- Historial de escaneos PCAP con veredicto "CAPTURA DE RED"
+- Login con X-API-Key
+
+**Rediseño UI** (mergeado en `main`):
+- Fuentes: Space Grotesk (UI) + JetBrains Mono (datos)
+- Fondo `#08080f`, header minimalista h-12 con línea de acento azul
+- ThreatScore: número enorme con glow del color del veredicto, sin gauge SVG
+- ResultsTable: filas compactas monospace agrupadas por tipo de IOC
+- EmptyState: radar animado, SkeletonResults: shimmer loader
+
+### Pendiente
+
+- Rediseño de: `AiSummary.tsx`, `SearchBar.tsx`, `SourcesStatus.tsx`, `Login.tsx`, `tailwind.config.js` (keyframes), `Dashboard.tsx` (ajustes finales)
+
+### Infraestructura
+
+- VPS: Hetzner CX23 — IP `138.199.205.221`
+- Dominio: blueecho.es (HTTPS, auto-renovación Let's Encrypt)
+- SSH: `ssh root@138.199.205.221`
+- Directorio producción: `/opt/blue-echo`
+- Dev local (Kali): `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`
+
+### Última sesión
+
+**Fecha**: 2026-09-23 — Rediseño UI (ThreatScore, ResultsTable, App, index.css). Merge de todas las ramas a `main`. Creado sistema de contexto en CLAUDE.md.
