@@ -90,6 +90,7 @@ export default function ScanDetail() {
             <ResultsTable
               connectorResults={base.connector_results}
               breakdown={base.breakdown}
+              iocType={base.ioc_type}
             />
             {base.ai_summary && <AiSummary summary={base.ai_summary} />}
             <MitreAttack techniques={base.mitre_techniques ?? []} />

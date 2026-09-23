@@ -346,7 +346,8 @@ async def history_detail(
     raw = json.loads(db_scan.connector_results)
     connector_objs = {name: ConnectorResult(**d) for name, d in raw.items()}
     scoring = compute_score(connector_objs)
-    return _build_scan_response(db_scan, scoring.breakdown)
+    geo = await geolocate(db_scan.ioc_value, db_scan.ioc_type)
+    return _build_scan_response(db_scan, scoring.breakdown, geolocation=geo)
 
 
 @router.get("/sources", response_model=list[SourceStatus], dependencies=[Depends(require_api_key)])
