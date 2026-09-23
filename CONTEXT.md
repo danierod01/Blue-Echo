@@ -9,11 +9,11 @@
 
 | Rama | Descripción | Estado |
 |---|---|---|
-| `main` | Práctica 1 entregada | Estable, no tocar |
-| `feat/pcap-https` | Práctica 2 — todas las funcionalidades nuevas | Base de desarrollo activo |
-| `design` | Rediseño UI sobre `feat/pcap-https` | En desarrollo |
+| `main` | **Rama principal activa** — contiene todo (P1 + P2 + rediseño) | Desarrollo activo aquí |
+| `feat/pcap-https` | Rama intermedia de P2 — ya mergeada en main | Obsoleta |
+| `design` | Rama de rediseño — ya mergeada en main | Obsoleta |
 
-El orden es: `main` ← `feat/pcap-https` ← `design`
+**Trabajar siempre desde `main`.** Las ramas intermedias ya están incorporadas.
 
 ---
 
@@ -50,7 +50,7 @@ El orden es: `main` ← `feat/pcap-https` ← `design`
 - SkeletonResults: shimmer loader
 - App.tsx: header minimalista, UserMenu con avatar BE
 
-**Componentes pendientes de rediseñar en `design`:**
+**Componentes pendientes de rediseñar (en `main`):**
 - `AiSummary.tsx`
 - `SearchBar.tsx`
 - `SourcesStatus.tsx`
@@ -75,15 +75,15 @@ El orden es: `main` ← `feat/pcap-https` ← `design`
 
 ```bash
 # Al empezar (en cualquier máquina)
-git pull origin <rama-activa>
+git pull origin main
 
 # Al terminar
 git add <ficheros>
 git commit -m "..."
-git push origin <rama-activa>
+git push origin main
 ```
 
-**Rama activa actual: `design`**
+**Rama activa actual: `main`**
 
 ---
 
@@ -107,5 +107,9 @@ git push origin <rama-activa>
 ## Última sesión trabajada
 
 **Fecha**: 2026-09-23
-**Rama**: `design`
-**Resumen**: Rediseño radical de la UI — nuevas fuentes, ThreatScore sin gauge, ResultsTable compacta monospace, header minimalista. Pendiente completar AiSummary, SearchBar, SourcesStatus, Login y ajustes de Dashboard.
+**Rama**: `main` (antes `design`, mergeada a main al final de la sesión)
+**Resumen**:
+- Rediseño radical de la UI: nuevas fuentes (Space Grotesk + JetBrains Mono), ThreatScore sin gauge SVG, ResultsTable compacta monospace, header minimalista con línea de acento azul.
+- Creado `CONTEXT.md` para continuidad entre máquinas y sesiones.
+- Mergeadas todas las ramas (`design`, `feat/pcap-https`) en `main`. A partir de ahora todo el desarrollo va en `main`.
+- Pendiente: completar rediseño de `AiSummary`, `SearchBar`, `SourcesStatus`, `Login`, `tailwind.config.js` y ajustes de `Dashboard`.
