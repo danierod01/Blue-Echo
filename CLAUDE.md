@@ -440,7 +440,7 @@ Estado a fecha 2026-09-24 (rama `claude/awesome-franklin-79do5a`):
 
 - [ ] **Verificar arranque en limpio** `docker compose up --build` (criterio nº1
       de P3, 30% de la nota). NO verificado tras añadir `fpdf2`. **Prioritario.**
-- [ ] **Numerar requisitos** RF-/RNF- de la P1 y montar la **matriz de trazabilidad**.
+- [x] ~~**Numerar requisitos** RF-/RNF- de la P1 y montar la **matriz de trazabilidad**~~ ✅ (2026-09-24): `Bluecho/IOC-Correlator/08 - Requisitos y Matriz de Trazabilidad.md` (12 RF + 7 RNF derivados del Informe P1 + mejoras, mapeados a código y tests). Falta rellenar minuto del vídeo y medir latencia (RNF-07).
 - [ ] **Documentar en Obsidian** (Claude puede hacerlo): F4 (PDF), F5 (webhooks),
       GreyNoise, decisión F7 (Groq vs Ollama), y la limpieza de tests. Crear nota
       "Fase P3" en `03 - Diario de Desarrollo/`.
@@ -461,8 +461,10 @@ Estado a fecha 2026-09-24 (rama `claude/awesome-franklin-79do5a`):
   P3 y anotado en CLAUDE.md. Arreglados 6 tests rojos + bug MalwareBazaar.
   Implementado GreyNoise (conector+scoring+tests). Implementado F4 (export PDF,
   fpdf2) y F5 (alertas webhook). De 6 tests rojos → **262 verdes**. Frontend
-  compila. Todo commiteado y pusheado. **Pendiente inmediato: verificar
-  `docker compose` y montar matriz de trazabilidad.**
+  compila. Todo commiteado y pusheado. Creada la matriz de trazabilidad
+  (`08 - Requisitos y Matriz de Trazabilidad.md`) con requisitos RF/RNF
+  numerados. **Pendiente inmediato (otra máquina): verificar `docker compose`.
+  Siguiente aquí: documentar fase P3 en Obsidian y apartado de seguridad.**
 
 ---
 
