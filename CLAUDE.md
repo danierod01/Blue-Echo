@@ -407,6 +407,102 @@ Cada nota de Obsidian corresponde directamente a una sección del PDF requerido:
 
 ---
 
+## Práctica 3 — "Del prototipo al producto" · ENTREGA 16/10/2026
+
+> **Esta es la práctica activa.** Sustituye como objetivo inmediato a cualquier fecha anterior
+> mencionada arriba (la del 25/05/2026 era de otra entrega). Enunciado leído el 2026-09-24.
+
+### Idea central
+
+Práctica 3 **no pide funcionalidades nuevas**: pide coger lo prometido en la Práctica 1 y
+**demostrar que funciona de verdad**, instalable, probado y documentado. Regla de oro del
+enunciado: *"un producto con menos funciones que funcionen bien puntúa más que uno con muchas
+funciones a medias"*. Primero cerrar y probar lo existente; las mejoras (P2, rediseño UI) solo
+suman si lo original ya está cumplido y demostrado. Nada de maquetas ni datos inventados: si una
+integración externa no está disponible y se simula, **hay que declararlo** en memoria y vídeo.
+
+### Qué significa "funcional" (criterio con más peso)
+
+- Se instala **desde cero** siguiendo solo el README, en máquina limpia o en contenedores, sin ayuda del grupo.
+- Los flujos principales van **de principio a fin** (entra input → se procesa → se muestra resultado real).
+- Se comporta bien ante errores: input inválido, servicio caído o usuario sin permisos no tumban el sistema ni filtran info interna.
+- Cada requisito de la P1 está **implementado y demostrado**, o justificado si se cambió/descartó.
+
+### Los 3 entregables
+
+1. **Memoria técnica** (PDF, 20-40 págs sin portada/índice/anexos, 11-12pt, paginada, con índice y capturas legibles con pie que indique qué requisito muestran). El material de Obsidian `Bluecho/` alimenta esto.
+2. **Vídeo de demostración** (MP4, ≥10 min — mínimo estricto; recomendado ≤20 —, 1080p rec./720p mín., audio claro). Sobre el **producto real desplegado desde el repo**, no diapositivas. Cortes solo para esperas largas y **señalados en pantalla**; un corte que oculte un fallo = falta grave. Se valora que intervengan todos los integrantes. Alojar en YouTube "no listado"/Drive y **comprobar el enlace en incógnito**.
+3. **Repositorio GitHub** (público o privado; si privado, dar lectura al equipo docente).
+
+### Estructura obligatoria de la memoria (no suprimir apartados)
+
+1. Portada (producto, grupo, integrantes, fecha, enlace repo, enlace vídeo)
+2. Resumen ejecutivo (máx. 1 pág)
+3. Punto de partida (resumen P1, feedback recibido, tabla de clasificación inicial de requisitos)
+4. Requisitos (lista completa **numerada**; si se modificó/descartó: versión original, nueva y justificación)
+5. Arquitectura y decisiones técnicas (diagrama de componentes, tecnologías y por qué, cambios vs P1)
+6. Funcionalidades implementadas (cada una con capturas, cómo se usa, qué requisitos cubre)
+7. **Seguridad del producto** (ver abajo)
+8. Pruebas y evidencias (plan, casos, resultados, y **pruebas que fallaron con explicación**)
+9. **Matriz de trazabilidad** (ver abajo)
+10. Limitaciones y trabajo futuro
+11. Reparto del trabajo (quién hizo qué + estimación de horas/persona)
+12. Uso de herramientas de IA (declarar qué herramientas y para qué — **este proyecto usa Claude Code, hay que declararlo**)
+13. Anexos (manual instalación ampliado, credenciales de prueba, glosario, referencias)
+
+### Apartado de seguridad (es un máster de ciberseguridad — pesa)
+
+Debe responder, como mínimo:
+- **Modelo de amenazas** (STRIDE sencillo vale): qué activos protege y quién atacaría.
+- **Gestión de secretos**: dónde están claves/tokens y cómo se evita que acaben en el repo (ni en el historial).
+- **Autenticación y control de acceso**: cómo se autentica y qué puede hacer cada rol. → *ya tenemos X-API-Key + rate limiting (slowapi); documentarlo.*
+- **Validación de entradas**: qué entra y cómo se valida. → *validators.py, extractor, tipos de IOC.*
+- **Dependencias**: revisar vulnerabilidades conocidas con Dependabot / `pip-audit` / `npm audit` / Trivy y documentarlo.
+- **Datos personales**: si se tratan, cuáles, finalidad, retención y protección. (Ojo: IPs pueden ser dato personal.)
+
+### Matriz de trazabilidad (pieza clave de la corrección)
+
+Una fila por requisito P1: `Requisito | Descripción | Estado final | Implementación (ruta) | Prueba (ID) | Evidencia (apartado memoria + minuto exacto del vídeo)`. La corrección va requisito por requisito siguiendo esta matriz.
+
+### Clasificación inicial de cada requisito P1 (primera tarea)
+
+Numerar como `RF-01…` / `RNF-01…` y etiquetar cada uno: **Cumplido** (verificar con pruebas) · **Parcial** (terminar y probar) · **Pendiente** (implementar) · **A revisar** (reformular con justificación) · **Descartado** (justificar por escrito, debe ser la excepción).
+
+### Reglas del repositorio para la entrega
+
+- **Ningún secreto real** en el código ni en el historial (contraseñas, API keys, tokens, certs). Si se subió alguno por error: **revocar y limpiar historial**, no basta con borrarlo en un commit nuevo.
+- Marcar la versión entregada con el tag **`v1.0-practica3`** sobre el commit final. Se evalúa ese commit; lo posterior a la fecha límite no cuenta.
+- Historial que refleje el trabajo del grupo (no un único commit final ni todo de un solo autor).
+- README que permita instalar y ejecutar desde cero; `.env.example` con todas las variables y valores ficticios; Dockerfiles/compose; tests y cómo ejecutarlos; `.gitignore` que excluya secretos; licencia si es público.
+
+### Criterios de evaluación (sobre 10)
+
+| Criterio | Peso |
+|---|---|
+| Producto funcional (se instala por README, flujos de principio a fin, casos de error) | **30 %** |
+| Cumplimiento de requisitos de la P1 (+ calidad de la justificación de cambios) | **20 %** |
+| Seguridad y calidad técnica (seguridad del producto, calidad del código, pruebas, dependencias) | **15 %** |
+| Memoria técnica | **15 %** |
+| Vídeo de demostración | **10 %** |
+| Repositorio y trabajo en equipo | **10 %** |
+
+**No superan la práctica:** falta un entregable · vídeo < 10 min · el producto no llega a ejecutarse · plagio o demo manipulada.
+
+### Implicaciones para el trabajo a partir de ahora
+
+- **Prioridad #1 = que arranque desde cero por README** (docker compose) y que los flujos reales funcionen. Verificarlo en limpio.
+- **Prioridad #2 = tests verdes.** El enunciado valora pruebas explícitamente; hoy hay 6 tests rojos en el backend → arreglarlos.
+- **GreyNoise** figura en la doc/scoring pero **no existe en el código** → implementarlo o justificarlo como "A revisar/Descartado" (coherencia requisito↔implementación).
+- Cada cosa que se toque debe quedar reflejada en la **matriz de trazabilidad** y en Obsidian (memoria).
+- Antes del 16/10: código congelado 2-3 días antes, grabar vídeo y cerrar memoria sobre esa versión, y crear el tag `v1.0-practica3`.
+- Declarar el uso de Claude Code en la memoria (apartado 12).
+
+### Checklist previa a la entrega (del enunciado)
+
+Memoria: apartados completos y en orden · portada con integrantes + enlaces · matriz cubre todos los requisitos · uso de IA declarado · fichero `P3_GrupoXX_Memoria.pdf`. Vídeo: ≥10 min · producto real, cada requisito con su minuto en la matriz · enlace funciona en incógnito. Repo: README instala desde cero · tag `v1.0-practica3` · sin secretos reales (ni en historial) · acceso docente si es privado. Producto: alguien ajeno lo ha instalado siguiendo el README.
+
+---
+
 ## Estado actual del proyecto
 
 > **Actualizar esta sección al final de cada sesión.**
