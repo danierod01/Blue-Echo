@@ -23,11 +23,6 @@ const VERDICT_DOT: Record<string, string> = {
   clean: "bg-emerald-500", unknown: "bg-gray-700", error: "bg-red-700", info: "bg-purple-500",
 };
 
-const VERDICT_SCORE: Record<string, string> = {
-  malicious: "text-orange-400", suspicious: "text-yellow-400",
-  clean: "text-emerald-500", unknown: "text-gray-600",
-};
-
 type Group = { label: string; icon: ReactNode; connectors: string[] };
 
 const GROUPS: Record<string, Group[]> = {

@@ -213,6 +213,26 @@ def test_history_detail_found(client, monkeypatch):
     assert detail_r.json()["ioc_value"] == "1.2.3.4"
 
 
+def test_history_detail_pdf(client, monkeypatch):
+    async def fake_enrich(ioc_value, ioc_type):
+        return {"virustotal": _VT_OK}
+
+    monkeypatch.setattr("ioc_correlator.api.routes.enrich", fake_enrich)
+
+    scan_id = client.post("/api/scan/json", json={"ioc": "1.2.3.4"}).json()["id"]
+
+    pdf_r = client.get(f"/api/history/{scan_id}/pdf")
+    assert pdf_r.status_code == 200
+    assert pdf_r.headers["content-type"] == "application/pdf"
+    assert "attachment" in pdf_r.headers["content-disposition"]
+    assert pdf_r.content[:5] == b"%PDF-"
+
+
+def test_history_detail_pdf_not_found(client):
+    r = client.get("/api/history/9999/pdf")
+    assert r.status_code == 404
+
+
 # ---------------------------------------------------------------------------
 # Tests de GET /api/sources
 # ---------------------------------------------------------------------------

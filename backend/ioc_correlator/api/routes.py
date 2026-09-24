@@ -4,6 +4,7 @@ import os
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi.responses import Response
 from sqlmodel import Session
 
 from ioc_correlator.api.auth import require_api_key
@@ -29,6 +30,7 @@ from ioc_correlator.geolocator import geolocate
 from ioc_correlator.pcap_analyzer import analyze_pcap, is_pcap
 from ioc_correlator.database import get_history, get_scan_by_id, get_session, save_scan
 from ioc_correlator.mitre_mapper import map_to_mitre
+from ioc_correlator.report_pdf import build_scan_pdf
 from ioc_correlator.enricher import enrich, get_sources_status
 from ioc_correlator.extractor import extract_iocs_from_bytes
 from ioc_correlator.scorer import compute_score
@@ -348,6 +350,33 @@ async def history_detail(
     scoring = compute_score(connector_objs)
     geo = await geolocate(db_scan.ioc_value, db_scan.ioc_type)
     return _build_scan_response(db_scan, scoring.breakdown, geolocation=geo)
+
+
+@router.get("/history/{scan_id}/pdf", dependencies=[Depends(require_api_key)])
+@limiter.limit("20/minute")
+async def history_detail_pdf(
+    request: Request,
+    scan_id: int,
+    session: Session = Depends(get_session),
+) -> Response:
+    """Descarga el informe del escaneo en PDF (roadmap F4)."""
+    db_scan = get_scan_by_id(session, scan_id)
+    if db_scan is None:
+        raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
+
+    raw = json.loads(db_scan.connector_results)
+    connector_objs = {name: ConnectorResult(**d) for name, d in raw.items()}
+    scoring = compute_score(connector_objs)
+    geo = await geolocate(db_scan.ioc_value, db_scan.ioc_type)
+    scan = _build_scan_response(db_scan, scoring.breakdown, geolocation=geo)
+
+    pdf_bytes = build_scan_pdf(scan)
+    filename = f"blue-echo-scan-{scan_id}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/sources", response_model=list[SourceStatus], dependencies=[Depends(require_api_key)])

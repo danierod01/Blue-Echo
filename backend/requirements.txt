@@ -27,6 +27,9 @@ limits==3.14.0
 # Análisis de PCAPs
 scapy==2.6.1
 
+# Generación de informes PDF (Python puro, sin dependencias de sistema)
+fpdf2==2.8.1
+
 # Utilidades
 python-multipart==0.0.20
 

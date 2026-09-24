@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, History } from "lucide-react";
+import { AlertCircle, History, FileDown, Loader2 } from "lucide-react";
 import SkeletonResults from "@/components/SkeletonResults";
 import EmptyState from "@/components/EmptyState";
 import SearchBar from "@/components/SearchBar";
@@ -14,7 +14,7 @@ import HistoryList from "@/components/HistoryList";
 import SourcesStatus from "@/components/SourcesStatus";
 import PcapAnalysisView from "@/components/PcapAnalysisView";
 import { cn } from "@/lib/utils";
-import { scanIoc, scanFile, scanPcap, getHistory, getScanById, getPcapScanById, type ScanResponse, type PcapScanResponse, type HistoryItem } from "@/api/client";
+import { scanIoc, scanFile, scanPcap, getHistory, getScanById, getPcapScanById, downloadScanPdf, type ScanResponse, type PcapScanResponse, type HistoryItem } from "@/api/client";
 
 type ScanMode = "single" | "bulk";
 
@@ -23,7 +23,21 @@ export default function Dashboard() {
   const [result, setResult]         = useState<ScanResponse | null>(null);
   const [pcapResult, setPcapResult] = useState<PcapScanResponse | null>(null);
   const [errorMsg, setError]        = useState<string | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const queryClient                 = useQueryClient();
+
+  async function handleDownloadPdf() {
+    if (!result) return;
+    setDownloadingPdf(true);
+    setError(null);
+    try {
+      await downloadScanPdf(result.id, result.ioc_value);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo descargar el PDF.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  }
 
   // Historial reciente para el sidebar
   const { data: historyPage } = useQuery({
@@ -169,6 +183,22 @@ export default function Dashboard() {
         {/* Resultados */}
         {mode === "single" && result && !loading && (
           <div className="flex flex-col gap-6">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={downloadingPdf}
+                className="flex items-center gap-2 rounded-lg border border-gray-700/60 bg-gray-900/60 px-3 py-1.5 text-xs font-medium text-gray-300 transition hover:border-blue-500/60 hover:text-blue-300 disabled:opacity-50"
+                title="Descargar informe en PDF"
+              >
+                {downloadingPdf ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <FileDown size={13} />
+                )}
+                Descargar PDF
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
               <div className="animate-[fadeSlideIn_0.4s_ease_forwards]">
                 <ThreatScore

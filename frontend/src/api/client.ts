@@ -213,6 +213,35 @@ export async function scanPcap(file: File): Promise<PcapScanResponse> {
   return handleResponse<PcapScanResponse>(res);
 }
 
+/**
+ * Descarga el informe PDF de un escaneo. Se hace vía fetch (no <a href>)
+ * porque el endpoint requiere la cabecera X-API-Key; el blob resultante se
+ * descarga disparando un enlace temporal.
+ */
+export async function downloadScanPdf(id: number, iocValue?: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/history/${id}/pdf`, {
+    headers: authHeaders(),
+  });
+  if (res.status === 401) {
+    clearStoredApiKey();
+    window.location.href = "/login";
+    throw new Error("Sesión expirada.");
+  }
+  if (!res.ok) {
+    throw new Error(`No se pudo generar el PDF (HTTP ${res.status}).`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const safe = (iocValue ?? String(id)).replace(/[^a-zA-Z0-9._-]/g, "_");
+  a.download = `blue-echo-${safe}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function getSources(): Promise<SourceStatus[]> {
   const res = await fetch(`${BASE_URL}/api/sources`, {
     headers: authHeaders(),

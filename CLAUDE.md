@@ -518,7 +518,7 @@ Cotejado con el código el 2026-09-24:
 | F7 | Estudio motor IA (Anthropic vs Ollama) | Alta | ⚠️ Modificado → Groq (Llama 3.3 70B) primario + Claude fallback + análisis local. **Justificar en memoria** |
 | R1 | Paginación real en historial | Baja | ✅ Hecho (`items`/`total`) |
 | I1 | API pública OpenAPI + auth | Media | ✅ Mayormente (`/docs` + auth) |
-| **F4** | **Exportación a PDF del escaneo** | Media | ❌ **Pendiente** (solo export CSV en bulk) |
+| **F4** | **Exportación a PDF del escaneo** | Media | ✅ **Hecho** (2026-09-24): `GET /api/history/{id}/pdf` con fpdf2 (Python puro, sin libs de sistema) + botón "Descargar PDF" en el dashboard |
 | **F5** | **Alertas por webhook (Slack/Discord/Teams)** | Media | ❌ **Pendiente** |
 | R2 | PostgreSQL | Baja | ❌ Backlog (justificar como trabajo futuro) |
 | R3 | Celery + Redis | Baja | ❌ Backlog (justificar como trabajo futuro) |
