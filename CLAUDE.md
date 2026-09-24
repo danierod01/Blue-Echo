@@ -463,11 +463,23 @@ tabla de mapeo antigua (que corresponde a la memoria de 10 apartados de la P1).
 Al maquetar la memoria P3, seguir el orden de 13 apartados de la sección "Estructura
 obligatoria de la memoria" de abajo.
 
+### Grupo = 1 persona (el desarrollador)
+
+El "grupo" de esta práctica es **una sola persona**. Implicaciones:
+- Apartado 11 (Reparto del trabajo): una fila (el desarrollador) + Claude Code
+  declarado como herramienta en el apartado 12.
+- Vídeo: lo graba él solo; el "que intervengan todos los integrantes" se cumple con
+  su intervención.
+- Historial de un solo autor **no penaliza** aquí (es un grupo de uno).
+- **Acción manual pendiente:** si el grupo quedó en una persona por bajas, comunicarlo
+  al equipo docente (el enunciado ajusta el alcance esperado según nº de integrantes).
+
 ### Trabajo pendiente (manual / otra máquina)
 
 - [ ] Capturas de pantalla de cada funcionalidad para la memoria y Obsidian.
 - [ ] Grabar el vídeo de demostración (≥10 min) sobre el producto real.
 - [ ] Probar el despliegue real en el VPS Hetzner (SSH) si se actualiza producción.
+- [ ] (Si aplica) Comunicar al equipo docente que el grupo quedó en 1 persona.
 
 ### Registro de sesiones
 
