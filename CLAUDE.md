@@ -407,6 +407,65 @@ Cada nota de Obsidian corresponde directamente a una sección del PDF requerido:
 
 ---
 
+## ⚙️ Protocolo de trabajo y continuidad entre ordenadores (LEER SIEMPRE)
+
+> Este proyecto se desarrolla en **varios ordenadores**, sincronizados vía git
+> (push desde uno, pull en otro). El `CLAUDE.md` es la **única memoria que viaja
+> entre máquinas** — la memoria local del asistente NO se sincroniza. Por tanto:
+
+**Reglas permanentes para el asistente (Claude):**
+
+1. **Todo cambio o desarrollo se anota en este `CLAUDE.md`** antes de terminar la
+   sesión: qué se ha implementado, dónde (rutas/ficheros), estado de tests, y qué
+   queda pendiente. Actualizar las tablas de estado (roadmap, plan P3) y el
+   "Registro de sesiones" de abajo.
+2. **Al empezar cada sesión**, leer este fichero primero (sobre todo "Trabajo
+   pendiente" y el último registro de sesión) para saber dónde se retoma.
+3. **Commit + push al terminar** en la rama de trabajo activa, para que el otro
+   ordenador reciba tanto el código como el contexto actualizado.
+4. **Lo que Claude NO pueda hacer en la máquina actual, se anota explícitamente**
+   en "Trabajo pendiente (manual / otra máquina)" para hacerlo donde sí se pueda.
+
+**Qué puede hacer Claude en esta máquina cloud:** editar código backend/frontend,
+ejecutar `pytest`, compilar el frontend (`npm run build`), crear/editar las notas
+de Obsidian (son ficheros `.md` bajo `Bluecho/`), y commit/push.
+
+**Qué NO puede hacer Claude aquí (requiere acción manual del desarrollador):**
+capturas de pantalla y grabación del vídeo, ejecutar cosas en el VPS Hetzner por
+SSH, verificar el navegador/UI real, y añadir imágenes/PNG a las notas de Obsidian.
+
+### Trabajo pendiente (dónde seguimos)
+
+Estado a fecha 2026-09-24 (rama `claude/awesome-franklin-79do5a`):
+
+- [ ] **Verificar arranque en limpio** `docker compose up --build` (criterio nº1
+      de P3, 30% de la nota). NO verificado tras añadir `fpdf2`. **Prioritario.**
+- [ ] **Numerar requisitos** RF-/RNF- de la P1 y montar la **matriz de trazabilidad**.
+- [ ] **Documentar en Obsidian** (Claude puede hacerlo): F4 (PDF), F5 (webhooks),
+      GreyNoise, decisión F7 (Groq vs Ollama), y la limpieza de tests. Crear nota
+      "Fase P3" en `03 - Diario de Desarrollo/`.
+- [ ] Redactar apartado de **seguridad** (STRIDE) y correr `pip-audit`/`npm audit`.
+- [ ] Rediseño UI pendiente (baja prioridad): `AiSummary`, `SearchBar`,
+      `SourcesStatus`, `Login`, ajustes `Dashboard`.
+- [ ] Antes de entregar: tag `v1.0-practica3`, README instala-desde-cero.
+
+### Trabajo pendiente (manual / otra máquina)
+
+- [ ] Capturas de pantalla de cada funcionalidad para la memoria y Obsidian.
+- [ ] Grabar el vídeo de demostración (≥10 min) sobre el producto real.
+- [ ] Probar el despliegue real en el VPS Hetzner (SSH) si se actualiza producción.
+
+### Registro de sesiones
+
+- **2026-09-24** (cloud, rama `claude/awesome-franklin-79do5a`): leído enunciado
+  P3 y anotado en CLAUDE.md. Arreglados 6 tests rojos + bug MalwareBazaar.
+  Implementado GreyNoise (conector+scoring+tests). Implementado F4 (export PDF,
+  fpdf2) y F5 (alertas webhook). De 6 tests rojos → **262 verdes**. Frontend
+  compila. Todo commiteado y pusheado. **Pendiente inmediato: verificar
+  `docker compose` y montar matriz de trazabilidad.**
+
+---
+
 ## Práctica 3 — "Del prototipo al producto" · ENTREGA 16/10/2026
 
 > **Esta es la práctica activa.** Sustituye como objetivo inmediato a cualquier fecha anterior
