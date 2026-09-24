@@ -497,6 +497,44 @@ Numerar como `RF-01…` / `RNF-01…` y etiquetar cada uno: **Cumplido** (verifi
 - Antes del 16/10: código congelado 2-3 días antes, grabar vídeo y cerrar memoria sobre esa versión, y crear el tag `v1.0-practica3`.
 - Declarar el uso de Claude Code en la memoria (apartado 12).
 
+### Contexto de entregas (IMPORTANTE — leer)
+
+La "Práctica 2" que aparece más abajo en este documento **no es** la Práctica 2 del máster (esa iba de otro tema, no de esta herramienta). Lo último que el profesor evaluó de Blue-Echo es lo que hay en `Bluecho/IOC-Correlator/Informe-BlueEcho.md` (la entrega de la Práctica 1). **Todo lo implementado por encima de ese informe son mejoras que el profesor aún no ha visto** y que se presentan por primera vez en esta Práctica 3. El roadmap de mejoras futuras está en la sección 8 de ese informe ("Road map de mejora"), y la P3 consiste en demostrar que ese roadmap se ha cumplido (+ requisitos originales de P1).
+
+### Estado del roadmap prometido (Informe P1 §8) vs. implementado
+
+Cotejado con el código el 2026-09-24:
+
+| ID | Mejora prometida | Prioridad | Estado real |
+|---|---|---|---|
+| S1 | Auth X-API-Key | Alta | ✅ Hecho |
+| S2 | Rate limiting por IP (slowapi) | Alta | ✅ Hecho |
+| S3 | HTTPS Let's Encrypt | Alta | ✅ Hecho (blueecho.es) |
+| S4 | Validación tamaño de fichero | Media | ✅ Hecho (`MAX_UPLOAD_SIZE_MB` → 413) |
+| F1 | Bulk scan | Alta | ✅ Hecho |
+| F2 | ThreatFox + más conectores | Alta | ✅ Hecho (superado: 11 conectores nuevos) |
+| F3 | WHOIS/RDAP dominios | Media | ✅ Hecho (`rdap.py`) |
+| F6 | Mapping MITRE ATT&CK | Media-Alta | ✅ Hecho |
+| F7 | Estudio motor IA (Anthropic vs Ollama) | Alta | ⚠️ Modificado → Groq (Llama 3.3 70B) primario + Claude fallback + análisis local. **Justificar en memoria** |
+| R1 | Paginación real en historial | Baja | ✅ Hecho (`items`/`total`) |
+| I1 | API pública OpenAPI + auth | Media | ✅ Mayormente (`/docs` + auth) |
+| **F4** | **Exportación a PDF del escaneo** | Media | ❌ **Pendiente** (solo export CSV en bulk) |
+| **F5** | **Alertas por webhook (Slack/Discord/Teams)** | Media | ❌ **Pendiente** |
+| R2 | PostgreSQL | Baja | ❌ Backlog (justificar como trabajo futuro) |
+| R3 | Celery + Redis | Baja | ❌ Backlog (justificar como trabajo futuro) |
+| I2 | Export a SIEM | Baja | ❌ Backlog |
+| I3 | Plugin de navegador | Baja | ❌ Backlog |
+
+**Extras construidos fuera del roadmap** (mejoras adicionales, el profesor no las ha visto): análisis PCAP (scapy), geolocalización con mapa, login UI, rediseño completo de la UI.
+
+### Plan de trabajo P3 (orden)
+
+1. **Arreglar los 6 tests rojos del backend** (formato historial `{items,total}`, `get_history` tupla, análisis local en Markdown, MalwareBazaar malformado). — *primero de todo.*
+2. **Resolver GreyNoise**: documentado/scoring pero sin `greynoise.py` → implementar o marcar "A revisar/Descartado".
+3. **Cerrar el roadmap prometido**: implementar **F4 (export PDF)** y **F5 (webhooks)**.
+4. **Documentar F7** (decisión de motor IA) y el resto para la matriz de trazabilidad; R2/R3/I2/I3 → "trabajo futuro" justificado.
+5. Verificar instalación desde cero por README (`docker compose`), tests verdes, y preparar tag `v1.0-practica3`.
+
 ### Checklist previa a la entrega (del enunciado)
 
 Memoria: apartados completos y en orden · portada con integrantes + enlaces · matriz cubre todos los requisitos · uso de IA declarado · fichero `P3_GrupoXX_Memoria.pdf`. Vídeo: ≥10 min · producto real, cada requisito con su minuto en la matriz · enlace funciona en incógnito. Repo: README instala desde cero · tag `v1.0-practica3` · sin secretos reales (ni en historial) · acceso docente si es privado. Producto: alguien ajeno lo ha instalado siguiendo el README.
