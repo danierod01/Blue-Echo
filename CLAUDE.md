@@ -530,7 +530,7 @@ Cotejado con el código el 2026-09-24:
 ### Plan de trabajo P3 (orden)
 
 1. **Arreglar los 6 tests rojos del backend** (formato historial `{items,total}`, `get_history` tupla, análisis local en Markdown, MalwareBazaar malformado). — *primero de todo.*
-2. **Resolver GreyNoise**: documentado/scoring pero sin `greynoise.py` → implementar o marcar "A revisar/Descartado".
+2. ~~**Resolver GreyNoise**~~ ✅ **Hecho** (2026-09-24): implementado `greynoise.py` (Community API, manejo de 404 = no observada), regla de scoring (+30 malicious / −10 benign), registrado en enricher, añadido a `.env.example` (`GREYNOISE_API_KEY`) y al análisis local. 16 tests nuevos (`test_greynoise.py`). 18 conectores en total.
 3. **Cerrar el roadmap prometido**: implementar **F4 (export PDF)** y **F5 (webhooks)**.
 4. **Documentar F7** (decisión de motor IA) y el resto para la matriz de trazabilidad; R2/R3/I2/I3 → "trabajo futuro" justificado.
 5. Verificar instalación desde cero por README (`docker compose`), tests verdes, y preparar tag `v1.0-practica3`.

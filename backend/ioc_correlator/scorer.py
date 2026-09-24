@@ -169,6 +169,17 @@ def _score_urlscan(result: ConnectorResult) -> int:
     return 0
 
 
+def _score_greynoise(result: ConnectorResult) -> int:
+    if not result.success:
+        return 0
+    classification = result.data.get("classification", "unknown")
+    if classification == "malicious":
+        return 30
+    if classification == "benign":
+        return -10  # señal de confianza: resta puntos (el total se acota a >= 0)
+    return 0
+
+
 _RULES: dict[str, object] = {
     "virustotal":       _score_virustotal,
     "abuseipdb":        _score_abuseipdb,
@@ -187,6 +198,7 @@ _RULES: dict[str, object] = {
     "censys":           _score_censys,
     "rdap":             _score_rdap,
     "urlscan":          _score_urlscan,
+    "greynoise":        _score_greynoise,
 }
 
 

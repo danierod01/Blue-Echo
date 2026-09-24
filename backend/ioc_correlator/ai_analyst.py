@@ -106,6 +106,16 @@ def _local_analysis(
         if pulses > 0:
             findings.append(f"- **AlienVault OTX**: presente en {pulses} pulso{'s' if pulses > 1 else ''} de amenaza activos.")
 
+    gn = results.get("greynoise")
+    if gn and gn.success and gn.data.get("seen"):
+        classification = gn.data.get("classification", "unknown")
+        if classification == "malicious":
+            findings.append("- **GreyNoise**: IP clasificada como maliciosa (escaneo/actividad hostil observada).")
+        elif classification == "benign":
+            findings.append("- **GreyNoise**: IP clasificada como benigna (servicio conocido).")
+        elif gn.data.get("noise"):
+            findings.append("- **GreyNoise**: IP observada generando ruido de escaneo en internet, intención no confirmada.")
+
     mb = results.get("malwarebazaar")
     if mb and mb.success and mb.data.get("found"):
         findings.append("- **MalwareBazaar**: hash catalogado como malware conocido.")

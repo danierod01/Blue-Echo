@@ -6,6 +6,7 @@ from ioc_correlator.connectors.abuseipdb import AbuseIPDBConnector
 from ioc_correlator.connectors.base import ConnectorResult
 from ioc_correlator.connectors.censys import CensysConnector
 from ioc_correlator.connectors.criminal_ip import CriminalIPConnector
+from ioc_correlator.connectors.greynoise import GreyNoiseConnector
 from ioc_correlator.connectors.hybrid_analysis import HybridAnalysisConnector
 from ioc_correlator.connectors.ipinfo import IPinfoConnector
 from ioc_correlator.connectors.malshare import MalShareConnector
@@ -32,6 +33,7 @@ _CONNECTORS = [
     ShodanConnector(),
     OTXConnector(),
     MalwareBazaarConnector(),
+    GreyNoiseConnector(),
     URLhausConnector(),
     URLScanConnector(),
     # Nuevas fuentes
