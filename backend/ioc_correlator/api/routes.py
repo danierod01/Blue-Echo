@@ -29,6 +29,7 @@ from ioc_correlator.ai_analyst import generate_pcap_summary, generate_summary
 from ioc_correlator.geolocator import geolocate
 from ioc_correlator.pcap_analyzer import analyze_pcap, is_pcap
 from ioc_correlator.database import get_history, get_scan_by_id, get_session, save_scan
+from ioc_correlator.alerting import maybe_send_alert
 from ioc_correlator.mitre_mapper import map_to_mitre
 from ioc_correlator.report_pdf import build_scan_pdf
 from ioc_correlator.enricher import enrich, get_sources_status
@@ -122,6 +123,10 @@ async def _run_scan(
         connector_results=serializable,
         ai_summary=ai_summary,
     )
+
+    # Alerta por webhook si el score supera el umbral (best-effort, no bloquea
+    # ni rompe el escaneo si el webhook falla).
+    await maybe_send_alert(ioc_value, ioc_type.value, scoring.score, scoring.verdict)
 
     return db_scan, scoring.breakdown
 
