@@ -83,7 +83,8 @@ def test_local_analysis_vt_detections():
 def test_local_analysis_vt_clean():
     results = {"virustotal": vt(malicious=0, total=87)}
     r = _local_analysis("1.2.3.4", "ipv4", make_scoring(0, "clean"), results)
-    assert "no registra detecciones" in r.lower()
+    # El análisis local pasó a formato Markdown; VT limpio se reporta como "sin detecciones"
+    assert "sin detecciones" in r.lower()
 
 
 def test_local_analysis_abuseipdb_with_isp():

@@ -134,7 +134,8 @@ def test_scan_json_stores_in_history(client, monkeypatch):
     client.post("/api/scan/json", json={"ioc": "1.2.3.4"})
     r = client.get("/api/history")
     assert r.status_code == 200
-    history = r.json()
+    # /api/history devuelve una página {items, total} tras añadir paginación (R1)
+    history = r.json()["items"]
     assert any(h["ioc_value"] == "1.2.3.4" for h in history)
 
 
@@ -188,7 +189,9 @@ def test_scan_form_no_input_returns_422(client):
 def test_history_empty(client):
     r = client.get("/api/history")
     assert r.status_code == 200
-    assert r.json() == []
+    body = r.json()
+    assert body["items"] == []
+    assert body["total"] == 0
 
 
 def test_history_detail_not_found(client):

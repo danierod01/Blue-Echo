@@ -80,7 +80,9 @@ def test_get_history_order(session: Session):
             ai_summary="",
         )
 
-    history = get_history(session, limit=10)
+    # get_history devuelve (items, total) tras añadir paginación (roadmap R1)
+    history, total = get_history(session, limit=10)
+    assert total == 5
     # Orden descendente por id (criterio secundario garantizado cuando created_at coincide)
     ids = [h.id for h in history]
     assert ids == sorted(ids, reverse=True)
@@ -98,8 +100,9 @@ def test_get_history_limit(session: Session):
             ai_summary="",
         )
 
-    history = get_history(session, limit=3)
+    history, total = get_history(session, limit=3)
     assert len(history) == 3
+    assert total == 10  # el total refleja todos los registros, no solo la página
 
 
 def test_get_scan_by_id_not_found(session: Session):
