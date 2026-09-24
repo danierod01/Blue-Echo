@@ -441,13 +441,27 @@ Estado a fecha 2026-09-24 (rama `claude/awesome-franklin-79do5a`):
 - [ ] **Verificar arranque en limpio** `docker compose up --build` (criterio nº1
       de P3, 30% de la nota). NO verificado tras añadir `fpdf2`. **Prioritario.**
 - [x] ~~**Numerar requisitos** RF-/RNF- de la P1 y montar la **matriz de trazabilidad**~~ ✅ (2026-09-24): `Bluecho/IOC-Correlator/08 - Requisitos y Matriz de Trazabilidad.md` (12 RF + 7 RNF derivados del Informe P1 + mejoras, mapeados a código y tests). Falta rellenar minuto del vídeo y medir latencia (RNF-07).
-- [ ] **Documentar en Obsidian** (Claude puede hacerlo): F4 (PDF), F5 (webhooks),
-      GreyNoise, decisión F7 (Groq vs Ollama), y la limpieza de tests. Crear nota
-      "Fase P3" en `03 - Diario de Desarrollo/`.
+- [x] ~~**Documentar en Obsidian**: F4, F5, GreyNoise, F7, limpieza de tests. Nota
+      "Fase P3" en `03 - Diario de Desarrollo/`~~ ✅ (2026-09-24):
+      `Fase P3-01 - Correcciones, GreyNoise, PDF y Webhooks.md`.
 - [ ] Redactar apartado de **seguridad** (STRIDE) y correr `pip-audit`/`npm audit`.
 - [ ] Rediseño UI pendiente (baja prioridad): `AiSummary`, `SearchBar`,
       `SourcesStatus`, `Login`, ajustes `Dashboard`.
 - [ ] Antes de entregar: tag `v1.0-practica3`, README instala-desde-cero.
+
+### ⚠️ La memoria de la P3 es un documento NUEVO (no se reutiliza la de P1)
+
+El enunciado de la P3 (Entregable 1) exige una **memoria técnica nueva** con su
+**estructura obligatoria de 13 apartados** (varios inexistentes en la P1: Seguridad,
+Matriz de trazabilidad, Uso de IA, Reparto del trabajo). El fichero se llama
+`P3_GrupoXX_Memoria.pdf`. La memoria de la P1 (`Informe-BlueEcho.md`) es **material de
+entrada** para el apartado 3 "Punto de partida", no el entregable.
+
+Implicación para Obsidian: las notas nuevas de la P3 (`08 - Requisitos y Matriz…`,
+`Fase P3-…`, y las de seguridad/pruebas que falten) alimentan la **memoria P3**, no la
+tabla de mapeo antigua (que corresponde a la memoria de 10 apartados de la P1).
+Al maquetar la memoria P3, seguir el orden de 13 apartados de la sección "Estructura
+obligatoria de la memoria" de abajo.
 
 ### Trabajo pendiente (manual / otra máquina)
 
@@ -463,8 +477,10 @@ Estado a fecha 2026-09-24 (rama `claude/awesome-franklin-79do5a`):
   fpdf2) y F5 (alertas webhook). De 6 tests rojos → **262 verdes**. Frontend
   compila. Todo commiteado y pusheado. Creada la matriz de trazabilidad
   (`08 - Requisitos y Matriz de Trazabilidad.md`) con requisitos RF/RNF
-  numerados. **Pendiente inmediato (otra máquina): verificar `docker compose`.
-  Siguiente aquí: documentar fase P3 en Obsidian y apartado de seguridad.**
+  numerados. Documentada la nota Obsidian "Fase P3-01". Confirmado que la
+  memoria de la P3 es un documento NUEVO (13 apartados), no la de la P1.
+  **Pendiente inmediato (otra máquina): verificar `docker compose`.
+  Siguiente aquí: apartado de seguridad (STRIDE) + `pip-audit`/`npm audit`.**
 
 ---
 
