@@ -444,7 +444,10 @@ Estado a fecha 2026-09-24 (rama `claude/awesome-franklin-79do5a`):
 - [x] ~~**Documentar en Obsidian**: F4, F5, GreyNoise, F7, limpieza de tests. Nota
       "Fase P3" en `03 - Diario de Desarrollo/`~~ ✅ (2026-09-24):
       `Fase P3-01 - Correcciones, GreyNoise, PDF y Webhooks.md`.
-- [ ] Redactar apartado de **seguridad** (STRIDE) y correr `pip-audit`/`npm audit`.
+- [ ] Redactar apartado de **seguridad** (STRIDE). *(Auditoría de dependencias ✅
+      2026-09-25: `pip-audit` 31→0 y `npm audit` 2→0; ver commit de hardening.
+      Versiones subidas: fastapi 0.141.1/starlette 1.7.0, python-multipart 0.0.32,
+      python-dotenv 1.2.3, scapy 2.7.0, pytest 9.0.3, react-router-dom 7.18.4.)*
 - [ ] Rediseño UI pendiente (baja prioridad): `AiSummary`, `SearchBar`,
       `SourcesStatus`, `Login`, ajustes `Dashboard`.
 - [ ] Antes de entregar: tag `v1.0-practica3`, README instala-desde-cero.
@@ -491,8 +494,14 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   (`08 - Requisitos y Matriz de Trazabilidad.md`) con requisitos RF/RNF
   numerados. Documentada la nota Obsidian "Fase P3-01". Confirmado que la
   memoria de la P3 es un documento NUEVO (13 apartados), no la de la P1.
-  **Pendiente inmediato (otra máquina): verificar `docker compose`.
-  Siguiente aquí: apartado de seguridad (STRIDE) + `pip-audit`/`npm audit`.**
+  **Pendiente inmediato (otra máquina): verificar `docker compose`.**
+- **2026-09-25** (cloud, misma rama): hardening de dependencias. `pip-audit` 31→0
+  y `npm audit` 2→0. Subidas fastapi→0.141.1 (+starlette 1.7.0), python-multipart
+  →0.0.32, python-dotenv→1.2.3, scapy→2.7.0, pytest→9.0.3/pytest-asyncio→1.4.0,
+  react-router-dom→7.18.4. 262 tests verdes y build de frontend OK tras cada tanda.
+  Commiteado y pusheado. **Siguiente aquí: redactar apartado de seguridad (STRIDE).**
+  **OJO despliegue:** el salto fastapi 0.115→0.141 y react-router 6→7 hace aún más
+  importante verificar `docker compose up --build` en limpio (RNF-03).
 
 ---
 
