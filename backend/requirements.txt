@@ -1,12 +1,15 @@
 # Web framework
-fastapi==0.115.6
+fastapi==0.141.1
+# starlette es dependencia transitiva de fastapi; se fija explícitamente para
+# garantizar reproducibilidad y evitar resolver a versiones con CVEs conocidos.
+starlette==1.7.0
 uvicorn[standard]==0.32.1
 
 # HTTP async client (para conectores TI)
 httpx==0.28.1
 
 # Variables de entorno
-python-dotenv==1.0.1
+python-dotenv==1.2.3
 
 # ORM / base de datos
 sqlmodel==0.0.22
@@ -25,16 +28,16 @@ slowapi==0.1.9
 limits==3.14.0
 
 # Análisis de PCAPs
-scapy==2.6.1
+scapy==2.7.0
 
 # Generación de informes PDF (Python puro, sin dependencias de sistema)
 fpdf2==2.8.1
 
 # Utilidades
-python-multipart==0.0.20
+python-multipart==0.0.32
 
 # Tests
-pytest==8.3.4
-pytest-asyncio==0.24.0
+pytest==9.0.3
+pytest-asyncio==1.4.0
 respx==0.21.1
 httpx==0.28.1
