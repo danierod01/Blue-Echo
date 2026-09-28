@@ -45,8 +45,9 @@ app.state.limiter = limiter
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
     return JSONResponse({"error": "Too many requests. Try again later."}, status_code=429)
 
-# CORS: en producción restringe allow_origins al dominio del frontend
-_cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
+# CORS: en producción restringe allow_origins al dominio del frontend.
+# Se limpian espacios y entradas vacías (permite "https://a.com, https://b.com").
+_cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,

@@ -1,6 +1,6 @@
 # Blue-Echo
 
-Plataforma web de correlación de Indicadores de Compromiso (IOCs) contra 16 fuentes de Threat Intelligence, con scoring automático, mapping a MITRE ATT&CK y análisis ejecutivo generado por IA.
+Plataforma web de correlación de Indicadores de Compromiso (IOCs) contra 18 fuentes de Threat Intelligence, con scoring automático, mapping a MITRE ATT&CK y análisis ejecutivo generado por IA.
 
 Dado un IOC (IP, hash, dominio, URL) o un fichero de logs, consulta todas las fuentes en paralelo, calcula un score de amenaza 0-100, mapea las técnicas ATT&CK relevantes y genera un resumen ejecutivo en español.
 
@@ -28,7 +28,7 @@ Dado un IOC (IP, hash, dominio, URL) o un fichero de logs, consulta todas las fu
 
 1. Introduces un IOC (IP, hash MD5/SHA1/SHA256, dominio o URL), subes un fichero de logs, o lanzas un escaneo masivo de hasta 20 IOCs a la vez.
 2. La plataforma extrae y normaliza todos los IOCs únicos del input.
-3. Los consulta en paralelo contra las 16 fuentes configuradas, respetando un semáforo de concurrencia configurable.
+3. Los consulta en paralelo contra las 18 fuentes configuradas, respetando un semáforo de concurrencia configurable.
 4. Calcula un **score de amenaza 0-100** según reglas fijas por fuente con acumulación acotada.
 5. Mapea los hallazgos a **técnicas MITRE ATT&CK** (Initial Access, Execution, C2, Impact…).
 6. Genera un **resumen ejecutivo en español** con Groq (LLaMA 3.3-70B, gratuito), con Anthropic Claude como fallback opcional.
@@ -51,6 +51,7 @@ Dado un IOC (IP, hash, dominio, URL) o un fichero de logs, consulta todas las fu
 | AbuseIPDB | IP | Sí — `ABUSEIPDB_API_KEY` |
 | Shodan | IP | Sí — `SHODAN_API_KEY` |
 | AlienVault OTX | IP, Hash, Dominio | Sí — `OTX_API_KEY` |
+| GreyNoise | IP | Sí (free) — `GREYNOISE_API_KEY` |
 | MalwareBazaar | Hash | No (pública) |
 | URLhaus | URL, Dominio | No (pública) |
 
@@ -59,6 +60,7 @@ Dado un IOC (IP, hash, dominio, URL) o un fichero de logs, consulta todas las fu
 | Fuente | Tipos de IOC | API Key | Cuota gratuita |
 |---|---|---|---|
 | ThreatFox (abuse.ch) | IP, Hash, Dominio, URL | Opcional — `THREATFOX_API_KEY` | Sin límite publicado |
+| URLScan.io | URL, Dominio | Opcional — `URLSCAN_API_KEY` | Búsqueda pública; la key sube la cuota |
 | IPinfo | IP | Sí — `IPINFO_API_KEY` | 50.000 req/mes |
 | SecurityTrails | Dominio | Sí — `SECURITYTRAILS_API_KEY` | 50 req/mes |
 | Hybrid Analysis | Hash | Sí — `HYBRID_ANALYSIS_API_KEY` | Tier "default" |
@@ -296,9 +298,11 @@ VT_API_KEY=
 ABUSEIPDB_API_KEY=
 SHODAN_API_KEY=
 OTX_API_KEY=
+GREYNOISE_API_KEY=
 
 # ---- Threat Intelligence — nuevas fuentes ----
 THREATFOX_API_KEY=
+URLSCAN_API_KEY=
 IPINFO_API_KEY=
 SECURITYTRAILS_API_KEY=
 HYBRID_ANALYSIS_API_KEY=
@@ -320,6 +324,13 @@ CORS_ORIGINS=*
 # ---- Rate limiting (peticiones por IP y minuto) ----
 RATE_LIMIT_SCAN=10
 RATE_LIMIT_DEFAULT=60
+
+# ---- Alertas por webhook (opcional) ----
+# Si se configura una URL, se envía una notificación cuando un escaneo
+# supera el umbral de score. Déjalo vacío para desactivar las alertas.
+ALERT_WEBHOOK_URL=
+ALERT_SCORE_THRESHOLD=70
+ALERT_WEBHOOK_TYPE=slack   # slack | discord | teams | generic
 ```
 
 ### Dónde conseguir las claves (todas tienen plan gratuito)
@@ -331,6 +342,7 @@ RATE_LIMIT_DEFAULT=60
 | AbuseIPDB | https://www.abuseipdb.com/register | 1.000 req/día |
 | Shodan | https://account.shodan.io/register | 1 req/seg |
 | AlienVault OTX | https://otx.alienvault.com/ | Sin límite publicado |
+| GreyNoise | https://viz.greynoise.io/signup | Community API gratuita |
 | IPinfo | https://ipinfo.io/signup | 50.000 req/mes |
 | SecurityTrails | https://securitytrails.com/app/signup | 50 req/mes |
 | Hybrid Analysis | https://hybrid-analysis.com | Solicitar tier "default" |
@@ -341,7 +353,7 @@ RATE_LIMIT_DEFAULT=60
 | Censys | https://censys.io/register | **250 req/mes** |
 | Anthropic | https://console.anthropic.com/ | Créditos de prueba |
 
-> MalwareBazaar, URLhaus, ThreatFox y RDAP son **APIs públicas** — funcionan sin clave desde el primer arranque.
+> MalwareBazaar, URLhaus, ThreatFox, URLScan y RDAP son **APIs públicas** — funcionan sin clave desde el primer arranque (una key opcional en ThreatFox/URLScan solo sube la cuota).
 
 Tras modificar `.env`:
 ```bash
@@ -372,6 +384,7 @@ La primera vez que accedes al panel verás un formulario de login. Introduce la 
    - **Técnicas MITRE ATT&CK** mapeadas a partir de los hallazgos
    - **Análisis en lenguaje natural** generado por IA
 5. El escaneo queda guardado automáticamente en el historial.
+6. Con el botón **Descargar PDF** obtienes un informe del escaneo (score, veredicto, tabla de fuentes, análisis IA y técnicas MITRE) listo para adjuntar a un ticket o parte de incidente.
 
 ### Escanear desde un fichero de logs
 
@@ -395,6 +408,10 @@ La primera vez que accedes al panel verás un formulario de login. Introduce la 
 - Busca un IOC concreto con el campo de búsqueda de texto
 - Paginación de 20 resultados por página con navegación completa
 - Haz clic en cualquier fila para ver el detalle completo del escaneo
+
+### Alertas por webhook (opcional)
+
+Si configuras `ALERT_WEBHOOK_URL` en el `.env`, la herramienta envía una notificación automática a Slack, Discord, Microsoft Teams o un endpoint propio cada vez que un escaneo supera el umbral de score (`ALERT_SCORE_THRESHOLD`, por defecto 70). El formato del mensaje se ajusta con `ALERT_WEBHOOK_TYPE` (`slack` | `discord` | `teams` | `generic`). El envío es *best-effort*: si el webhook falla, se registra pero nunca interrumpe el escaneo.
 
 ### Estado de los conectores
 
@@ -497,6 +514,15 @@ Parámetros:
 curl http://localhost/api/history/42 \
   -H "X-API-Key: tu_clave"
 ```
+
+### GET /api/history/{id}/pdf — Informe del escaneo en PDF
+
+```bash
+curl http://localhost/api/history/42/pdf \
+  -H "X-API-Key: tu_clave" -o informe-42.pdf
+```
+
+Devuelve `application/pdf` con el informe del escaneo (score, veredicto, tabla de fuentes, análisis IA y técnicas MITRE).
 
 ### GET /api/sources — Estado de los conectores
 
