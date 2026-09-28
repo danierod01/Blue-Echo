@@ -513,10 +513,18 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   SourcesStatus (faltaba etiqueta+grupo). SearchBar: placeholder rota en vivo. Build
   de frontend verificado, commiteado y pusheado. Login ya estaba bien (no tocado).
   Añadido el pulido de UI a la nota Obsidian Fase P3-01 (addendum). Redactado el
-  apartado de **seguridad STRIDE** (`09 - Seguridad del Producto.md`).
-  **Sigue pendiente (tú): verificar `docker compose`. Siguiente aquí: README
-  instala-desde-cero y, al final, tag `v1.0-practica3`. Cerrar gaps de seguridad
-  (CORS en prod, revisar historial git por secretos).**
+  apartado de **seguridad STRIDE** (`09 - Seguridad del Producto.md`). Además:
+  **README actualizado** a 18 fuentes + PDF + webhooks, y **hardening de CORS**
+  (limpieza de espacios en `CORS_ORIGINS` + guía en `.env.example`). 262 tests
+  verdes, todo commiteado y pusheado.
+  **QUÉ FALTA (estado al 28/09):**
+  1) [tú] `docker compose up --build` en limpio (RNF-03, no verificado aún).
+  2) [tú] capturas + grabar vídeo + maquetar memoria PDF (contenido ya en Obsidian).
+  3) [prod] `CORS_ORIGINS=https://blueecho.es` en el `.env` del VPS.
+  4) [entrega] verificar que el historial git no tiene secretos reales + tag
+     `v1.0-practica3` sobre el commit final.
+  El producto y toda la documentación técnica (matriz, fases, seguridad, README)
+  están **completos**; lo que queda es despliegue-verificación + entregables manuales.
 
 ---
 
