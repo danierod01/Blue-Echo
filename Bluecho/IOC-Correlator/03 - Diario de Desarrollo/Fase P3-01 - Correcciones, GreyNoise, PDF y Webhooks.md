@@ -116,3 +116,52 @@ python -c "from ioc_correlator.report_pdf import build_scan_pdf; ..."
 - Captura del dashboard con el botón "Descargar PDF" y del PDF generado.
 - Captura de una alerta recibida en Slack/Discord (con webhook de prueba).
 - Salida de `pytest` mostrando los 262 tests en verde.
+
+---
+
+## Addendum — Pulido de UI (2026-09-28)
+
+### Qué se ha construido
+
+- **`AiSummary.tsx` — render de Markdown.** El módulo de IA devuelve Markdown
+  (`## encabezados`, `**negritas**`, `` `código` ``, listas), pero el componente lo
+  pintaba como texto plano con `whitespace-pre-wrap`: se veían los `##` y `**` en
+  crudo, justo en el bloque diferenciador del producto. Se implementó un
+  **mini-renderizador de Markdown propio** (encabezados, negritas, código inline,
+  listas con viñeta y numeradas) que devuelve JSX, **sin añadir dependencias**
+  (evita meter `react-markdown`, ~algunas decenas de KB, para un subconjunto acotado).
+- **`SourcesStatus.tsx` — bug corregido.** GreyNoise se había añadido como conector
+  (18 en total) pero faltaba su etiqueta y su grupo en el panel de fuentes, así que
+  **no se mostraba**. Añadido al grupo "Análisis de IPs".
+- **`SearchBar.tsx`.** El placeholder de ejemplo (IP, hash, dominio, URL) se calculaba
+  una vez por render con `Date.now()` y no cambiaba; ahora **rota en vivo cada 4s** con
+  `useEffect` + `setInterval`.
+- **`Login.tsx`** se revisó y ya estaba correctamente rediseñado (glassmorphism,
+  aurora, logo con gradiente) → no se tocó.
+
+### Decisiones técnicas
+
+- **Mini-parser de Markdown vs. librería.** Para el formato acotado que emite la IA,
+  un parser propio (~90 líneas) mantiene el bundle pequeño y evita una dependencia
+  extra que auditar. Divide el texto en bloques (heading/párrafo/lista) y parsea el
+  inline con una única expresión regular sobre `**...**` y `` `...` ``.
+
+### Problemas y soluciones
+
+| Problema | Solución |
+|---|---|
+| AiSummary mostraba `##` y `**` en crudo | Mini-renderizador de Markdown a JSX, sin dependencias |
+| GreyNoise no aparecía en el panel de fuentes | Añadir etiqueta + grupo en `SourcesStatus.tsx` |
+| El placeholder de la barra no rotaba | `useEffect` + `setInterval` cada 4s |
+
+### Ficheros tocados
+
+- `frontend/src/components/AiSummary.tsx` (reescrito) ·
+  `frontend/src/components/SourcesStatus.tsx` (GreyNoise) ·
+  `frontend/src/components/SearchBar.tsx` (placeholder rotativo)
+
+### Estado
+
+- [x] Build de frontend verificado (`npm run build` OK)
+- [x] Commiteado y pusheado
+- [ ] Captura del bloque de Análisis IA renderizado (pendiente, manual)

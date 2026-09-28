@@ -444,10 +444,12 @@ Estado a fecha 2026-09-24 (rama `claude/awesome-franklin-79do5a`):
 - [x] ~~**Documentar en Obsidian**: F4, F5, GreyNoise, F7, limpieza de tests. Nota
       "Fase P3" en `03 - Diario de Desarrollo/`~~ ✅ (2026-09-24):
       `Fase P3-01 - Correcciones, GreyNoise, PDF y Webhooks.md`.
-- [ ] Redactar apartado de **seguridad** (STRIDE). *(Auditoría de dependencias ✅
-      2026-09-25: `pip-audit` 31→0 y `npm audit` 2→0; ver commit de hardening.
-      Versiones subidas: fastapi 0.141.1/starlette 1.7.0, python-multipart 0.0.32,
-      python-dotenv 1.2.3, scapy 2.7.0, pytest 9.0.3, react-router-dom 7.18.4.)*
+- [x] ~~Redactar apartado de **seguridad** (STRIDE)~~ ✅ (2026-09-28):
+      `Bluecho/IOC-Correlator/09 - Seguridad del Producto.md` (STRIDE + secretos,
+      auth, validación, dependencias, datos personales, y gaps). Auditoría de
+      dependencias ✅ 2026-09-25: `pip-audit` 31→0 y `npm audit` 2→0.
+      **Gaps a cerrar antes de entregar:** CORS `*`→dominio en prod; verificar que el
+      historial de git no tiene secretos reales; (opcional) retención del historial.
 - [ ] Rediseño UI pendiente (baja prioridad): `AiSummary`, `SearchBar`,
       `SourcesStatus`, `Login`, ajustes `Dashboard`.
 - [ ] Antes de entregar: tag `v1.0-practica3`, README instala-desde-cero.
@@ -506,7 +508,11 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   Markdown (antes mostraba ## y ** en crudo). Corregido bug: GreyNoise no aparecía en
   SourcesStatus (faltaba etiqueta+grupo). SearchBar: placeholder rota en vivo. Build
   de frontend verificado, commiteado y pusheado. Login ya estaba bien (no tocado).
-  **Sigue pendiente (tú): verificar `docker compose`. Siguiente aquí: STRIDE.**
+  Añadido el pulido de UI a la nota Obsidian Fase P3-01 (addendum). Redactado el
+  apartado de **seguridad STRIDE** (`09 - Seguridad del Producto.md`).
+  **Sigue pendiente (tú): verificar `docker compose`. Siguiente aquí: README
+  instala-desde-cero y, al final, tag `v1.0-practica3`. Cerrar gaps de seguridad
+  (CORS en prod, revisar historial git por secretos).**
 
 ---
 
