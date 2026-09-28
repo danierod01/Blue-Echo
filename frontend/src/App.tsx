@@ -5,6 +5,7 @@ import Dashboard from "@/pages/Dashboard";
 import History from "@/pages/History";
 import ScanDetail from "@/pages/ScanDetail";
 import Login from "@/pages/Login";
+import Invite from "@/pages/Invite";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { clearStoredApiKey, getStoredApiKey } from "@/api/client";
 import { cn } from "@/lib/utils";
@@ -108,6 +109,7 @@ export default function App() {
       <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-6">
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/invite" element={<Invite />} />
           <Route path="/" element={<ProtectedRoute><Dashboard key={location.key} /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
           <Route path="/history/:id" element={<ProtectedRoute><ScanDetail /></ProtectedRoute>} />

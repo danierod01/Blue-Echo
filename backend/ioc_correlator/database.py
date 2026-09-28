@@ -11,6 +11,13 @@ from sqlmodel import Field, Session, SQLModel, col, create_engine, select
 # Modelo
 # ---------------------------------------------------------------------------
 
+class ApiKey(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    key: str = Field(index=True, unique=True)
+    label: str = Field(default="")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 class ScanResult(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
@@ -118,3 +125,15 @@ def get_history(
 
 def get_scan_by_id(session: Session, scan_id: int) -> Optional[ScanResult]:
     return session.get(ScanResult, scan_id)
+
+
+def create_api_key(session: Session, key: str, label: str = "") -> ApiKey:
+    obj = ApiKey(key=key, label=label)
+    session.add(obj)
+    session.commit()
+    session.refresh(obj)
+    return obj
+
+
+def is_valid_api_key(session: Session, key: str) -> bool:
+    return session.exec(select(ApiKey).where(ApiKey.key == key)).first() is not None
