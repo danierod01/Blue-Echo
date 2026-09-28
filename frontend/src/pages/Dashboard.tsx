@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, History, FileDown, Loader2 } from "lucide-react";
+import { AlertCircle, History, FileDown, Loader2, PanelRightClose, PanelRightOpen } from "lucide-react";
 import SkeletonResults from "@/components/SkeletonResults";
 import EmptyState from "@/components/EmptyState";
 import SearchBar from "@/components/SearchBar";
@@ -24,7 +24,14 @@ export default function Dashboard() {
   const [pcapResult, setPcapResult] = useState<PcapScanResponse | null>(null);
   const [errorMsg, setError]        = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    try { return localStorage.getItem("be_sidebar") !== "0"; } catch { return true; }
+  });
   const queryClient                 = useQueryClient();
+
+  useEffect(() => {
+    try { localStorage.setItem("be_sidebar", sidebarOpen ? "1" : "0"); } catch { /* ignore */ }
+  }, [sidebarOpen]);
 
   async function handleDownloadPdf() {
     if (!result) return;
@@ -112,9 +119,21 @@ export default function Dashboard() {
               Introduce una IP, hash, dominio o URL — o sube un fichero.
             </p>
           </div>
-          <div className="flex items-center gap-1.5 rounded-full border border-green-800/60 bg-green-950/30 px-3 py-1 text-xs text-green-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            Online
+          <div className="flex items-center gap-2">
+            {history.length > 0 && (
+              <button
+                onClick={() => setSidebarOpen(v => !v)}
+                className="hidden lg:flex items-center gap-1.5 rounded-lg border border-gray-800 bg-gray-900/50 px-3 py-1 text-xs text-gray-400 transition hover:border-blue-500/50 hover:text-white"
+                title={sidebarOpen ? "Ocultar historial" : "Mostrar historial"}
+              >
+                {sidebarOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
+                {sidebarOpen ? "Ocultar" : "Historial"}
+              </button>
+            )}
+            <div className="flex items-center gap-1.5 rounded-full border border-green-800/60 bg-green-950/30 px-3 py-1 text-xs text-green-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              Online
+            </div>
           </div>
         </div>
 
@@ -256,7 +275,7 @@ export default function Dashboard() {
       {/* ---------------------------------------------------------------- */}
       {/* Sidebar — historial reciente                                      */}
       {/* ---------------------------------------------------------------- */}
-      {history.length > 0 && (
+      {history.length > 0 && sidebarOpen && (
         <aside className="w-72 shrink-0 hidden lg:flex flex-col gap-3">
           <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider">
             <History size={13} />

@@ -8,7 +8,12 @@ from pydantic import BaseModel
 from sqlmodel import Session
 
 from ioc_correlator.api.limiter import limiter
-from ioc_correlator.database import create_api_key, get_session, is_valid_api_key
+from ioc_correlator.database import (
+    create_api_key,
+    get_api_key_label,
+    get_session,
+    is_valid_api_key,
+)
 
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
@@ -31,6 +36,10 @@ class InviteRequest(BaseModel):
 class InviteResponse(BaseModel):
     token: str
     label: str
+
+
+class MeResponse(BaseModel):
+    name: str
 
 
 def _check_key(api_key: str, session: Session) -> bool:
@@ -72,9 +81,13 @@ async def invite(
     if not hmac.compare_digest(body.admin_secret.encode(), admin_secret.encode()):
         raise HTTPException(status_code=403, detail="Código de acceso incorrecto.")
 
+    label = body.label.strip()
+    if not label:
+        raise HTTPException(status_code=422, detail="El nombre es obligatorio.")
+
     token = secrets.token_urlsafe(32)
-    create_api_key(session, key=token, label=body.label)
-    return InviteResponse(token=token, label=body.label)
+    create_api_key(session, key=token, label=label)
+    return InviteResponse(token=token, label=label)
 
 
 async def require_api_key(
@@ -86,3 +99,13 @@ async def require_api_key(
     if not _check_key(key, session):
         raise HTTPException(status_code=401, detail="API key inválida o ausente.")
     return key
+
+
+@auth_router.get("/auth/me", response_model=MeResponse)
+async def me(
+    current_key: str = Depends(require_api_key),
+    session: Session = Depends(get_session),
+) -> MeResponse:
+    """Devuelve el nombre asociado al token actual (para mostrarlo en la UI)."""
+    label = get_api_key_label(session, current_key) if current_key else None
+    return MeResponse(name=label or "Administrador")

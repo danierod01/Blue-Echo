@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Routes, Route, NavLink, useNavigate, useLocation, Link } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Radar, LogOut, ChevronDown } from "lucide-react";
 import Dashboard from "@/pages/Dashboard";
 import History from "@/pages/History";
@@ -7,13 +8,28 @@ import ScanDetail from "@/pages/ScanDetail";
 import Login from "@/pages/Login";
 import Invite from "@/pages/Invite";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { clearStoredApiKey, getStoredApiKey } from "@/api/client";
+import { clearStoredApiKey, getStoredApiKey, getMe } from "@/api/client";
 import { cn } from "@/lib/utils";
+
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "BE";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
 function UserMenu() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  const { data: me } = useQuery({
+    queryKey: ["me"],
+    queryFn: getMe,
+    staleTime: 60_000,
+  });
+  const name = me?.name ?? "";
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -26,6 +42,7 @@ function UserMenu() {
   function logout() {
     setOpen(false);
     clearStoredApiKey();
+    queryClient.clear();
     navigate("/login", { replace: true });
   }
 
@@ -36,13 +53,20 @@ function UserMenu() {
         className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
       >
         <div className="w-6 h-6 rounded bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
-          <span className="text-[9px] font-bold text-white font-data">BE</span>
+          <span className="text-[9px] font-bold text-white font-data">{initialsOf(name)}</span>
         </div>
+        {name && <span className="hidden sm:block max-w-[140px] truncate">{name}</span>}
         <ChevronDown size={11} className={cn("transition-transform", open && "rotate-180")} />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-44 bg-[#0d0f1a] border border-white/8 rounded-lg shadow-2xl shadow-black/50 py-1 z-50 animate-[fadeSlideIn_0.15s_ease_forwards]">
+        <div className="absolute right-0 top-full mt-1 w-48 bg-[#0d0f1a] border border-white/8 rounded-lg shadow-2xl shadow-black/50 py-1 z-50 animate-[fadeSlideIn_0.15s_ease_forwards]">
+          {name && (
+            <div className="px-3 py-2 border-b border-white/5">
+              <p className="text-sm text-white truncate">{name}</p>
+              <p className="text-[10px] text-gray-500">Sesión activa</p>
+            </div>
+          )}
           <NavLink to="/" end onClick={() => setOpen(false)}
             className={({ isActive }) => cn("flex items-center gap-2 px-3 py-2 text-sm transition-colors", isActive ? "text-white" : "text-gray-400 hover:text-white")}>
             Dashboard

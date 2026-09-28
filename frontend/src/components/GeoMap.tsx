@@ -59,6 +59,7 @@ export default function GeoMap({ geo, iocValue }: GeoMapProps) {
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            crossOrigin="anonymous"
           />
           <CircleMarker
             center={[geo.lat, geo.lon]}

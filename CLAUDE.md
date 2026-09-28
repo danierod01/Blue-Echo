@@ -456,11 +456,14 @@ Estado a fecha 2026-09-28 (rama `feat/invite-tokens`):
 - [x] ~~README instala-desde-cero~~ ✅ (2026-09-28): actualizado a 18 fuentes
       (GreyNoise + URLScan), documentados endpoint PDF, alertas webhook y variables
       nuevas. Gap CORS mitigado (limpieza de espacios + guía en .env.example).
-- [x] ~~Sistema de invitaciones + aislamiento de sesiones~~ ✅ (2026-09-28, rama
-      `feat/invite-tokens`): `POST /api/auth/invite` (gated by `ADMIN_SECRET`),
-      tokens almacenados en tabla `ApiKey`, `ScanResult.api_key` por usuario,
-      historial y detalle filtrados por token. Página `/invite` en frontend.
-      **Pendiente: mergear `feat/invite-tokens` a `main` cuando se verifique.**
+- [x] ~~Sistema de invitaciones + aislamiento de sesiones + sesión con nombre~~ ✅
+      (2026-09-28, rama `feat/invite-tokens`): `POST /api/auth/invite` (nombre
+      obligatorio, gated by `ADMIN_SECRET`), tokens en tabla `ApiKey`,
+      `ScanResult.api_key` por usuario, historial y detalle filtrados por token
+      (ajeno → 404), `GET /api/auth/me` + nombre en la UI, barra lateral plegable.
+      Nota: `Fase P3-02`. **Pendiente en Kali: `pytest` (cambian firmas de
+      `save_scan`/`get_history`/`require_api_key`) + build de frontend, luego mergear
+      `feat/invite-tokens` a `main`.**
 - [ ] Antes de entregar: tag `v1.0-practica3`.
 - [ ] Cerrar en prod: `CORS_ORIGINS=https://blueecho.es` en el `.env` del VPS.
 
@@ -523,12 +526,22 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   **Sigue pendiente (tú): verificar `docker compose`. Siguiente aquí: README
   instala-desde-cero y, al final, tag `v1.0-practica3`. Cerrar gaps de seguridad
   (CORS en prod, revisar historial git por secretos).**
-- **2026-09-28** (Windows, rama `feat/invite-tokens`): implementado sistema de
-  invitaciones y aislamiento de sesiones. `POST /api/auth/invite` genera tokens
-  per-usuario (requiere `ADMIN_SECRET`). `ScanResult.api_key` almacena el token
-  creador. Historial y detalle de escaneo filtrados por token (otros usuarios
-  reciben 404). Página `/invite` en el frontend. Commiteado y pusheado.
-  **Siguiente: verificar `docker compose up --build` en Kali, luego mergear a `main`.**
+- **2026-09-28** (Windows, rama `feat/invite-tokens`): sistema multiusuario completo.
+  (1) **Invitaciones**: `POST /api/auth/invite` genera tokens per-usuario con nombre
+  obligatorio (requiere `ADMIN_SECRET`), guardados en tabla `ApiKey`. Página `/invite`.
+  (2) **Aislamiento de sesiones**: `ScanResult.api_key` almacena el token creador;
+  historial y detalle filtrados por token (escaneo ajeno → 404). Verificado
+  inspeccionando la BD (no era bug: cada clave ve solo lo suyo). (3) **Sesión con
+  nombre**: `GET /api/auth/me` devuelve el nombre; el frontend lo muestra en el menú
+  (nombre + iniciales). `queryClient.clear()` en login/logout evita datos cacheados del
+  usuario anterior. (4) **Barra lateral de historial plegable** en el dashboard (estado
+  en localStorage). Nota Obsidian: `Fase P3-02 - Invitaciones, sesiones aisladas y
+  UI.md`. **OJO: la BD necesita recrearse (`docker compose down -v`) por la columna
+  `api_key` — SQLModel no migra en caliente. En local usar el override
+  `-f docker-compose.dev.yml` (si no, Nginx crashea por el cert de blueecho.es).**
+  **NO verificado esta sesión (Windows sin npm): `pytest` en Kali (cambian firmas de
+  `save_scan`/`get_history` y `require_api_key`) y build de frontend vía Docker.**
+  **Siguiente: verificar tests + build en Kali, luego mergear `feat/invite-tokens` a `main`.**
 
 ---
 
@@ -671,7 +684,8 @@ Memoria: apartados completos y en orden · portada con integrantes + enlaces · 
 > **Actualizar esta sección al final de cada sesión.**
 
 ### Rama activa
-`main` — todo el desarrollo va aquí desde ahora.
+`feat/invite-tokens` — sistema multiusuario en pruebas. Se mergeará a `main` cuando
+pasen los tests y el build en Kali. El resto del desarrollo está en `main`.
 
 ### Qué hay implementado
 
@@ -699,9 +713,19 @@ Memoria: apartados completos y en orden · portada con integrantes + enlaces · 
 - ResultsTable: filas compactas monospace agrupadas por tipo de IOC
 - EmptyState: radar animado, SkeletonResults: shimmer loader
 
+**Sistema multiusuario** (rama `feat/invite-tokens`, sin mergear aún):
+- Invitaciones autoservicio: `/invite` + `POST /api/auth/invite` (nombre obligatorio,
+  gated by `ADMIN_SECRET`), tokens en tabla `ApiKey`
+- Aislamiento de sesiones: `ScanResult.api_key` por usuario; historial y detalle
+  filtrados por token (escaneo ajeno → 404)
+- Sesión con nombre: `GET /api/auth/me` + nombre e iniciales en el menú de usuario
+- Barra lateral de historial plegable (estado en localStorage)
+
 ### Pendiente
 
-- Rediseño de: `AiSummary.tsx`, `SearchBar.tsx`, `SourcesStatus.tsx`, `Login.tsx`, `tailwind.config.js` (keyframes), `Dashboard.tsx` (ajustes finales)
+- **`feat/invite-tokens`**: ejecutar `pytest` y build de frontend en Kali; si verde,
+  mergear a `main`. Recrear BD con `docker compose down -v` (columna `api_key` nueva).
+- Ajustes finales de `Dashboard.tsx` (baja prioridad).
 
 ### Infraestructura
 
@@ -713,4 +737,10 @@ Memoria: apartados completos y en orden · portada con integrantes + enlaces · 
 
 ### Última sesión
 
-**Fecha**: 2026-09-23 — Rediseño UI (ThreatScore, ResultsTable, App, index.css). Merge de todas las ramas a `main`. Creado sistema de contexto en CLAUDE.md.
+**Fecha**: 2026-09-28 (rama `feat/invite-tokens`) — Sistema multiusuario: invitaciones
+autoservicio con nombre obligatorio (`/invite`, `POST /api/auth/invite`), aislamiento de
+historial por token (`ScanResult.api_key`, filtros en `/history`, ajeno → 404), sesión
+con nombre en la UI (`GET /api/auth/me`), y barra lateral de historial plegable. Se
+verificó por inspección de BD que el aislamiento funciona. Nota Obsidian `Fase P3-02`.
+**Sin verificar (Windows sin npm): `pytest` y build de frontend → hacerlo en Kali antes
+de mergear a `main`. Recrear BD con `docker compose down -v` por la columna nueva.**

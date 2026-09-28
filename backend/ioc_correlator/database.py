@@ -145,3 +145,9 @@ def create_api_key(session: Session, key: str, label: str = "") -> ApiKey:
 
 def is_valid_api_key(session: Session, key: str) -> bool:
     return session.exec(select(ApiKey).where(ApiKey.key == key)).first() is not None
+
+
+def get_api_key_label(session: Session, key: str) -> Optional[str]:
+    """Devuelve la etiqueta (nombre) asociada a un token, o None si no existe."""
+    obj = session.exec(select(ApiKey).where(ApiKey.key == key)).first()
+    return obj.label if obj else None

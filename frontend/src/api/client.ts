@@ -249,6 +249,17 @@ export async function getSources(): Promise<SourceStatus[]> {
   return handleResponse<SourceStatus[]>(res);
 }
 
+export interface MeResponse {
+  name: string;
+}
+
+export async function getMe(): Promise<MeResponse> {
+  const res = await fetch(`${BASE_URL}/api/auth/me`, {
+    headers: authHeaders(),
+  });
+  return handleResponse<MeResponse>(res);
+}
+
 export async function verifyApiKey(apiKey: string): Promise<boolean> {
   const res = await fetch(`${BASE_URL}/api/auth/verify`, {
     method: "POST",

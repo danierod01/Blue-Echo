@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Radar, KeyRound, Loader2 } from "lucide-react";
 import { verifyApiKey, setStoredApiKey } from "@/api/client";
 
 export default function Login() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [apiKey, setApiKey] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,6 +20,7 @@ export default function Login() {
       const valid = await verifyApiKey(apiKey.trim());
       if (valid) {
         setStoredApiKey(apiKey.trim());
+        queryClient.clear();
         navigate("/", { replace: true });
       } else {
         setError("API key incorrecta. Inténtalo de nuevo.");
