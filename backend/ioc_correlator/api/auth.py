@@ -80,6 +80,9 @@ async def invite(
 async def require_api_key(
     api_key: str = Security(_api_key_header),
     session: Session = Depends(get_session),
-) -> None:
-    if not _check_key(api_key or "", session):
+) -> str:
+    """Valida la API key y la devuelve para que los endpoints puedan filtrar por usuario."""
+    key = api_key or ""
+    if not _check_key(key, session):
         raise HTTPException(status_code=401, detail="API key inválida o ausente.")
+    return key

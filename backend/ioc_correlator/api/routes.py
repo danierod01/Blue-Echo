@@ -87,6 +87,7 @@ def _build_scan_response(db_scan, breakdown: dict[str, int], geolocation=None) -
 async def _run_scan(
     ioc_value: str,
     session: Session,
+    api_key: str = "",
 ) -> tuple:
     """Núcleo del escaneo: enrich → score → save. Devuelve (db_scan, breakdown)."""
     ioc_value = ioc_value.strip()
@@ -122,10 +123,9 @@ async def _run_scan(
         verdict=scoring.verdict,
         connector_results=serializable,
         ai_summary=ai_summary,
+        api_key=api_key or None,
     )
 
-    # Alerta por webhook si el score supera el umbral (best-effort, no bloquea
-    # ni rompe el escaneo si el webhook falla).
     await maybe_send_alert(ioc_value, ioc_type.value, scoring.score, scoring.verdict)
 
     return db_scan, scoring.breakdown
@@ -140,14 +140,14 @@ async def health() -> HealthResponse:
     return HealthResponse(status="ok", version=APP_VERSION)
 
 
-@router.post("/scan", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
+@router.post("/scan", response_model=ScanResponse)
 @limiter.limit(os.getenv("RATE_LIMIT_SCAN", "10/minute"))
 async def scan(
     request: Request,
-    # Acepta JSON body O multipart/form-data (para subida de ficheros)
     ioc: Optional[str] = Form(default=None),
     file: Optional[UploadFile] = File(default=None),
     session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
 ) -> ScanResponse:
     if file is not None:
         content = await file.read()
@@ -180,30 +180,32 @@ async def scan(
             detail="Proporciona un IOC en el campo 'ioc' o sube un fichero de logs.",
         )
 
-    db_scan, breakdown = await _run_scan(ioc_value, session)
+    db_scan, breakdown = await _run_scan(ioc_value, session, current_key)
     geo = await geolocate(ioc_value, db_scan.ioc_type)
     return _build_scan_response(db_scan, breakdown, geolocation=geo)
 
 
-@router.post("/scan/json", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
+@router.post("/scan/json", response_model=ScanResponse)
 @limiter.limit(os.getenv("RATE_LIMIT_SCAN", "10/minute"))
 async def scan_json(
     request: Request,
     body: ScanRequest,
     session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
 ) -> ScanResponse:
     """Variante que acepta JSON puro (útil para peticiones desde código)."""
-    db_scan, breakdown = await _run_scan(body.ioc, session)
+    db_scan, breakdown = await _run_scan(body.ioc, session, current_key)
     geo = await geolocate(body.ioc, db_scan.ioc_type)
     return _build_scan_response(db_scan, breakdown, geolocation=geo)
 
 
-@router.post("/scan/pcap", response_model=PcapScanResponse, dependencies=[Depends(require_api_key)])
+@router.post("/scan/pcap", response_model=PcapScanResponse)
 @limiter.limit(os.getenv("RATE_LIMIT_SCAN", "10/minute"))
 async def scan_pcap(
     request: Request,
     file: UploadFile = File(...),
     session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
 ) -> PcapScanResponse:
     """Analiza un fichero PCAP/PCAPNG con IA y extrae IOCs del tráfico de red."""
     content = await file.read()
@@ -237,6 +239,7 @@ async def scan_pcap(
         ioc_type="pcap",
         score=0,
         verdict="pcap",
+        api_key=current_key or None,
         connector_results={
             "pcap_analyzer": {
                 "source": "pcap_analyzer",
@@ -273,16 +276,17 @@ async def scan_pcap(
     )
 
 
-@router.get("/history", response_model=HistoryPage, dependencies=[Depends(require_api_key)])
+@router.get("/history", response_model=HistoryPage)
 @limiter.limit("30/minute")
 async def history(
     request: Request,
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-    ioc_type: Optional[str] = None,   # valores separados por coma: "ipv4,ipv6"
+    ioc_type: Optional[str] = None,
     verdict: Optional[str] = None,
     search: Optional[str] = None,
     session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
 ) -> HistoryPage:
     ioc_types = [t.strip() for t in ioc_type.split(",")] if ioc_type else None
     scans, total = get_history(
@@ -292,6 +296,7 @@ async def history(
         ioc_types=ioc_types,
         verdict=verdict,
         search=search.strip() if search else None,
+        api_key=current_key or None,
     )
     return HistoryPage(
         items=[
@@ -311,15 +316,18 @@ async def history(
     )
 
 
-@router.get("/history/{scan_id}/pcap", response_model=PcapScanResponse, dependencies=[Depends(require_api_key)])
+@router.get("/history/{scan_id}/pcap", response_model=PcapScanResponse)
 @limiter.limit("30/minute")
 async def history_pcap_detail(
     request: Request,
     scan_id: int,
     session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
 ) -> PcapScanResponse:
     db_scan = get_scan_by_id(session, scan_id)
     if db_scan is None:
+        raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
+    if current_key and db_scan.api_key and db_scan.api_key != current_key:
         raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
     if db_scan.ioc_type != "pcap":
         raise HTTPException(status_code=422, detail="Este escaneo no es un PCAP.")
@@ -340,15 +348,18 @@ async def history_pcap_detail(
     )
 
 
-@router.get("/history/{scan_id}", response_model=ScanResponse, dependencies=[Depends(require_api_key)])
+@router.get("/history/{scan_id}", response_model=ScanResponse)
 @limiter.limit("30/minute")
 async def history_detail(
     request: Request,
     scan_id: int,
     session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
 ) -> ScanResponse:
     db_scan = get_scan_by_id(session, scan_id)
     if db_scan is None:
+        raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
+    if current_key and db_scan.api_key and db_scan.api_key != current_key:
         raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
     raw = json.loads(db_scan.connector_results)
     connector_objs = {name: ConnectorResult(**d) for name, d in raw.items()}

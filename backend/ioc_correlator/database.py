@@ -32,6 +32,9 @@ class ScanResult(SQLModel, table=True):
 
     ai_summary: str = Field(default="")
 
+    # Token que creó este escaneo (None = sin auth / dev mode)
+    api_key: Optional[str] = Field(default=None, index=True)
+
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -77,6 +80,7 @@ def save_scan(
     verdict: str,
     connector_results: dict,
     ai_summary: str,
+    api_key: Optional[str] = None,
 ) -> ScanResult:
     scan = ScanResult(
         ioc_value=ioc_value,
@@ -85,6 +89,7 @@ def save_scan(
         verdict=verdict,
         connector_results=json.dumps(connector_results, ensure_ascii=False),
         ai_summary=ai_summary,
+        api_key=api_key or None,
     )
     session.add(scan)
     session.commit()
@@ -99,9 +104,12 @@ def get_history(
     ioc_types: list[str] | None = None,
     verdict: str | None = None,
     search: str | None = None,
+    api_key: str | None = None,
 ) -> tuple[list[ScanResult], int]:
     base = select(ScanResult)
 
+    if api_key:
+        base = base.where(ScanResult.api_key == api_key)
     if ioc_types:
         base = base.where(col(ScanResult.ioc_type).in_(ioc_types))
     if verdict:
