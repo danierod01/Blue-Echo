@@ -7,6 +7,7 @@ const SOURCE_LABEL: Record<string, string> = {
   virustotal:      "VirusTotal",
   abuseipdb:       "AbuseIPDB",
   shodan:          "Shodan",
+  greynoise:       "GreyNoise",
   otx:             "AlienVault OTX",
   malwarebazaar:   "MalwareBazaar",
   urlhaus:         "URLhaus",
@@ -31,7 +32,7 @@ const GROUPS: { label: string; names: string[] }[] = [
   },
   {
     label: "Análisis de IPs",
-    names: ["abuseipdb", "shodan", "ipinfo", "criminal_ip", "netlas", "censys"],
+    names: ["abuseipdb", "shodan", "greynoise", "ipinfo", "criminal_ip", "netlas", "censys"],
   },
   {
     label: "Dominios & URLs",

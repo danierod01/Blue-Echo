@@ -1,4 +1,4 @@
-import { useState, useRef, type FormEvent } from "react";
+import { useState, useRef, useEffect, type FormEvent } from "react";
 import { Search, Upload, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,8 +21,16 @@ export default function SearchBar({ onScanIoc, onScanFile, onScanPcap, loading }
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const placeholder =
-    PLACEHOLDER_EXAMPLES[Math.floor(Date.now() / 5000) % PLACEHOLDER_EXAMPLES.length];
+  // Rota el ejemplo del placeholder en vivo (cada 4s) mientras no se escribe.
+  const [phIndex, setPhIndex] = useState(0);
+  useEffect(() => {
+    const id = setInterval(
+      () => setPhIndex((i) => (i + 1) % PLACEHOLDER_EXAMPLES.length),
+      4000
+    );
+    return () => clearInterval(id);
+  }, []);
+  const placeholder = PLACEHOLDER_EXAMPLES[phIndex];
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
