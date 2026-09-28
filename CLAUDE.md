@@ -502,6 +502,11 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   Commiteado y pusheado. **Siguiente aquí: redactar apartado de seguridad (STRIDE).**
   **OJO despliegue:** el salto fastapi 0.115→0.141 y react-router 6→7 hace aún más
   importante verificar `docker compose up --build` en limpio (RNF-03).
+- **2026-09-28** (cloud, misma rama): rediseño/pulido UI. AiSummary ahora renderiza
+  Markdown (antes mostraba ## y ** en crudo). Corregido bug: GreyNoise no aparecía en
+  SourcesStatus (faltaba etiqueta+grupo). SearchBar: placeholder rota en vivo. Build
+  de frontend verificado, commiteado y pusheado. Login ya estaba bien (no tocado).
+  **Sigue pendiente (tú): verificar `docker compose`. Siguiente aquí: STRIDE.**
 
 ---
 
