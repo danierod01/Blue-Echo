@@ -436,7 +436,7 @@ SSH, verificar el navegador/UI real, y añadir imágenes/PNG a las notas de Obsi
 
 ### Trabajo pendiente (dónde seguimos)
 
-Estado a fecha 2026-09-24 (rama `claude/awesome-franklin-79do5a`):
+Estado a fecha 2026-09-28 (rama `feat/invite-tokens`):
 
 - [ ] **Verificar arranque en limpio** `docker compose up --build` (criterio nº1
       de P3, 30% de la nota). NO verificado tras añadir `fpdf2`. **Prioritario.**
@@ -450,11 +450,17 @@ Estado a fecha 2026-09-24 (rama `claude/awesome-franklin-79do5a`):
       dependencias ✅ 2026-09-25: `pip-audit` 31→0 y `npm audit` 2→0.
       **Gaps a cerrar antes de entregar:** CORS `*`→dominio en prod; verificar que el
       historial de git no tiene secretos reales; (opcional) retención del historial.
-- [ ] Rediseño UI pendiente (baja prioridad): `AiSummary`, `SearchBar`,
-      `SourcesStatus`, `Login`, ajustes `Dashboard`.
+- [x] ~~Rediseño UI pendiente~~ ✅ (2026-09-28): `AiSummary` renderiza Markdown,
+      `SearchBar` placeholder rotatorio, `SourcesStatus` con GreyNoise visible.
+      Pendiente menor: ajustes finales `Dashboard` (baja prioridad).
 - [x] ~~README instala-desde-cero~~ ✅ (2026-09-28): actualizado a 18 fuentes
       (GreyNoise + URLScan), documentados endpoint PDF, alertas webhook y variables
       nuevas. Gap CORS mitigado (limpieza de espacios + guía en .env.example).
+- [x] ~~Sistema de invitaciones + aislamiento de sesiones~~ ✅ (2026-09-28, rama
+      `feat/invite-tokens`): `POST /api/auth/invite` (gated by `ADMIN_SECRET`),
+      tokens almacenados en tabla `ApiKey`, `ScanResult.api_key` por usuario,
+      historial y detalle filtrados por token. Página `/invite` en frontend.
+      **Pendiente: mergear `feat/invite-tokens` a `main` cuando se verifique.**
 - [ ] Antes de entregar: tag `v1.0-practica3`.
 - [ ] Cerrar en prod: `CORS_ORIGINS=https://blueecho.es` en el `.env` del VPS.
 
@@ -517,6 +523,12 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   **Sigue pendiente (tú): verificar `docker compose`. Siguiente aquí: README
   instala-desde-cero y, al final, tag `v1.0-practica3`. Cerrar gaps de seguridad
   (CORS en prod, revisar historial git por secretos).**
+- **2026-09-28** (Windows, rama `feat/invite-tokens`): implementado sistema de
+  invitaciones y aislamiento de sesiones. `POST /api/auth/invite` genera tokens
+  per-usuario (requiere `ADMIN_SECRET`). `ScanResult.api_key` almacena el token
+  creador. Historial y detalle de escaneo filtrados por token (otros usuarios
+  reciben 404). Página `/invite` en el frontend. Commiteado y pusheado.
+  **Siguiente: verificar `docker compose up --build` en Kali, luego mergear a `main`.**
 
 ---
 
