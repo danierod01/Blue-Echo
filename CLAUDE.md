@@ -452,7 +452,11 @@ Estado a fecha 2026-09-24 (rama `claude/awesome-franklin-79do5a`):
       historial de git no tiene secretos reales; (opcional) retención del historial.
 - [ ] Rediseño UI pendiente (baja prioridad): `AiSummary`, `SearchBar`,
       `SourcesStatus`, `Login`, ajustes `Dashboard`.
-- [ ] Antes de entregar: tag `v1.0-practica3`, README instala-desde-cero.
+- [x] ~~README instala-desde-cero~~ ✅ (2026-09-28): actualizado a 18 fuentes
+      (GreyNoise + URLScan), documentados endpoint PDF, alertas webhook y variables
+      nuevas. Gap CORS mitigado (limpieza de espacios + guía en .env.example).
+- [ ] Antes de entregar: tag `v1.0-practica3`.
+- [ ] Cerrar en prod: `CORS_ORIGINS=https://blueecho.es` en el `.env` del VPS.
 
 ### ⚠️ La memoria de la P3 es un documento NUEVO (no se reutiliza la de P1)
 
