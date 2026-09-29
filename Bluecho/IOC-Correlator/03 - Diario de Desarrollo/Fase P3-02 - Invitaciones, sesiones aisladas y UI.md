@@ -93,7 +93,9 @@ for row in c.execute('SELECT id, substr(key,1,16), label FROM apikey'): print(ro
 ![[captura_invite.png]]
 
 ## Estado al terminar esta fase
-- [ ] Tests pasando (no ejecutados esta sesión — pendiente `pytest` en Kali)
+- [x] Tests pasando — **270 verdes** (262 previos + 8 nuevos en `tests/test_auth_invite.py`
+      que cubren invitación, `/auth/me`, verify y **aislamiento de historial por token**;
+      verificado en el entorno cloud el 2026-09-29)
 - [x] Variables de entorno documentadas en `.env.example` (`ADMIN_SECRET`)
 - [ ] Commit realizado (lo hace el desarrollador al terminar)
 - [ ] Build de frontend verificado (no hay npm en la máquina Windows; verificar vía Docker en Kali)

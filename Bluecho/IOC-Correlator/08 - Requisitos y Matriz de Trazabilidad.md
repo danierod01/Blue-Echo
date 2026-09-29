@@ -62,6 +62,7 @@ Estas no son requisitos originales de la P1 sino el roadmap prometido; se incluy
 | MJ-F7 | Estudio y decisión de motor de IA (→ Groq + Claude fallback) | Cumplido (ver RF-06) |
 | MJ-R1 | Paginación real en el historial | Cumplido |
 | MJ-I1 | API pública documentada (OpenAPI `/docs`) + auth | Cumplido |
+| MJ-AUTH | Multiusuario: invitaciones autoservicio (`/auth/invite`), token con etiqueta, historial **aislado por token**, sesión con nombre (`/auth/me`) | Cumplido (feat/invite-tokens, 2026-09-28) |
 | MJ-R2/R3/I2/I3 | PostgreSQL, Celery+Redis, export SIEM, plugin navegador | Backlog (trabajo futuro justificado) |
 
 **Extras fuera del roadmap:** análisis PCAP (scapy), geolocalización con mapa, login con X-API-Key, rediseño completo de la UI.
@@ -102,6 +103,7 @@ Estas no son requisitos originales de la P1 sino el roadmap prometido; se incluy
 | MJ-F5 (webhook) | `backend/ioc_correlator/alerting.py`, enganchado en `routes.py::_run_scan` | `tests/test_alerting.py` | mem. §6 · vídeo `pend.` |
 | MJ-F6 (MITRE) | `backend/ioc_correlator/mitre_mapper.py`, `frontend/.../MitreAttack.tsx` | (tests scorer/enricher) | mem. §6 · vídeo `pend.` |
 | MJ-S1/S2 (auth+rate) | `backend/ioc_correlator/api/auth.py`, `limiter.py` | `tests/test_scan_endpoint.py` | mem. §7 · vídeo `pend.` |
+| MJ-AUTH (invitaciones + aislamiento) | `api/auth.py` (`/auth/invite`, `/auth/me`, `_check_key`), `database.py` (`ApiKey`, `create_api_key`, filtro `get_history`), `routes.py` (404 escaneo ajeno), `frontend/.../Invite.tsx` | `tests/test_auth_invite.py` (8 tests: invitación, `/me`, verify, aislamiento) | mem. §6/§7 · vídeo `pend.` |
 
 ---
 

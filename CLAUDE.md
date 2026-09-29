@@ -542,6 +542,19 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   **NO verificado esta sesión (Windows sin npm): `pytest` en Kali (cambian firmas de
   `save_scan`/`get_history` y `require_api_key`) y build de frontend vía Docker.**
   **Siguiente: verificar tests + build en Kali, luego mergear `feat/invite-tokens` a `main`.**
+- **2026-09-29** (cloud, rama `feat/invite-tokens`): revisado el sistema de invitaciones
+  y **verificados los tests que quedaron pendientes → 262 seguían verdes** (los cambios de
+  firma no rompieron nada). **Añadidos 8 tests nuevos** (`tests/test_auth_invite.py`):
+  invitación (503 sin `ADMIN_SECRET`, 403 secreto malo, 422 sin nombre, token usable),
+  `/auth/me`, `/auth/verify` (master + token BD + inválida) y **aislamiento de historial
+  por token** (cada token ve solo lo suyo; escaneo ajeno → 404). Total **270 verdes**.
+  Actualizados matriz de trazabilidad (MJ-AUTH) y STRIDE (Repudiation con atribución por
+  token; §4 control de acceso con tokens personales; gaps revisados). Todo commiteado y
+  pusheado en `feat/invite-tokens`.
+  **QUÉ FALTA (estado al 29/09):** [tú] `docker compose` en limpio + build frontend vía
+  Docker en Kali; [tú] capturas + vídeo + memoria PDF; [decisión] mergear
+  `feat/invite-tokens` a `main`; [prod] `CORS_ORIGINS` + recrear BD (`down -v`) por la
+  columna `api_key`; [entrega] revisar historial git por secretos + tag `v1.0-practica3`.
 
 ---
 

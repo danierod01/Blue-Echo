@@ -29,7 +29,7 @@ o PCAP subidos, IOCs manipulados, respuestas de las APIs externas).
 |---|---|---|
 | **S**poofing (suplantación) | Alguien usa la API sin ser un usuario legítimo | Autenticación por cabecera `X-API-Key`; comparación en **tiempo constante** con `hmac.compare_digest` (evita *timing attacks*). Rutas protegidas con la dependency `require_api_key`. |
 | **T**ampering (manipulación) | Manipular peticiones o el tráfico en tránsito | **HTTPS/TLS** con Let's Encrypt (Certbot, auto-renovación). Validación y normalización de toda entrada antes de procesarla. Pydantic valida los cuerpos JSON. |
-| **R**epudiation (repudio) | Un actor niega haber hecho una consulta | Persistencia del historial con timestamp (`created_at`) en BD. *(Limitación: no hay log de auditoría por usuario porque el modelo es de clave única — ver §7.)* |
+| **R**epudiation (repudio) | Un actor niega haber hecho una consulta | Persistencia del historial con timestamp (`created_at`) en BD y **atribución por token**: cada escaneo se guarda con el token que lo creó (`ScanResult.api_key`), y cada token lleva una etiqueta identificativa (`ApiKey.label`). |
 | **I**nformation Disclosure (fuga de información) | Filtrado de API keys o de datos internos | Secretos solo por variables de entorno, nunca en el código ni en el repo (`.gitignore`). El backend no se publica al exterior (`expose`, no `ports`): único punto de entrada Nginx:80/443. Errores controlados que no exponen trazas internas. |
 | **D**enial of Service (denegación) | Saturar la API o agotar recursos/cuotas | **Rate limiting por IP** (`slowapi`): límites por endpoint (`/auth/verify` 5/min, escaneo configurable). **Límite de tamaño de fichero** en uploads (`MAX_UPLOAD_SIZE_MB`, HTTP 413). Semáforo de 5 peticiones concurrentes a las fuentes. Timeouts en todas las llamadas HTTP externas. |
 | **E**levation of Privilege (elevación) | Ejecutar código o salir del contenedor | Contenedor backend corre como **usuario no root** (`appuser`). Imagen `slim` multi-stage (menos superficie). Dependencias auditadas sin CVEs conocidos (§6). Sin `eval`/deserialización de datos no confiables en el flujo de la app. |
@@ -53,10 +53,14 @@ o PCAP subidos, IOCs manipulados, respuestas de las APIs externas).
 - **Autenticación:** cabecera `X-API-Key` requerida en todos los endpoints de datos.
   El endpoint público `/api/auth/verify` (usado por el login del frontend) comprueba la
   clave y está limitado a 5 intentos/minuto por IP para frenar fuerza bruta.
-- **Modelo de acceso:** clave **única** de aplicación (`BLUE_ECHO_API_KEY`). No hay
-  roles ni usuarios individuales — es coherente con el caso de uso (herramienta de un
-  analista o un equipo pequeño). Si la variable no está configurada, la app entra en
-  **modo desarrollo sin restricciones** (documentado); en producción **debe** estar fijada.
+- **Modelo de acceso:** dos niveles. (1) `BLUE_ECHO_API_KEY` es la **clave maestra**;
+  (2) además, cualquiera con el `ADMIN_SECRET` puede generar en `/invite` **tokens de
+  acceso personales** (`secrets.token_urlsafe(32)`) con una etiqueta identificativa,
+  almacenados en la tabla `ApiKey`. Cada token ve **solo su propio historial**
+  (aislamiento por token; el detalle de un escaneo ajeno devuelve 404, no 403, para no
+  revelar su existencia). Es el patrón *Personal Access Token* (como GitHub/Stripe). Si
+  `BLUE_ECHO_API_KEY` no está configurada, la app entra en **modo desarrollo sin
+  restricciones** (documentado); en producción **debe** estar fijada.
 - **Aislamiento de red:** el backend FastAPI no se expone al host (`expose: 8000` en la
   red interna de Docker); Nginx es el único punto de entrada y hace de reverse proxy.
 - **Limitación honesta:** al ser clave única no hay trazabilidad por usuario ni control
@@ -106,12 +110,15 @@ o PCAP subidos, IOCs manipulados, respuestas de las APIs externas).
 
 ## 8. Resumen de controles y gaps
 
-**Implementado:** auth X-API-Key (comparación constante), rate limiting por IP, HTTPS,
-límite de tamaño de subida, validación de entradas, parseo defensivo de fuentes,
+**Implementado:** auth X-API-Key (comparación constante), tokens personales por invitación
+con **historial aislado por token** (404 ante recursos ajenos), rate limiting por IP,
+HTTPS, límite de tamaño de subida, validación de entradas, parseo defensivo de fuentes,
 secretos fuera del repo, contenedor no root, backend no expuesto, dependencias sin CVEs.
 
 **Gaps conocidos (documentados como trabajo futuro):**
 - CORS por defecto `*` → restringir a `https://blueecho.es` en producción.
-- Clave única en vez de usuarios/roles (sin RBAC ni auditoría por usuario).
+- Multiusuario por token con etiqueta, sin RBAC completo (no hay roles diferenciados ni
+  revocación/expiración de tokens desde la UI) → mejora de trabajo futuro.
 - Sin política de retención/purga del historial.
 - Verificación manual pendiente de que el historial de git no contiene secretos reales.
+- `ADMIN_SECRET`: al configurarlo se habilita `/invite`; debe ser fuerte y rotarse si se filtra.
