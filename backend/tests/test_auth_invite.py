@@ -17,9 +17,15 @@ from sqlmodel.pool import StaticPool
 import os
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 
+from datetime import datetime, timedelta, timezone  # noqa: E402
+
 from main import app  # noqa: E402
 from ioc_correlator.connectors.base import ConnectorResult  # noqa: E402
-from ioc_correlator.database import get_session, create_api_key  # noqa: E402
+from ioc_correlator.database import (  # noqa: E402
+    get_session,
+    create_api_key,
+    is_valid_api_key,
+)
 
 _VT_OK = ConnectorResult(
     source="virustotal", success=True,
@@ -150,3 +156,71 @@ def test_history_is_isolated_per_token(client, session, monkeypatch):
     own = client.get(f"/api/history/{id_a}", headers={"X-API-Key": "tokenA"})
     assert own.status_code == 200
     assert own.json()["ioc_value"] == "1.1.1.1"
+
+
+# ---------------------------------------------------------------------------
+# Caducidad de tokens
+# ---------------------------------------------------------------------------
+
+def test_expired_token_is_invalid(session):
+    past = datetime.now(timezone.utc) - timedelta(days=1)
+    create_api_key(session, key="tok-caducado", label="Viejo", expires_at=past)
+    assert is_valid_api_key(session, "tok-caducado") is False
+
+
+def test_future_token_is_valid(session):
+    future = datetime.now(timezone.utc) + timedelta(days=7)
+    create_api_key(session, key="tok-vigente", label="Nuevo", expires_at=future)
+    assert is_valid_api_key(session, "tok-vigente") is True
+
+
+def test_invite_negative_expiry_is_422(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_SECRET", "s3cr3t")
+    r = client.post("/api/auth/invite",
+                    json={"admin_secret": "s3cr3t", "label": "Ana", "expires_in_days": -3})
+    assert r.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Listado y revocación de tokens
+# ---------------------------------------------------------------------------
+
+def test_list_tokens_requires_admin_secret(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_SECRET", "s3cr3t")
+    r = client.post("/api/auth/tokens", json={"admin_secret": "malo"})
+    assert r.status_code == 403
+
+
+def test_list_tokens_returns_masked_keys(client, session, monkeypatch):
+    monkeypatch.setenv("ADMIN_SECRET", "s3cr3t")
+    create_api_key(session, key="supersecreto-token-1234", label="Ana")
+    r = client.post("/api/auth/tokens", json={"admin_secret": "s3cr3t"})
+    assert r.status_code == 200
+    tokens = r.json()
+    assert any(t["label"] == "Ana" for t in tokens)
+    # nunca se devuelve el token completo
+    for t in tokens:
+        assert "supersecreto-token-1234" not in t["key_preview"]
+        assert t["key_preview"].endswith("…")
+
+
+def test_revoke_token_makes_it_invalid(client, session, monkeypatch):
+    monkeypatch.setenv("ADMIN_SECRET", "s3cr3t")
+    monkeypatch.setenv("BLUE_ECHO_API_KEY", "master")
+    obj = create_api_key(session, key="tok-a-revocar", label="Temporal")
+
+    # Antes de revocar: el token da acceso
+    assert client.get("/api/auth/me", headers={"X-API-Key": "tok-a-revocar"}).status_code == 200
+
+    # Revocar
+    r = client.post("/api/auth/revoke", json={"admin_secret": "s3cr3t", "token_id": obj.id})
+    assert r.status_code == 200
+
+    # Después de revocar: el token deja de valer -> 401
+    assert client.get("/api/auth/me", headers={"X-API-Key": "tok-a-revocar"}).status_code == 401
+
+
+def test_revoke_unknown_token_is_404(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_SECRET", "s3cr3t")
+    r = client.post("/api/auth/revoke", json={"admin_secret": "s3cr3t", "token_id": 99999})
+    assert r.status_code == 404

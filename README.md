@@ -273,6 +273,21 @@ curl http://localhost/api/history \
   -H "X-API-Key: tu_clave_secreta_aqui"
 ```
 
+### Invitaciones y tokens personales (multiusuario)
+
+Además de la clave maestra, si defines `ADMIN_SECRET` puedes repartir **tokens de
+acceso personales** sin compartir la clave maestra:
+
+1. Ve a **http://localhost/invite**, introduce el `ADMIN_SECRET`, un **nombre** y
+   (opcional) una **caducidad en días** → se genera un token.
+2. Cada usuario entra con su token y ve **solo su propio historial** (aislamiento por
+   token; el detalle de un escaneo ajeno responde `404`).
+3. Desde la misma página, "Gestionar tokens" permite **listar y revocar** tokens.
+
+Endpoints equivalentes: `POST /api/auth/invite` (crear), `POST /api/auth/tokens`
+(listar), `POST /api/auth/revoke` (revocar), `GET /api/auth/me` (nombre de la sesión).
+Todos los de administración requieren el `ADMIN_SECRET` en el cuerpo.
+
 ---
 
 ## Configuración de API Keys
@@ -281,8 +296,11 @@ Edita el fichero `.env`:
 
 ```dotenv
 # ---- Autenticación ----
-# Clave para acceder al panel y a la API. Déjala vacía solo en desarrollo local.
+# Clave maestra para acceder al panel y a la API. Déjala vacía solo en desarrollo local.
 BLUE_ECHO_API_KEY=
+# Código de administración para generar/gestionar tokens de invitación en /invite.
+# Si se deja vacío, el sistema de invitaciones queda deshabilitado.
+ADMIN_SECRET=
 
 # ---- IA Generativa ----
 # Groq — proveedor principal, tier gratuito (registro en console.groq.com)

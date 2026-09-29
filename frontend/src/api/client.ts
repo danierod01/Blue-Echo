@@ -260,6 +260,36 @@ export async function getMe(): Promise<MeResponse> {
   return handleResponse<MeResponse>(res);
 }
 
+export interface TokenInfo {
+  id: number;
+  label: string;
+  key_preview: string;
+  active: boolean;
+  created_at: string;
+  expires_at: string | null;
+}
+
+/** Lista los tokens emitidos (requiere el ADMIN_SECRET). */
+export async function listTokens(adminSecret: string): Promise<TokenInfo[]> {
+  const res = await fetch(`${BASE_URL}/api/auth/tokens`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ admin_secret: adminSecret }),
+  });
+  if (!res.ok) throw new Error("No autorizado o error listando tokens.");
+  return res.json() as Promise<TokenInfo[]>;
+}
+
+/** Revoca (desactiva) un token por id (requiere el ADMIN_SECRET). */
+export async function revokeToken(adminSecret: string, tokenId: number): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/auth/revoke`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ admin_secret: adminSecret, token_id: tokenId }),
+  });
+  if (!res.ok) throw new Error("No se pudo revocar el token.");
+}
+
 export async function verifyApiKey(apiKey: string): Promise<boolean> {
   const res = await fetch(`${BASE_URL}/api/auth/verify`, {
     method: "POST",

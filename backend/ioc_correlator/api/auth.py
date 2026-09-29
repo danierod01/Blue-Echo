@@ -1,6 +1,8 @@
 import hmac
 import os
 import secrets
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Security
 from fastapi.security.api_key import APIKeyHeader
@@ -13,6 +15,8 @@ from ioc_correlator.database import (
     get_api_key_label,
     get_session,
     is_valid_api_key,
+    list_api_keys,
+    revoke_api_key,
 )
 
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
@@ -31,6 +35,7 @@ class VerifyResponse(BaseModel):
 class InviteRequest(BaseModel):
     admin_secret: str
     label: str = ""
+    expires_in_days: Optional[int] = None  # None = no caduca
 
 
 class InviteResponse(BaseModel):
@@ -40,6 +45,33 @@ class InviteResponse(BaseModel):
 
 class MeResponse(BaseModel):
     name: str
+
+
+class AdminRequest(BaseModel):
+    admin_secret: str
+
+
+class RevokeRequest(BaseModel):
+    admin_secret: str
+    token_id: int
+
+
+class TokenInfo(BaseModel):
+    id: int
+    label: str
+    key_preview: str          # solo un prefijo, nunca el token completo
+    active: bool
+    created_at: datetime
+    expires_at: Optional[datetime]
+
+
+def _require_admin(admin_secret: str) -> None:
+    """Valida el ADMIN_SECRET para operaciones de administración de tokens."""
+    expected = os.getenv("ADMIN_SECRET", "").strip()
+    if not expected:
+        raise HTTPException(status_code=503, detail="Sistema de invitaciones no configurado.")
+    if not hmac.compare_digest(admin_secret.encode(), expected.encode()):
+        raise HTTPException(status_code=403, detail="Código de acceso incorrecto.")
 
 
 def _check_key(api_key: str, session: Session) -> bool:
@@ -75,19 +107,57 @@ async def invite(
     session: Session = Depends(get_session),
 ) -> InviteResponse:
     """Genera un token de acceso. Requiere el ADMIN_SECRET del servidor."""
-    admin_secret = os.getenv("ADMIN_SECRET", "").strip()
-    if not admin_secret:
-        raise HTTPException(status_code=503, detail="Sistema de invitaciones no configurado.")
-    if not hmac.compare_digest(body.admin_secret.encode(), admin_secret.encode()):
-        raise HTTPException(status_code=403, detail="Código de acceso incorrecto.")
+    _require_admin(body.admin_secret)
 
     label = body.label.strip()
     if not label:
         raise HTTPException(status_code=422, detail="El nombre es obligatorio.")
 
+    expires_at = None
+    if body.expires_in_days is not None:
+        if body.expires_in_days <= 0:
+            raise HTTPException(status_code=422, detail="La caducidad debe ser un número de días positivo.")
+        expires_at = datetime.now(timezone.utc) + timedelta(days=body.expires_in_days)
+
     token = secrets.token_urlsafe(32)
-    create_api_key(session, key=token, label=label)
+    create_api_key(session, key=token, label=label, expires_at=expires_at)
     return InviteResponse(token=token, label=label)
+
+
+@auth_router.post("/auth/tokens", response_model=list[TokenInfo])
+@limiter.limit("30/minute")
+async def list_tokens(
+    request: Request,
+    body: AdminRequest,
+    session: Session = Depends(get_session),
+) -> list[TokenInfo]:
+    """Lista los tokens emitidos (solo un prefijo de cada uno). Requiere ADMIN_SECRET."""
+    _require_admin(body.admin_secret)
+    return [
+        TokenInfo(
+            id=k.id,
+            label=k.label,
+            key_preview=k.key[:8] + "…",
+            active=k.active,
+            created_at=k.created_at,
+            expires_at=k.expires_at,
+        )
+        for k in list_api_keys(session)
+    ]
+
+
+@auth_router.post("/auth/revoke")
+@limiter.limit("30/minute")
+async def revoke(
+    request: Request,
+    body: RevokeRequest,
+    session: Session = Depends(get_session),
+) -> dict:
+    """Revoca (desactiva) un token por su id. Requiere ADMIN_SECRET."""
+    _require_admin(body.admin_secret)
+    if not revoke_api_key(session, body.token_id):
+        raise HTTPException(status_code=404, detail="Token no encontrado.")
+    return {"revoked": body.token_id}
 
 
 async def require_api_key(

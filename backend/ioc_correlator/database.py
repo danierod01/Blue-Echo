@@ -15,6 +15,8 @@ class ApiKey(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     key: str = Field(index=True, unique=True)
     label: str = Field(default="")
+    active: bool = Field(default=True)                       # revocación
+    expires_at: Optional[datetime] = Field(default=None)    # caducidad (None = no caduca)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -135,8 +137,18 @@ def get_scan_by_id(session: Session, scan_id: int) -> Optional[ScanResult]:
     return session.get(ScanResult, scan_id)
 
 
-def create_api_key(session: Session, key: str, label: str = "") -> ApiKey:
-    obj = ApiKey(key=key, label=label)
+def _as_utc(dt: datetime) -> datetime:
+    """Normaliza a UTC-aware (SQLite puede devolver datetimes naive)."""
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+
+
+def create_api_key(
+    session: Session,
+    key: str,
+    label: str = "",
+    expires_at: Optional[datetime] = None,
+) -> ApiKey:
+    obj = ApiKey(key=key, label=label, expires_at=expires_at)
     session.add(obj)
     session.commit()
     session.refresh(obj)
@@ -144,10 +156,34 @@ def create_api_key(session: Session, key: str, label: str = "") -> ApiKey:
 
 
 def is_valid_api_key(session: Session, key: str) -> bool:
-    return session.exec(select(ApiKey).where(ApiKey.key == key)).first() is not None
+    """True solo si el token existe, está activo y no ha caducado."""
+    obj = session.exec(select(ApiKey).where(ApiKey.key == key)).first()
+    if obj is None or not obj.active:
+        return False
+    if obj.expires_at is not None and _as_utc(obj.expires_at) <= datetime.now(timezone.utc):
+        return False
+    return True
 
 
 def get_api_key_label(session: Session, key: str) -> Optional[str]:
     """Devuelve la etiqueta (nombre) asociada a un token, o None si no existe."""
     obj = session.exec(select(ApiKey).where(ApiKey.key == key)).first()
     return obj.label if obj else None
+
+
+def list_api_keys(session: Session) -> list[ApiKey]:
+    """Todos los tokens (para la vista de administración), más recientes primero."""
+    return list(
+        session.exec(select(ApiKey).order_by(ApiKey.created_at.desc())).all()
+    )
+
+
+def revoke_api_key(session: Session, token_id: int) -> bool:
+    """Marca un token como inactivo. Devuelve False si no existe."""
+    obj = session.get(ApiKey, token_id)
+    if obj is None:
+        return False
+    obj.active = False
+    session.add(obj)
+    session.commit()
+    return True

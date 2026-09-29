@@ -561,6 +561,19 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   Docker en Kali; [tú] capturas + vídeo + memoria PDF; [decisión] mergear
   `feat/invite-tokens` a `main`; [prod] `CORS_ORIGINS` + recrear BD (`down -v`) por la
   columna `api_key`; [entrega] revisar historial git por secretos + tag `v1.0-practica3`.
+- **2026-09-29** (cloud, `feat/invite-tokens`): decisión de dejar la app "a nivel
+  producción" (última entrega, hay días). Escaneado historial git de secretos → limpio
+  (salvo `miapi2026` redactado). Empezado el pulido en tandas ("todo, yo ordeno").
+  **Tanda 1 (seguridad, gestión de tokens):** revocación + caducidad opcional de tokens.
+  Backend: `ApiKey.active`/`expires_at`, `is_valid_api_key` valida estado+caducidad,
+  `list_api_keys`/`revoke_api_key`, endpoints `POST /auth/tokens` (listar, key
+  enmascarada) y `POST /auth/revoke` (ambos con `ADMIN_SECRET`); `/auth/invite` acepta
+  `expires_in_days`. Frontend: panel "Gestionar tokens" en `/invite` (listar/revocar +
+  campo caducidad). +7 tests → **277 verdes**; build frontend OK. STRIDE/matriz al día.
+  **PENDIENTE en tandas siguientes:** cabeceras de seguridad HTTP (nginx), CORS default,
+  log de auditoría; CI GitHub Actions + healthchecks + LICENSE; UX (404, error boundary,
+  favicon/meta, toasts); tests de frontend (Vitest). **OJO migración:** `ApiKey` ganó
+  columnas → recrear BD (`down -v`) en el próximo despliegue.
 
 ---
 

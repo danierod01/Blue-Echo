@@ -117,8 +117,9 @@ secretos fuera del repo, contenedor no root, backend no expuesto, dependencias s
 
 **Gaps conocidos (documentados como trabajo futuro):**
 - CORS por defecto `*` → restringir a `https://blueecho.es` en producción.
-- Multiusuario por token con etiqueta, sin RBAC completo (no hay roles diferenciados ni
-  revocación/expiración de tokens desde la UI) → mejora de trabajo futuro.
+- Multiusuario por token con etiqueta e **invalidación de tokens** (revocación +
+  caducidad opcional, gestionables desde `/invite`). Sin RBAC con roles diferenciados
+  (todos los tokens tienen los mismos permisos) → mejora de trabajo futuro.
 - Sin política de retención/purga del historial.
 - Verificación manual pendiente de que el historial de git no contiene secretos reales.
 - `ADMIN_SECRET`: al configurarlo se habilita `/invite`; debe ser fuerte y rotarse si se filtra.

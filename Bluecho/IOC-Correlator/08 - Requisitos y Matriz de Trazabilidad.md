@@ -62,7 +62,7 @@ Estas no son requisitos originales de la P1 sino el roadmap prometido; se incluy
 | MJ-F7 | Estudio y decisión de motor de IA (→ Groq + Claude fallback) | Cumplido (ver RF-06) |
 | MJ-R1 | Paginación real en el historial | Cumplido |
 | MJ-I1 | API pública documentada (OpenAPI `/docs`) + auth | Cumplido |
-| MJ-AUTH | Multiusuario: invitaciones autoservicio (`/auth/invite`), token con etiqueta, historial **aislado por token**, sesión con nombre (`/auth/me`) | Cumplido (feat/invite-tokens, 2026-09-28) |
+| MJ-AUTH | Multiusuario: invitaciones autoservicio (`/auth/invite`), token con etiqueta, historial **aislado por token**, sesión con nombre (`/auth/me`), **revocación y caducidad de tokens** (`/auth/tokens`, `/auth/revoke`) | Cumplido (feat/invite-tokens, 2026-09-28/29) |
 | MJ-R2/R3/I2/I3 | PostgreSQL, Celery+Redis, export SIEM, plugin navegador | Backlog (trabajo futuro justificado) |
 
 **Extras fuera del roadmap:** análisis PCAP (scapy), geolocalización con mapa, login con X-API-Key, rediseño completo de la UI.
