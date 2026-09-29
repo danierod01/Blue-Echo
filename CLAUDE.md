@@ -438,8 +438,10 @@ SSH, verificar el navegador/UI real, y añadir imágenes/PNG a las notas de Obsi
 
 Estado a fecha 2026-09-28 (rama `feat/invite-tokens`):
 
-- [ ] **Verificar arranque en limpio** `docker compose up --build` (criterio nº1
-      de P3, 30% de la nota). NO verificado tras añadir `fpdf2`. **Prioritario.**
+- [x] ~~**Verificar arranque en limpio** `docker compose up --build` (criterio nº1
+      de P3, 30% de la nota)~~ ✅ (2026-09-29): verificado en Kali sobre la rama
+      `design-soc-dashboard` (5 servicios sanos + `/api/health` ok + escaneo real de
+      principio a fin). Ver registro de sesión y `Fase P3-04`.
 - [x] ~~**Numerar requisitos** RF-/RNF- de la P1 y montar la **matriz de trazabilidad**~~ ✅ (2026-09-24): `Bluecho/IOC-Correlator/08 - Requisitos y Matriz de Trazabilidad.md` (12 RF + 7 RNF derivados del Informe P1 + mejoras, mapeados a código y tests). Falta rellenar minuto del vídeo y medir latencia (RNF-07).
 - [x] ~~**Documentar en Obsidian**: F4, F5, GreyNoise, F7, limpieza de tests. Nota
       "Fase P3" en `03 - Diario de Desarrollo/`~~ ✅ (2026-09-24):
@@ -713,6 +715,19 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   sigue con el diseño clásico (sin tocar). **⚠️ verificar en Kali** (`docker compose` con los
   5 servicios, `pytest`=315, `npm test`=6) — la migración de BD (`down -v`) aplica por las
   columnas nuevas de `ApiKey` y por el cambio a Postgres.
+- **2026-09-29** (Kali → cloud, `design-soc-dashboard`) **¡ARRANQUE EN LIMPIO VERIFICADO!** El
+  usuario levantó la rama fusionada en Kali con `docker compose ... down -v && up --build`:
+  los **5 servicios arrancan** (db/redis *healthy*, backend *healthy*, worker *up*, frontend)
+  y `curl /api/health` → `{"status":"ok","version":"1.0.0"}`. Escaneo real de `185.220.101.45`
+  verificado de principio a fin con el look SOC: ThreatScore 70 MALICIOSO, tabla por fuente,
+  análisis IA, **pivotes clicables**, geolocalización y botones STIX/MISP/PDF. **El criterio
+  del 30% (instala y arranca desde cero por README) queda demostrado.** Nota Obsidian creada:
+  `Fase P3-04 - Cierre de roadmap, seguridad avanzada, pivoting y diseño SOC.md`.
+  **Ajuste de UI pedido por el usuario:** el botón de mostrar/ocultar historial no era
+  intuitivo (estaba suelto junto a "ONLINE"). Reorganizado: el botón **"Ocultar"** ahora vive
+  dentro del panel de historial (pegado a "Recientes"), y en la cabecera solo aparece un botón
+  **"Historial"** cuando está oculto (para reabrirlo). El indicador "ONLINE" se mantiene.
+  **Pendiente (tú):** solo cargar el plugin de navegador en Firefox/Chrome y probarlo.
 
 ---
 
@@ -832,7 +847,7 @@ Cotejado con el código el 2026-09-24:
 | **R2** | **PostgreSQL** | Baja | ✅ **Hecho** (2026-09-29): servicio `db` (postgres:16-alpine) en `docker-compose.yml` con healthcheck + `depends_on: service_healthy`; backend apunta a `postgresql+psycopg://…`. Driver `psycopg[binary]` en requirements. El código mantiene SQLite por defecto (dev/tests). `.env.example` con `POSTGRES_*`. **⚠️ verificar `docker compose up --build` en Kali (yo no levanto Docker aquí).** Rama `feat/invite-tokens` |
 | **R3** | **Celery + Redis** | Baja | ✅ **Hecho** (2026-09-29): `celery_app.py` + `tasks.py` (tarea `scan_ioc` = enrich→score→IA→guardar en su propia sesión de BD). Endpoints `POST /api/scan/async` (encola, → task_id) y `GET /api/tasks/{id}` (estado/resultado). Servicios `redis` + `worker` en compose. Deps `celery`/`redis`. Tests en modo eager/mockeado (6, `test_tasks.py`). **⚠️ verificar en Kali con Docker.** Rama `feat/invite-tokens` |
 | **I2** | **Export a SIEM** | Baja | ✅ **Hecho** (2026-09-29): `siem_export.py` (STIX 2.1 + MISP, Python puro, IDs deterministas, attack-patterns MITRE). `GET /api/history/{id}/export?format=stix\|misp` con aislamiento por token + botones STIX/MISP en el dashboard. 13 tests (`test_siem_export.py`). Rama `feat/invite-tokens` |
-| I3 | Plugin de navegador | Baja | ❌ Backlog |
+| **I3** | **Plugin de navegador** | Baja | ✅ **Hecho** (2026-09-29): `browser-extension/` (Manifest V3): popup de escaneo, menú contextual sobre IOCs, página de opciones (URL + API key), README de instalación. Habla con `POST /api/scan/json`. Rama `feat/invite-tokens` |
 
 **Extras construidos fuera del roadmap** (mejoras adicionales, el profesor no las ha visto): análisis PCAP (scapy), geolocalización con mapa, login UI, rediseño completo de la UI, **pivoting / entidades relacionadas** (escaneo encadenado).
 

@@ -133,14 +133,15 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {history.length > 0 && (
+            {/* Botón para reabrir el historial: solo visible cuando está oculto */}
+            {history.length > 0 && !sidebarOpen && (
               <button
-                onClick={() => setSidebarOpen(v => !v)}
+                onClick={() => setSidebarOpen(true)}
                 className="hidden lg:flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-1 text-xs text-slate-400 transition hover:border-accent/50 hover:text-white"
-                title={sidebarOpen ? "Ocultar historial" : "Mostrar historial"}
+                title="Mostrar historial"
               >
-                {sidebarOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
-                {sidebarOpen ? "Ocultar" : "Historial"}
+                <PanelRightOpen size={14} />
+                Historial
               </button>
             )}
             <div className="flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 font-data text-[11px] text-accent-soft">
@@ -320,9 +321,19 @@ export default function Dashboard() {
       {/* ---------------------------------------------------------------- */}
       {history.length > 0 && sidebarOpen && (
         <aside className="w-72 shrink-0 hidden lg:flex flex-col gap-3">
-          <div className="flex items-center gap-2 soc-label">
-            <History size={13} />
-            Recientes
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 soc-label">
+              <History size={13} />
+              Recientes
+            </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-1 text-[11px] text-slate-500 transition hover:text-accent"
+              title="Ocultar historial"
+            >
+              <PanelRightClose size={13} />
+              Ocultar
+            </button>
           </div>
           <div className="soc-panel p-2">
             <HistoryList items={history} onSelect={handleHistorySelect} />
