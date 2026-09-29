@@ -33,6 +33,7 @@ from ioc_correlator.alerting import maybe_send_alert
 from ioc_correlator.audit import audit, mask_token
 from ioc_correlator.mitre_mapper import map_to_mitre
 from ioc_correlator.report_pdf import build_scan_pdf
+from ioc_correlator.siem_export import to_misp, to_stix
 from ioc_correlator.enricher import enrich, get_sources_status
 from ioc_correlator.extractor import extract_iocs_from_bytes
 from ioc_correlator.scorer import compute_score
@@ -401,6 +402,46 @@ async def history_detail_pdf(
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/history/{scan_id}/export")
+@limiter.limit("20/minute")
+async def history_detail_export(
+    request: Request,
+    scan_id: int,
+    format: str = Query("stix", pattern="^(stix|misp)$"),
+    session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
+) -> Response:
+    """Exporta el escaneo a un formato SIEM/TI estándar (roadmap I2).
+
+    `format=stix`  → bundle STIX 2.1
+    `format=misp`  → evento MISP JSON
+    """
+    db_scan = get_scan_by_id(session, scan_id)
+    if db_scan is None:
+        raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
+    # Mismo aislamiento por token que el resto del historial.
+    if current_key and db_scan.api_key and db_scan.api_key != current_key:
+        raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
+
+    raw = json.loads(db_scan.connector_results)
+    connector_objs = {name: ConnectorResult(**d) for name, d in raw.items()}
+    scoring = compute_score(connector_objs)
+    scan = _build_scan_response(db_scan, scoring.breakdown)
+
+    if format == "misp":
+        payload = to_misp(scan)
+        filename = f"blue-echo-scan-{scan_id}-misp.json"
+    else:
+        payload = to_stix(scan)
+        filename = f"blue-echo-scan-{scan_id}-stix.json"
+
+    return Response(
+        content=json.dumps(payload, indent=2, ensure_ascii=False),
+        media_type="application/json",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 

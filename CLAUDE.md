@@ -619,6 +619,23 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   tests FE verdes. **BLOQUE DE HARDENING TERMINADO.** Pendiente solo del desarrollador:
   verificar en Kali (`docker compose`, `pytest`=281, `npm test`=6), mergear
   `feat/invite-tokens`→`main`, y entregables manuales (capturas/vídeo/memoria/tag).
+- **2026-09-29** (cloud, `feat/invite-tokens`) **Cierre de roadmap — I2 + I3:** el usuario
+  decidió cerrar el roadmap pendiente entero (R2/R3/I2/I3), en orden de riesgo ascendente.
+  **I2 · Export a SIEM ✅:** `siem_export.py` (STIX 2.1 con indicador + `attack-pattern`
+  MITRE + relaciones e IDs deterministas; evento MISP; Python puro, sin deps nuevas).
+  Endpoint `GET /api/history/{id}/export?format=stix|misp` (aislamiento por token → 404;
+  formato inválido → 422). Frontend: `downloadScanExport` + botones STIX/MISP en el
+  dashboard. 13 tests (`test_siem_export.py`) → **suite backend 294 verdes**; build FE OK;
+  6 tests FE verdes. README actualizado (endpoint + manual). **I3 · Plugin de navegador ✅:**
+  `browser-extension/` (Manifest V3): popup de escaneo, menú contextual (clic derecho sobre
+  IOC), página de opciones (URL servidor + API key en `chrome.storage.sync`), icono radar
+  teal SVG, README de instalación (Firefox/Chrome). Habla con `POST /api/scan/json`; usa
+  `host_permissions` para no depender del CORS. Manifest validado (JSON OK).
+  **PENDIENTE (tú):** cargar la extensión en un navegador real y probarla (yo no tengo
+  navegador con extensiones aquí). **PENDIENTE roadmap:** R2 (PostgreSQL) y R3 (Celery+Redis)
+  — los que tocan `docker compose`; se harán re-verificando el arranque limpio tras cada uno.
+  Nota: durante esta sesión el clasificador de Bash estuvo caído un rato; I3 se escribió
+  entero (solo ficheros) mientras tanto y se verificó al recuperarse el terminal.
 
 ---
 
@@ -737,7 +754,7 @@ Cotejado con el código el 2026-09-24:
 | **F5** | **Alertas por webhook (Slack/Discord/Teams)** | Media | ✅ **Hecho** (2026-09-24): `alerting.py`, dispara webhook si `score >= ALERT_SCORE_THRESHOLD`; formatos slack/discord/teams/generic; best-effort (nunca rompe el escaneo). Config en `.env` |
 | R2 | PostgreSQL | Baja | ❌ Backlog (justificar como trabajo futuro) |
 | R3 | Celery + Redis | Baja | ❌ Backlog (justificar como trabajo futuro) |
-| I2 | Export a SIEM | Baja | ❌ Backlog |
+| **I2** | **Export a SIEM** | Baja | ✅ **Hecho** (2026-09-29): `siem_export.py` (STIX 2.1 + MISP, Python puro, IDs deterministas, attack-patterns MITRE). `GET /api/history/{id}/export?format=stix\|misp` con aislamiento por token + botones STIX/MISP en el dashboard. 13 tests (`test_siem_export.py`). Rama `feat/invite-tokens` |
 | I3 | Plugin de navegador | Baja | ❌ Backlog |
 
 **Extras construidos fuera del roadmap** (mejoras adicionales, el profesor no las ha visto): análisis PCAP (scapy), geolocalización con mapa, login UI, rediseño completo de la UI.

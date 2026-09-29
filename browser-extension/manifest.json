@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Blue-Echo IOC Scanner",
+  "version": "1.0.0",
+  "description": "Escanea IOCs (IP, hash, dominio, URL) contra tu instancia de Blue-Echo desde el navegador.",
+  "permissions": ["contextMenus", "storage", "notifications", "scripting", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Blue-Echo IOC Scanner",
+    "default_popup": "popup.html",
+    "default_icon": "icon.svg"
+  },
+  "icons": {
+    "48": "icon.svg",
+    "128": "icon.svg"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  }
+}

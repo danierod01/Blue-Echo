@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, History, FileDown, Loader2, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { AlertCircle, History, FileDown, Loader2, PanelRightClose, PanelRightOpen, Share2 } from "lucide-react";
 import SkeletonResults from "@/components/SkeletonResults";
 import EmptyState from "@/components/EmptyState";
 import SearchBar from "@/components/SearchBar";
@@ -15,7 +15,7 @@ import SourcesStatus from "@/components/SourcesStatus";
 import { useToast } from "@/components/Toast";
 import PcapAnalysisView from "@/components/PcapAnalysisView";
 import { cn } from "@/lib/utils";
-import { scanIoc, scanFile, scanPcap, getHistory, getScanById, getPcapScanById, downloadScanPdf, type ScanResponse, type PcapScanResponse, type HistoryItem } from "@/api/client";
+import { scanIoc, scanFile, scanPcap, getHistory, getScanById, getPcapScanById, downloadScanPdf, downloadScanExport, type ScanResponse, type PcapScanResponse, type HistoryItem } from "@/api/client";
 
 type ScanMode = "single" | "bulk";
 
@@ -45,6 +45,16 @@ export default function Dashboard() {
       toast(e instanceof Error ? e.message : "No se pudo descargar el PDF.", "error");
     } finally {
       setDownloadingPdf(false);
+    }
+  }
+
+  async function handleExport(format: "stix" | "misp") {
+    if (!result) return;
+    try {
+      await downloadScanExport(result.id, format, result.ioc_value);
+      toast(`Exportado a ${format.toUpperCase()}.`, "success");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "No se pudo exportar.", "error");
     }
   }
 
@@ -204,7 +214,25 @@ export default function Dashboard() {
         {/* Resultados */}
         {mode === "single" && result && !loading && (
           <div className="flex flex-col gap-6">
-            <div className="flex justify-end">
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => handleExport("stix")}
+                className="flex items-center gap-2 rounded-lg border border-gray-700/60 bg-gray-900/60 px-3 py-1.5 text-xs font-medium text-gray-300 transition hover:border-blue-500/60 hover:text-blue-300"
+                title="Exportar a STIX 2.1 (bundle para SIEM/TIP)"
+              >
+                <Share2 size={13} />
+                STIX
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExport("misp")}
+                className="flex items-center gap-2 rounded-lg border border-gray-700/60 bg-gray-900/60 px-3 py-1.5 text-xs font-medium text-gray-300 transition hover:border-blue-500/60 hover:text-blue-300"
+                title="Exportar a evento MISP (JSON)"
+              >
+                <Share2 size={13} />
+                MISP
+              </button>
               <button
                 type="button"
                 onClick={handleDownloadPdf}

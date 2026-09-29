@@ -418,7 +418,7 @@ La primera vez que accedes al panel verás un formulario de login. Introduce la 
    - **Técnicas MITRE ATT&CK** mapeadas a partir de los hallazgos
    - **Análisis en lenguaje natural** generado por IA
 5. El escaneo queda guardado automáticamente en el historial.
-6. Con el botón **Descargar PDF** obtienes un informe del escaneo (score, veredicto, tabla de fuentes, análisis IA y técnicas MITRE) listo para adjuntar a un ticket o parte de incidente.
+6. Con el botón **Descargar PDF** obtienes un informe del escaneo (score, veredicto, tabla de fuentes, análisis IA y técnicas MITRE) listo para adjuntar a un ticket o parte de incidente. Los botones **STIX** y **MISP** exportan el mismo escaneo a formatos estándar de Threat Intelligence, importables en un SIEM/TIP.
 
 ### Escanear desde un fichero de logs
 
@@ -557,6 +557,25 @@ curl http://localhost/api/history/42/pdf \
 ```
 
 Devuelve `application/pdf` con el informe del escaneo (score, veredicto, tabla de fuentes, análisis IA y técnicas MITRE).
+
+### GET /api/history/{id}/export — Exportación a SIEM/TIP (STIX 2.1 / MISP)
+
+```bash
+# Bundle STIX 2.1 (indicador + attack-patterns MITRE + relaciones)
+curl "http://localhost/api/history/42/export?format=stix" \
+  -H "X-API-Key: tu_clave" -o ioc-42-stix.json
+
+# Evento MISP (atributo + tags + threat level)
+curl "http://localhost/api/history/42/export?format=misp" \
+  -H "X-API-Key: tu_clave" -o ioc-42-misp.json
+```
+
+Serializa el escaneo a formatos interoperables que consumen las plataformas de
+seguridad reales (Splunk/QRadar/OpenCTI vía STIX, o MISP directamente). El patrón
+STIX se adapta al tipo de IOC (`ipv4-addr`, `domain-name`, `file:hashes`, …) y
+cada técnica MITRE detectada se incluye como `attack-pattern` con su relación
+`indicates`. Los IDs STIX son deterministas, de modo que reexportar el mismo IOC
+produce el mismo identificador (el receptor lo trata como actualización).
 
 ### GET /api/sources — Estado de los conectores
 

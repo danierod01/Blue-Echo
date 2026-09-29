@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="popup.css">
+  <title>Blue-Echo</title>
+</head>
+<body>
+  <header>
+    <span class="logo">◎</span>
+    <span class="brand">BlueEcho</span>
+    <span class="soc">SOC</span>
+    <a id="opts" href="#" title="Opciones">⚙</a>
+  </header>
+
+  <form id="form">
+    <input id="ioc" type="text" placeholder="IP, hash, dominio o URL" autocomplete="off" autofocus>
+    <button id="go" type="submit">Escanear</button>
+  </form>
+
+  <div id="status" class="status" hidden></div>
+  <div id="result" class="result" hidden>
+    <div class="scoreline">
+      <span id="score" class="score">–</span>
+      <span id="verdict" class="verdict"></span>
+    </div>
+    <div id="ioctype" class="ioctype"></div>
+    <p id="summary" class="summary"></p>
+  </div>
+
+  <p id="hint" class="hint">Configura la URL del servidor en <a id="opts2" href="#">Opciones</a>.</p>
+
+  <script src="popup.js"></script>
+</body>
+</html>
