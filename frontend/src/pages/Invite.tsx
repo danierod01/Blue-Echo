@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Radar, Copy, Check, KeyRound, ShieldOff, RefreshCw } from "lucide-react";
 import { listTokens, revokeToken, type TokenInfo } from "@/api/client";
+import { useToast } from "@/components/Toast";
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export default function Invite() {
@@ -15,6 +16,7 @@ export default function Invite() {
   // Panel de gestión de tokens
   const [tokens, setTokens] = useState<TokenInfo[] | null>(null);
   const [manageError, setManageError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   async function loadTokens() {
     setManageError(null);
@@ -30,6 +32,7 @@ export default function Invite() {
     try {
       await revokeToken(secret, id);
       await loadTokens();
+      toast("Token revocado.", "success");
     } catch (err) {
       setManageError(err instanceof Error ? err.message : "Error revocando token.");
     }
@@ -67,6 +70,7 @@ export default function Invite() {
     if (!token) return;
     navigator.clipboard.writeText(token);
     setCopied(true);
+    toast("Token copiado al portapapeles.", "success");
     setTimeout(() => setCopied(false), 2000);
   }
 

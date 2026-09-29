@@ -610,6 +610,15 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   que arrastraría Vite 7); no afectan al producto y el CI usa `--audit-level=high`, así que
   no bloquean. **CON ESTO LAS 5 TANDAS DE HARDENING ESTÁN COMPLETAS.** Pendiente: nota
   Obsidian consolidada (Fase P3-03) + toasts (micro-paso opcional).
+- **2026-09-29** (cloud, `feat/invite-tokens`) **Cierre del bloque:** creada la nota
+  Obsidian **`Fase P3-03 - Hardening a produccion...`** consolidando las 5 tandas (para la
+  memoria). Añadidos **toasts** (`components/Toast.tsx`: `ToastProvider` + `useToast`,
+  auto-cierre 4s), envueltos en `main.tsx`, y usados para feedback transitorio: descarga de
+  PDF (éxito/error) en Dashboard, y copiar/revocar token en `/invite`. Los errores en línea
+  contextuales (login, formulario invite, errores de escaneo) se mantienen. Build OK, 6
+  tests FE verdes. **BLOQUE DE HARDENING TERMINADO.** Pendiente solo del desarrollador:
+  verificar en Kali (`docker compose`, `pytest`=281, `npm test`=6), mergear
+  `feat/invite-tokens`→`main`, y entregables manuales (capturas/vídeo/memoria/tag).
 
 ---
 

@@ -12,6 +12,7 @@ import MitreAttack from "@/components/MitreAttack";
 import GeoMap from "@/components/GeoMap";
 import HistoryList from "@/components/HistoryList";
 import SourcesStatus from "@/components/SourcesStatus";
+import { useToast } from "@/components/Toast";
 import PcapAnalysisView from "@/components/PcapAnalysisView";
 import { cn } from "@/lib/utils";
 import { scanIoc, scanFile, scanPcap, getHistory, getScanById, getPcapScanById, downloadScanPdf, type ScanResponse, type PcapScanResponse, type HistoryItem } from "@/api/client";
@@ -28,6 +29,7 @@ export default function Dashboard() {
     try { return localStorage.getItem("be_sidebar") !== "0"; } catch { return true; }
   });
   const queryClient                 = useQueryClient();
+  const { toast }                   = useToast();
 
   useEffect(() => {
     try { localStorage.setItem("be_sidebar", sidebarOpen ? "1" : "0"); } catch { /* ignore */ }
@@ -36,11 +38,11 @@ export default function Dashboard() {
   async function handleDownloadPdf() {
     if (!result) return;
     setDownloadingPdf(true);
-    setError(null);
     try {
       await downloadScanPdf(result.id, result.ioc_value);
+      toast("Informe PDF descargado.", "success");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo descargar el PDF.");
+      toast(e instanceof Error ? e.message : "No se pudo descargar el PDF.", "error");
     } finally {
       setDownloadingPdf(false);
     }
