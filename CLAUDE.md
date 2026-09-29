@@ -599,6 +599,17 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   (queda como micro-paso; toca muchos puntos de error inline, mejor con verificación
   visual); tests de frontend (Vitest, Tanda 5). Falta también consolidar una nota
   Obsidian "Fase P3-03" con las tandas 1-4 (hardening a producción) para la memoria.
+- **2026-09-29** (cloud, `feat/invite-tokens`) **Tanda 5 (tests de frontend):** montado
+  **Vitest + Testing Library + jsdom** (`vitest.config.ts`, `src/test/setup.ts`, script
+  `npm test`). 6 tests: `lib/utils` (cn, VERDICT_LABEL, formatDate), `AiSummary` (renderiza
+  Markdown, sin `##`/`**` crudos) y `NotFound`. Tests excluidos del `tsc -b` de producción
+  vía `tsconfig.app.json`. Añadido paso Vitest al CI. Build OK. **Deuda anotada:** (1)
+  `react-markdown` está en dependencies pero AiSummary usa un mini-parser propio (revisar
+  si algún otro componente lo usa; si no, se puede quitar). (2) El tooling de test dejó **2
+  vulnerabilidades moderate DEV-ONLY** en `@vitest/mocker` (solo se corrigen en vitest 5,
+  que arrastraría Vite 7); no afectan al producto y el CI usa `--audit-level=high`, así que
+  no bloquean. **CON ESTO LAS 5 TANDAS DE HARDENING ESTÁN COMPLETAS.** Pendiente: nota
+  Obsidian consolidada (Fase P3-03) + toasts (micro-paso opcional).
 
 ---
 

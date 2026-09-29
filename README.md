@@ -231,6 +231,8 @@ curl http://localhost:8000/api/health
 
 #### Ejecutar los tests
 
+**Backend** (pytest — 281 tests):
+
 ```bash
 cd backend
 
@@ -238,6 +240,17 @@ python -m pytest -v           # Suite completa
 python -m pytest --tb=short   # Resumen de fallos sin traza
 python -m pytest tests/test_virustotal.py -v   # Un conector específico
 ```
+
+**Frontend** (Vitest + Testing Library):
+
+```bash
+cd frontend
+
+npm test          # Ejecuta los tests una vez
+npm run test:watch # Modo watch
+```
+
+Ambas suites se ejecutan automáticamente en cada push/PR mediante GitHub Actions.
 
 ---
 
