@@ -50,9 +50,12 @@ def _get_database_url() -> str:
 
 def _make_engine():
     url = _get_database_url()
-    # check_same_thread solo aplica a SQLite; no rompe otros backends
-    connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
-    return create_engine(url, connect_args=connect_args)
+    if url.startswith("sqlite"):
+        # check_same_thread solo aplica a SQLite (acceso multihilo de FastAPI).
+        return create_engine(url, connect_args={"check_same_thread": False})
+    # Otros backends (PostgreSQL en Docker, roadmap R2): pool_pre_ping evita
+    # errores por conexiones que el servidor cerró tras un idle largo.
+    return create_engine(url, pool_pre_ping=True)
 
 
 # El engine se crea una sola vez al importar el módulo

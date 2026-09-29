@@ -1,5 +1,25 @@
 services:
 
+  # Base de datos PostgreSQL (roadmap R2)
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-blueecho}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_in_env}
+      POSTGRES_DB: ${POSTGRES_DB:-blueecho}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    # No se expone al exterior: solo accesible por el backend en la red interna
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-blueecho} -d ${POSTGRES_DB:-blueecho}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   backend:
     build:
       context: ./backend
@@ -7,15 +27,16 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    volumes:
-      # Base de datos persistente fuera del contenedor
-      - db_data:/app/data
     environment:
-      # Sobreescribir la ruta de BD para apuntar al volumen
-      DATABASE_URL: sqlite:////app/data/ioc_correlator.db
+      # Apuntar la BD al servicio Postgres (psycopg v3). Sobreescribe el
+      # DATABASE_URL del .env, que por defecto es SQLite para desarrollo local.
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-blueecho}:${POSTGRES_PASSWORD:-change_me_in_env}@db:5432/${POSTGRES_DB:-blueecho}
     # El backend NO expone puerto al exterior: solo accesible via Nginx
     expose:
       - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/api/health').raise_for_status()"]
       interval: 30s
@@ -38,4 +59,4 @@ services:
         condition: service_healthy
 
 volumes:
-  db_data:
+  pg_data:

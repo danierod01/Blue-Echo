@@ -752,7 +752,7 @@ Cotejado con el código el 2026-09-24:
 | I1 | API pública OpenAPI + auth | Media | ✅ Mayormente (`/docs` + auth) |
 | **F4** | **Exportación a PDF del escaneo** | Media | ✅ **Hecho** (2026-09-24): `GET /api/history/{id}/pdf` con fpdf2 (Python puro, sin libs de sistema) + botón "Descargar PDF" en el dashboard |
 | **F5** | **Alertas por webhook (Slack/Discord/Teams)** | Media | ✅ **Hecho** (2026-09-24): `alerting.py`, dispara webhook si `score >= ALERT_SCORE_THRESHOLD`; formatos slack/discord/teams/generic; best-effort (nunca rompe el escaneo). Config en `.env` |
-| R2 | PostgreSQL | Baja | ❌ Backlog (justificar como trabajo futuro) |
+| **R2** | **PostgreSQL** | Baja | ✅ **Hecho** (2026-09-29): servicio `db` (postgres:16-alpine) en `docker-compose.yml` con healthcheck + `depends_on: service_healthy`; backend apunta a `postgresql+psycopg://…`. Driver `psycopg[binary]` en requirements. El código mantiene SQLite por defecto (dev/tests). `.env.example` con `POSTGRES_*`. **⚠️ verificar `docker compose up --build` en Kali (yo no levanto Docker aquí).** Rama `feat/invite-tokens` |
 | R3 | Celery + Redis | Baja | ❌ Backlog (justificar como trabajo futuro) |
 | **I2** | **Export a SIEM** | Baja | ✅ **Hecho** (2026-09-29): `siem_export.py` (STIX 2.1 + MISP, Python puro, IDs deterministas, attack-patterns MITRE). `GET /api/history/{id}/export?format=stix\|misp` con aislamiento por token + botones STIX/MISP en el dashboard. 13 tests (`test_siem_export.py`). Rama `feat/invite-tokens` |
 | I3 | Plugin de navegador | Baja | ❌ Backlog |

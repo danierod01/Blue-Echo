@@ -130,7 +130,9 @@ Ver la sección [Configuración de API Keys](#configuración-de-api-keys) para e
 docker compose up -d --build
 ```
 
-Este comando construye las imágenes, arranca los dos contenedores en segundo plano y crea el volumen `db_data` donde se almacena la base de datos de forma persistente. El primer arranque tarda 2-4 minutos.
+Este comando construye las imágenes y arranca tres contenedores en segundo plano: **PostgreSQL** (base de datos), **backend** (FastAPI) y **frontend** (Nginx + build de React). Los datos persisten en el volumen `pg_data`. El backend espera a que Postgres esté sano (`depends_on: service_healthy`) antes de arrancar. El primer arranque tarda 2-4 minutos.
+
+> **Base de datos:** en Docker se usa PostgreSQL 16 (credenciales en las variables `POSTGRES_*` del `.env`). Fuera de Docker (desarrollo local directo o tests) el código usa SQLite por defecto, sin configuración extra.
 
 #### 4. Verificar que todo funciona
 
@@ -784,7 +786,7 @@ Blue-Echo/
 
 | Capa | Tecnología |
 |---|---|
-| Backend | Python 3.11 + FastAPI + httpx (async) + SQLModel + SQLite |
+| Backend | Python 3.11 + FastAPI + httpx (async) + SQLModel + PostgreSQL (Docker) / SQLite (dev) |
 | IA (principal) | Groq API — LLaMA 3.3-70B Versatile (tier gratuito) |
 | IA (fallback) | Anthropic Claude API — `claude-sonnet-4-20250514` (opcional) |
 | Frontend | React 18 + Vite + TypeScript + Tailwind CSS + shadcn/ui + TanStack Query |

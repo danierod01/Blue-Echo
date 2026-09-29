@@ -13,6 +13,10 @@ python-dotenv==1.2.3
 
 # ORM / base de datos
 sqlmodel==0.0.22
+# Driver PostgreSQL (roadmap R2). El código usa SQLite por defecto; en Docker
+# se apunta DATABASE_URL a Postgres (postgresql+psycopg://). psycopg v3 binario
+# no requiere libpq del sistema.
+psycopg[binary]==3.2.3
 
 # Validación de datos (ya incluida en FastAPI, pero fijamos versión)
 pydantic==2.10.4
