@@ -619,6 +619,28 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   tests FE verdes. **BLOQUE DE HARDENING TERMINADO.** Pendiente solo del desarrollador:
   verificar en Kali (`docker compose`, `pytest`=281, `npm test`=6), mergear
   `feat/invite-tokens`→`main`, y entregables manuales (capturas/vídeo/memoria/tag).
+- **2026-09-29** (cloud, **rama nueva `design/soc-dashboard`**, parte de `feat/invite-tokens`):
+  **rediseño visual "SOC" (experimental, NO mergeado).** El usuario pidió una identidad tipo
+  consola SOC / data-desk (paleta teal/cian sobre negro azulado, inspirada en una plantilla de
+  landing de ciberseguridad) manteniendo el **layout de dashboard** existente. Cambios (solo
+  frontend, sin tocar lógica ni API): (1) `index.css` — tokens SOC (`--soc-bg #05080e`,
+  `--soc-accent #2dd4bf`), textura de rejilla de consola + viñeta radial en `body` (CSS, sin
+  imágenes de stock), scrollbar/selección teal, y clases de componente `.soc-panel`,
+  `.soc-label`, `.stat-tile`, `.soc-ticks` (marcas de esquina HUD). (2) `tailwind.config.js` —
+  añadida escala de color `accent` (teal). (3) Retematizadas superficies a teal manteniendo los
+  **colores de veredicto** (rojo/naranja/amarillo/verde) y los **semánticos/categóricos** intactos
+  (info azul en Toast, táctica "Execution" de MITRE, badges de tipo IOC en PCAP): `App` (header +
+  micro-tira "OPERATIVO" + avatar), `SearchBar`, `ThreatScore` (marco de consola + `soc-ticks`),
+  `ResultsTable` envuelta en `.soc-panel` con cabecera, `SourcesStatus` (píldoras teal),
+  `AiSummary`, `EmptyState` (radar teal), `Dashboard` (toggle/pill/loading/PDF/sidebar), `Login`,
+  `Invite`, y swaps de acento en `BulkScanPanel`/`GeoMap`/`PcapAnalysisView`/`History`/`NotFound`/
+  `ErrorBoundary`/`SkeletonResults`. Botones teal → texto negro (contraste). **Build OK + 6 tests
+  FE verdes.** Backend intacto (no ejecuté pytest: sin cambios en backend).
+  **PENDIENTE (tú):** verlo en navegador real (`docker compose ... dev`), decidir si gusta y si
+  se aplica; si sí → mergear `design/soc-dashboard` (o cherry-pick) sobre la rama que toque.
+  Es puramente estético y aislado; si no convence, se descarta la rama sin afectar a nada.
+  **OJO entrega P3:** un rediseño a días de la entrega es opcional/bajo riesgo — la regla de oro
+  es "que funcione bien > que sea vistoso"; no bloquear la entrega por esto.
 
 ---
 

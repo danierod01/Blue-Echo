@@ -7,14 +7,14 @@ export default function EmptyState() {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="absolute inset-0 rounded-full border border-blue-500/10"
+            className="absolute inset-0 rounded-full border border-accent/10"
             style={{ transform: `scale(${i * 0.25})`, transformOrigin: "center" }}
           />
         ))}
         {/* Ping exterior */}
-        <div className="absolute inset-0 rounded-full border border-blue-500/20 animate-radarPing" />
+        <div className="absolute inset-0 rounded-full border border-accent/20 animate-radarPing" />
         <div
-          className="absolute inset-0 rounded-full border border-blue-500/10 animate-radarPing"
+          className="absolute inset-0 rounded-full border border-accent/10 animate-radarPing"
           style={{ animationDelay: "1s" }}
         />
         {/* Sweep line */}
@@ -22,7 +22,7 @@ export default function EmptyState() {
           <div
             className="absolute w-1/2 h-px origin-left animate-radarSweep"
             style={{
-              background: "linear-gradient(to right, rgba(59,130,246,0.8), transparent)",
+              background: "linear-gradient(to right, rgba(45,212,191,0.85), transparent)",
               left: "50%",
               top: "50%",
             }}
@@ -30,16 +30,17 @@ export default function EmptyState() {
         </div>
         {/* Punto central */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+          <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_10px_var(--soc-accent)]" />
         </div>
         {/* Fondo radial */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500/5 to-transparent" />
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-accent/5 to-transparent" />
       </div>
 
-      <p className="text-sm font-medium text-gray-400 tracking-wide">
-        Sistema listo para escanear
+      <p className="soc-label text-accent/70">Sistema listo</p>
+      <p className="text-sm font-medium text-slate-400 tracking-wide mt-2">
+        Esperando indicador de compromiso
       </p>
-      <p className="text-xs text-gray-600 mt-1">
+      <p className="text-xs text-slate-600 mt-1">
         Introduce un IOC arriba o sube un fichero
       </p>
     </div>

@@ -53,15 +53,15 @@ function UserMenu() {
         onClick={() => setOpen(v => !v)}
         className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
       >
-        <div className="w-6 h-6 rounded bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
-          <span className="text-[9px] font-bold text-white font-data">{initialsOf(name)}</span>
+        <div className="w-6 h-6 rounded bg-gradient-to-br from-accent-deep to-accent-cyan flex items-center justify-center">
+          <span className="text-[9px] font-bold text-black font-data">{initialsOf(name)}</span>
         </div>
         {name && <span className="hidden sm:block max-w-[140px] truncate">{name}</span>}
         <ChevronDown size={11} className={cn("transition-transform", open && "rotate-180")} />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-48 bg-[#0d0f1a] border border-white/8 rounded-lg shadow-2xl shadow-black/50 py-1 z-50 animate-[fadeSlideIn_0.15s_ease_forwards]">
+        <div className="absolute right-0 top-full mt-1 w-48 bg-[var(--soc-bg-elev)] border border-accent/20 rounded-lg shadow-2xl shadow-black/50 py-1 z-50 animate-[fadeSlideIn_0.15s_ease_forwards]">
           {name && (
             <div className="px-3 py-2 border-b border-white/5">
               <p className="text-sm text-white truncate">{name}</p>
@@ -92,13 +92,14 @@ function Header() {
   const hasSession = !!getStoredApiKey();
 
   return (
-    <header className="border-b border-white/5 bg-[#08080f]/90 backdrop-blur-sm sticky top-0 z-40">
+    <header className="border-b border-accent/10 bg-[var(--soc-bg)]/90 backdrop-blur-sm sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-6 h-12 flex items-center gap-6">
         <Link to="/" className="flex items-center gap-2 shrink-0">
-          <Radar size={18} className="text-blue-400" />
-          <span className="font-bold text-sm tracking-tight bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+          <Radar size={18} className="text-accent" />
+          <span className="font-bold text-sm tracking-tight bg-gradient-to-r from-accent-soft to-accent-cyan bg-clip-text text-transparent">
             BlueEcho
           </span>
+          <span className="soc-label hidden sm:inline ml-1 text-accent/50">SOC</span>
         </Link>
 
         {hasSession && (
@@ -108,20 +109,25 @@ function Header() {
                 <NavLink key={to} to={to} end={end}
                   className={({ isActive }) => cn(
                     "px-3 py-1 text-sm rounded transition-colors",
-                    isActive ? "text-white bg-white/8" : "text-gray-500 hover:text-gray-300"
+                    isActive ? "text-accent bg-accent/10" : "text-slate-500 hover:text-slate-300"
                   )}>
                   {label}
                 </NavLink>
               ))}
             </nav>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-4">
+              {/* Micro-tira de estado tipo consola SOC */}
+              <span className="hidden md:flex items-center gap-1.5 soc-label text-accent/70">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_6px_var(--soc-accent)] animate-pulse" />
+                OPERATIVO
+              </span>
               <UserMenu />
             </div>
           </>
         )}
       </div>
       {/* Línea de acento inferior */}
-      <div className="h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
     </header>
   );
 }

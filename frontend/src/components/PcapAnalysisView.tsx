@@ -11,8 +11,8 @@ interface Props {
 const IOC_COLORS: Record<string, string> = {
   ipv4:   "text-orange-400 border-orange-800/60 bg-orange-950/20",
   ipv6:   "text-orange-400 border-orange-800/60 bg-orange-950/20",
-  domain: "text-blue-400  border-blue-800/60  bg-blue-950/20",
-  url:    "text-blue-400  border-blue-800/60  bg-blue-950/20",
+  domain: "text-accent  border-accent/25  bg-accent/10",
+  url:    "text-accent  border-accent/25  bg-accent/10",
   md5:    "text-purple-400 border-purple-800/60 bg-purple-950/20",
   sha1:   "text-purple-400 border-purple-800/60 bg-purple-950/20",
   sha256: "text-purple-400 border-purple-800/60 bg-purple-950/20",
@@ -125,17 +125,17 @@ export default function PcapAnalysisView({ result, onScanIoc }: Props) {
       )}
 
       {/* Análisis IA */}
-      <div className="rounded-2xl border border-blue-900/60 bg-gradient-to-br from-blue-950/40 to-gray-900 p-5">
+      <div className="rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/10 to-slate-900 p-5">
         <div className="flex items-center gap-2 mb-3">
-          <Shield size={16} className="text-blue-400 shrink-0" />
-          <h2 className="text-sm font-semibold text-blue-400 uppercase tracking-wider">
+          <Shield size={16} className="text-accent shrink-0" />
+          <h2 className="text-sm font-semibold text-accent uppercase tracking-wider">
             Análisis IA — Tráfico de Red
           </h2>
         </div>
         <div className="text-sm text-gray-200 leading-relaxed prose prose-invert prose-sm max-w-none
-          [&_h2]:text-blue-300 [&_h2]:font-semibold [&_h2]:text-xs [&_h2]:uppercase [&_h2]:tracking-wider [&_h2]:mt-4 [&_h2]:mb-1 [&_h2:first-child]:mt-0
+          [&_h2]:text-accent-soft [&_h2]:font-semibold [&_h2]:text-xs [&_h2]:uppercase [&_h2]:tracking-wider [&_h2]:mt-4 [&_h2]:mb-1 [&_h2:first-child]:mt-0
           [&_ul]:mt-1 [&_ul]:space-y-0.5 [&_li]:text-gray-300
-          [&_strong]:text-white [&_code]:text-blue-300 [&_code]:bg-blue-950/50 [&_code]:px-1 [&_code]:rounded">
+          [&_strong]:text-white [&_code]:text-accent-soft [&_code]:bg-accent/15 [&_code]:px-1 [&_code]:rounded">
           <ReactMarkdown>{result.ai_summary}</ReactMarkdown>
         </div>
       </div>

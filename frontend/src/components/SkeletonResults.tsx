@@ -31,7 +31,7 @@ export default function SkeletonResults() {
       </div>
 
       {/* AI Summary skeleton */}
-      <div className="rounded-2xl border border-blue-900/30 bg-gray-900/50 p-5 space-y-3">
+      <div className="rounded-2xl border border-accent/20 bg-gray-900/50 p-5 space-y-3">
         <div className="h-3 w-40 bg-gray-800 rounded" />
         <div className="h-3 w-full bg-gray-800/60 rounded" />
         <div className="h-3 w-5/6 bg-gray-800/60 rounded" />

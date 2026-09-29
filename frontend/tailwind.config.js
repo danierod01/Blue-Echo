@@ -4,6 +4,14 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Acento SOC (teal/cian) — identidad de la consola
+        accent: {
+          DEFAULT: "#2dd4bf",
+          soft:    "#5eead4",
+          dim:     "#14b8a6",
+          deep:    "#0d9488",
+          cyan:    "#22d3ee",
+        },
         critical:   { DEFAULT: "#ef4444", fg: "#ffffff" },
         malicious:  { DEFAULT: "#f97316", fg: "#ffffff" },
         suspicious: { DEFAULT: "#eab308", fg: "#000000" },

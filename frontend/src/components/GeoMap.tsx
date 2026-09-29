@@ -24,7 +24,7 @@ export default function GeoMap({ geo, iocValue }: GeoMapProps) {
   return (
     <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-5">
       <div className="flex items-center gap-2 mb-4">
-        <MapPin size={15} className="text-blue-400" />
+        <MapPin size={15} className="text-accent" />
         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
           Geolocalización
         </h2>

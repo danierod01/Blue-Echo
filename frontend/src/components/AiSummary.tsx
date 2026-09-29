@@ -92,24 +92,24 @@ export default function AiSummary({ summary }: Props) {
   const blocks = parseBlocks(summary);
 
   return (
-    <div className="relative pl-4">
+    <div className="soc-panel relative overflow-hidden p-5 pl-6">
       {/* Borde izquierdo luminoso */}
-      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-400 via-cyan-400 to-transparent rounded-full" />
+      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-accent via-accent-cyan to-transparent" />
 
       <div className="flex items-center gap-2 mb-3">
-        <Sparkles size={13} className="text-blue-400" />
-        <span className="text-[10px] font-semibold text-blue-400 uppercase tracking-widest">
+        <Sparkles size={13} className="text-accent" />
+        <span className="soc-label text-accent">
           Análisis IA
         </span>
       </div>
 
-      <div className="space-y-3 text-sm text-gray-300 leading-relaxed">
+      <div className="space-y-3 text-sm text-slate-300 leading-relaxed">
         {blocks.map((b, i) => {
           if (b.type === "heading") {
             return (
               <h4
                 key={i}
-                className="text-[11px] font-semibold text-cyan-400/90 uppercase tracking-wider pt-1"
+                className="text-[11px] font-semibold text-accent-cyan uppercase tracking-wider pt-1"
               >
                 {renderInline(b.text ?? "")}
               </h4>
@@ -120,7 +120,7 @@ export default function AiSummary({ summary }: Props) {
               <ul key={i} className="space-y-1">
                 {b.items!.map((it, j) => (
                   <li key={j} className="flex gap-2">
-                    <span className="text-blue-500 shrink-0 mt-[3px] text-[8px]">●</span>
+                    <span className="text-accent shrink-0 mt-[3px] text-[8px]">●</span>
                     <span>{renderInline(it)}</span>
                   </li>
                 ))}
@@ -132,7 +132,7 @@ export default function AiSummary({ summary }: Props) {
               <ol key={i} className="space-y-1">
                 {b.items!.map((it, j) => (
                   <li key={j} className="flex gap-2">
-                    <span className="font-data text-blue-400 shrink-0 text-xs mt-[1px]">
+                    <span className="font-data text-accent shrink-0 text-xs mt-[1px]">
                       {j + 1}.
                     </span>
                     <span>{renderInline(it)}</span>

@@ -51,10 +51,10 @@ export default function SearchBar({ onScanIoc, onScanFile, onScanPcap, loading }
     <form onSubmit={handleSubmit} className="w-full">
       <div
         className={cn(
-          "flex items-center gap-2 rounded-xl border bg-gray-900/60 backdrop-blur-sm px-4 py-3 transition shadow-lg",
+          "flex items-center gap-2 rounded-xl border bg-[var(--soc-bg-elev)] backdrop-blur-sm px-4 py-3 transition shadow-lg",
           dragOver
-            ? "border-blue-400 shadow-blue-500/20"
-            : "border-gray-700/60 focus-within:border-blue-500/60 focus-within:shadow-blue-500/10"
+            ? "border-accent shadow-accent/20"
+            : "border-accent/15 focus-within:border-accent/60 focus-within:shadow-accent/10"
         )}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
@@ -64,7 +64,7 @@ export default function SearchBar({ onScanIoc, onScanFile, onScanPcap, loading }
           handleFile(e.dataTransfer.files[0]);
         }}
       >
-        <Search size={18} className="shrink-0 text-gray-500" />
+        <Search size={18} className="shrink-0 text-accent/60" />
 
         <input
           type="text"
@@ -97,7 +97,7 @@ export default function SearchBar({ onScanIoc, onScanFile, onScanPcap, loading }
         <button
           type="submit"
           disabled={loading || !value.trim()}
-          className="shrink-0 rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          className="shrink-0 rounded-lg bg-accent px-4 py-1.5 text-sm font-semibold text-black hover:bg-accent-soft disabled:opacity-40 disabled:cursor-not-allowed transition"
         >
           {loading ? (
             <Loader2 size={16} className="animate-spin" />
@@ -108,7 +108,7 @@ export default function SearchBar({ onScanIoc, onScanFile, onScanPcap, loading }
       </div>
 
       {dragOver && (
-        <p className="mt-2 text-center text-xs text-blue-400">
+        <p className="mt-2 text-center text-xs text-accent">
           Suelta el fichero (.log, .txt, .csv, .json, .pcap, .pcapng)
         </p>
       )}

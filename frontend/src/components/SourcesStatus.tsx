@@ -58,10 +58,13 @@ export default function SourcesStatus() {
   const total  = data.length;
 
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-900/50 px-4 py-3 space-y-3">
-      <p className="text-xs text-gray-500">
-        Fuentes activas: <span className="text-gray-300 font-medium">{active}/{total}</span>
-      </p>
+    <div className="soc-panel px-4 py-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="soc-label">Fuentes de inteligencia</span>
+        <span className="font-data text-xs text-slate-400">
+          <span className="text-accent font-semibold">{active}</span>/{total} activas
+        </span>
+      </div>
 
       {GROUPS.map((group) => {
         const sources = group.names
@@ -74,7 +77,7 @@ export default function SourcesStatus() {
 
         return (
           <div key={group.label}>
-            <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1.5">
+            <p className="text-[10px] text-slate-600 uppercase tracking-wider mb-1.5">
               {group.label}
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -82,10 +85,10 @@ export default function SourcesStatus() {
                 <span
                   key={s.name}
                   className={cn(
-                    "flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 border",
+                    "flex items-center gap-1 font-data text-[11px] rounded-full px-2.5 py-0.5 border",
                     s.available
-                      ? "border-green-900 bg-green-950/50 text-green-400"
-                      : "border-gray-800 bg-gray-900 text-gray-600"
+                      ? "border-accent/30 bg-accent/10 text-accent-soft"
+                      : "border-slate-800 bg-slate-900/60 text-slate-600"
                   )}
                 >
                   <CircleDot size={8} />

@@ -124,7 +124,7 @@ export default function BulkScanPanel({ onComplete }: Props) {
               "Un IOC por línea (máx. 20):\n185.220.101.45\nmalware.evil.com\nd41d8cd98f00b204e9800998ecf8427e"
             }
             rows={6}
-            className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-sm text-gray-100 placeholder-gray-600 outline-none focus:border-blue-500 transition resize-none font-mono"
+            className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-sm text-gray-100 placeholder-gray-600 outline-none focus:border-accent transition resize-none font-mono"
           />
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-600">
@@ -135,7 +135,7 @@ export default function BulkScanPanel({ onComplete }: Props) {
             <button
               onClick={handleStart}
               disabled={iocList.length === 0}
-              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black hover:bg-accent-soft disabled:opacity-40 disabled:cursor-not-allowed transition"
             >
               <Play size={14} />
               Iniciar escaneo masivo
@@ -149,7 +149,7 @@ export default function BulkScanPanel({ onComplete }: Props) {
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-gray-400">
-              <Loader2 size={14} className="animate-spin text-blue-500" />
+              <Loader2 size={14} className="animate-spin text-accent" />
               <span>
                 Procesando {done + 1}/{results.length}
                 {currentIoc && (
@@ -166,7 +166,7 @@ export default function BulkScanPanel({ onComplete }: Props) {
           </div>
           <div className="h-1.5 w-full rounded-full bg-gray-800">
             <div
-              className="h-full rounded-full bg-blue-500 transition-all duration-500"
+              className="h-full rounded-full bg-accent transition-all duration-500"
               style={{ width: `${(done / results.length) * 100}%` }}
             />
           </div>
@@ -217,7 +217,7 @@ export default function BulkScanPanel({ onComplete }: Props) {
                     <td className="px-4 py-3 text-right tabular-nums font-mono">
                       {r.status === "running" || r.status === "pending" ? (
                         r.status === "running" ? (
-                          <Loader2 size={12} className="animate-spin text-blue-500 inline" />
+                          <Loader2 size={12} className="animate-spin text-accent inline" />
                         ) : (
                           <span className="text-gray-700">—</span>
                         )
@@ -244,7 +244,7 @@ export default function BulkScanPanel({ onComplete }: Props) {
                       {r.data && (
                         <Link
                           to={`/history/${r.data.id}`}
-                          className="text-xs text-blue-500 hover:text-blue-400 transition"
+                          className="text-xs text-accent hover:text-accent transition"
                         >
                           Ver →
                         </Link>

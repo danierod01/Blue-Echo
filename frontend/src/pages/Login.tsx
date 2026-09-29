@@ -35,14 +35,22 @@ export default function Login() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: "#0a0a12" }}
+      style={{ background: "var(--soc-bg)" }}
     >
-      {/* Aurora */}
+      {/* Aurora teal + rejilla de consola */}
       <div
         className="pointer-events-none fixed inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 50% at 50% -5%, rgba(59,130,246,0.12) 0%, transparent 70%)",
+            "radial-gradient(ellipse 80% 50% at 50% -5%, rgba(45,212,191,0.12) 0%, transparent 70%)",
+        }}
+      />
+      <div
+        className="pointer-events-none fixed inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(45,212,191,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(45,212,191,0.03) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
         }}
       />
 
@@ -52,15 +60,15 @@ export default function Login() {
           {/* Logo */}
           <div className="flex flex-col items-center gap-3 mb-8">
             <div className="relative">
-              <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20">
-                <Radar size={32} className="text-blue-400" />
+              <div className="p-3 rounded-2xl bg-accent/10 border border-accent/20">
+                <Radar size={32} className="text-accent" />
               </div>
-              <div className="absolute inset-0 rounded-2xl bg-blue-500/10 blur-xl" />
+              <div className="absolute inset-0 rounded-2xl bg-accent/10 blur-xl" />
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent tracking-tight">
-              BlueEcho
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-accent-soft to-accent-cyan bg-clip-text text-transparent tracking-tight">
+              BlueEcho <span className="font-data text-xs text-accent/50 align-middle">SOC</span>
             </h1>
-            <p className="text-sm text-gray-500">Introduce tu API key para acceder</p>
+            <p className="text-sm text-slate-500">Introduce tu API key para acceder</p>
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -71,7 +79,7 @@ export default function Login() {
                 placeholder="API key"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-gray-900/80 border border-gray-700/60 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-blue-500/60 focus:bg-gray-900 transition"
+                className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-slate-900/80 border border-accent/15 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-accent/60 focus:bg-slate-900 transition"
                 autoFocus
               />
             </div>
@@ -83,7 +91,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition shadow-lg shadow-blue-500/20"
+              className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-accent hover:bg-accent-soft disabled:opacity-50 disabled:cursor-not-allowed text-black text-sm font-semibold transition shadow-lg shadow-accent/20"
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : "Iniciar sesión"}
             </button>

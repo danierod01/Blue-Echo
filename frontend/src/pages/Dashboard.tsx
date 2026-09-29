@@ -125,22 +125,22 @@ export default function Dashboard() {
             {history.length > 0 && (
               <button
                 onClick={() => setSidebarOpen(v => !v)}
-                className="hidden lg:flex items-center gap-1.5 rounded-lg border border-gray-800 bg-gray-900/50 px-3 py-1 text-xs text-gray-400 transition hover:border-blue-500/50 hover:text-white"
+                className="hidden lg:flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-1 text-xs text-slate-400 transition hover:border-accent/50 hover:text-white"
                 title={sidebarOpen ? "Ocultar historial" : "Mostrar historial"}
               >
                 {sidebarOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
                 {sidebarOpen ? "Ocultar" : "Historial"}
               </button>
             )}
-            <div className="flex items-center gap-1.5 rounded-full border border-green-800/60 bg-green-950/30 px-3 py-1 text-xs text-green-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              Online
+            <div className="flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 font-data text-[11px] text-accent-soft">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_6px_var(--soc-accent)] animate-pulse" />
+              ONLINE
             </div>
           </div>
         </div>
 
         {/* Toggle Individual / Masivo */}
-        <div className="flex rounded-lg border border-gray-800 bg-gray-900/50 p-1 w-fit">
+        <div className="flex rounded-lg border border-slate-800 bg-slate-900/50 p-1 w-fit">
           {(["single", "bulk"] as ScanMode[]).map((m) => (
             <button
               key={m}
@@ -148,8 +148,8 @@ export default function Dashboard() {
               className={cn(
                 "px-4 py-1.5 rounded-md text-sm font-medium transition",
                 mode === m
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-500 hover:text-gray-300"
+                  ? "bg-accent text-black"
+                  : "text-slate-500 hover:text-slate-300"
               )}
             >
               {m === "single" ? "Individual" : "Masivo"}
@@ -186,9 +186,9 @@ export default function Dashboard() {
         {/* Cargando */}
         {mode === "single" && loading && (
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-3">
-              <div className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.8)] animate-pulse" />
-              <span className="text-sm text-blue-300 font-mono">
+            <div className="flex items-center gap-3 rounded-lg border border-accent/20 bg-accent/5 px-4 py-3">
+              <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_var(--soc-accent)] animate-pulse" />
+              <span className="text-sm text-accent-soft font-data">
                 {pcapMutation.isPending ? "Analizando tráfico PCAP con IA" : "Consultando fuentes de Threat Intelligence"}
                 <span className="inline-flex gap-0.5 ml-1">
                   {[0,1,2].map(i => (
@@ -209,7 +209,7 @@ export default function Dashboard() {
                 type="button"
                 onClick={handleDownloadPdf}
                 disabled={downloadingPdf}
-                className="flex items-center gap-2 rounded-lg border border-gray-700/60 bg-gray-900/60 px-3 py-1.5 text-xs font-medium text-gray-300 transition hover:border-blue-500/60 hover:text-blue-300 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-accent/60 hover:text-accent disabled:opacity-50"
                 title="Descargar informe en PDF"
               >
                 {downloadingPdf ? (
@@ -229,7 +229,13 @@ export default function Dashboard() {
                   iocType={result.ioc_type}
                 />
               </div>
-              <div className="md:col-span-2 animate-[fadeSlideIn_0.4s_ease_0.1s_forwards] opacity-0">
+              <div className="md:col-span-2 soc-panel p-4 animate-[fadeSlideIn_0.4s_ease_0.1s_forwards] opacity-0">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="soc-label">Resultados por fuente</span>
+                  <span className="font-data text-[10px] text-slate-600">
+                    {Object.keys(result.connector_results).filter(k => k !== "__pcap_data__").length} conectores
+                  </span>
+                </div>
                 <ResultsTable
                   connectorResults={result.connector_results}
                   breakdown={result.breakdown}
@@ -279,11 +285,11 @@ export default function Dashboard() {
       {/* ---------------------------------------------------------------- */}
       {history.length > 0 && sidebarOpen && (
         <aside className="w-72 shrink-0 hidden lg:flex flex-col gap-3">
-          <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider">
+          <div className="flex items-center gap-2 soc-label">
             <History size={13} />
             Recientes
           </div>
-          <div className="rounded-xl border border-gray-800 bg-gray-900/30 p-2">
+          <div className="soc-panel p-2">
             <HistoryList items={history} onSelect={handleHistorySelect} />
           </div>
         </aside>

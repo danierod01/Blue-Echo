@@ -75,19 +75,19 @@ export default function Invite() {
   }
 
   return (
-    <div className="min-h-screen bg-[#08080f] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[var(--soc-bg)] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <Radar size={22} className="text-blue-400" />
-          <span className="font-bold text-lg bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+          <Radar size={22} className="text-accent" />
+          <span className="font-bold text-lg bg-gradient-to-r from-accent-soft to-accent-cyan bg-clip-text text-transparent">
             BlueEcho
           </span>
         </div>
 
         <div className="rounded-xl border border-white/8 bg-white/[0.03] p-8">
           <div className="flex items-center gap-2 mb-1">
-            <KeyRound size={16} className="text-blue-400" />
+            <KeyRound size={16} className="text-accent" />
             <h1 className="text-base font-semibold text-white">Obtener acceso</h1>
           </div>
           <p className="text-sm text-gray-500 mb-6">
@@ -105,7 +105,7 @@ export default function Invite() {
                 onChange={e => setSecret(e.target.value)}
                 placeholder="••••••••••••"
                 required
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-blue-500/60 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
               />
             </div>
 
@@ -119,7 +119,7 @@ export default function Invite() {
                 onChange={e => setLabel(e.target.value)}
                 placeholder="p.ej. Profesor García"
                 required
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-blue-500/60 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
               />
               <p className="text-[11px] text-gray-600 mt-1.5">
                 Aparecerá en la sesión de quien use este token.
@@ -136,7 +136,7 @@ export default function Invite() {
                 value={expiresDays}
                 onChange={e => setExpiresDays(e.target.value)}
                 placeholder="Sin caducidad"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-blue-500/60 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
               />
             </div>
 
@@ -149,7 +149,7 @@ export default function Invite() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-4 py-2.5 text-sm font-medium text-white transition"
+              className="w-full rounded-lg bg-accent hover:bg-accent-soft disabled:opacity-50 px-4 py-2.5 text-sm font-semibold text-black transition"
             >
               {loading ? "Generando…" : "Generar token"}
             </button>
@@ -179,7 +179,7 @@ export default function Invite() {
         <div className="mt-4 rounded-xl border border-white/8 bg-white/[0.03] p-6">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <ShieldOff size={15} className="text-blue-400" />
+              <ShieldOff size={15} className="text-accent" />
               <h2 className="text-sm font-semibold text-white">Gestionar tokens</h2>
             </div>
             <button

@@ -4,16 +4,70 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ------------------------------------------------------------------ */
+/*  Diseño SOC — tokens de identidad (consola de operaciones)          */
+/*  Acento teal/cian sobre negro azulado profundo. App siempre oscura. */
+/* ------------------------------------------------------------------ */
+:root {
+  --soc-bg:        #05080e;   /* fondo base, negro azulado */
+  --soc-bg-elev:   #0a0f18;   /* superficie elevada (paneles) */
+  --soc-line:      rgba(45, 212, 191, 0.10);  /* líneas/bordes teal muy tenues */
+  --soc-line-soft: rgba(148, 163, 184, 0.10); /* bordes neutros */
+  --soc-accent:    #2dd4bf;   /* teal-400 — acento principal */
+  --soc-accent-2:  #22d3ee;   /* cyan-400 — acento secundario */
+  --soc-accent-dim: rgba(45, 212, 191, 0.08);
+  color-scheme: dark;
+}
+
 @layer base {
   body {
-    background-color: #08080f;
+    background-color: var(--soc-bg);
+    /* Rejilla de consola + viñeta radial: textura de SOC sin imágenes de stock */
+    background-image:
+      radial-gradient(circle at 50% -10%, rgba(45, 212, 191, 0.06), transparent 55%),
+      linear-gradient(rgba(45, 212, 191, 0.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(45, 212, 191, 0.022) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+    background-attachment: fixed;
     font-family: 'Space Grotesk', system-ui, sans-serif;
-    @apply text-gray-100 antialiased;
+    @apply text-slate-100 antialiased;
   }
 
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #1e2030; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb { background: rgba(45, 212, 191, 0.25); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(45, 212, 191, 0.4); }
+
+  ::selection { background: rgba(45, 212, 191, 0.25); }
 
   .font-data { font-family: 'JetBrains Mono', monospace; }
+}
+
+@layer components {
+  /* Panel de consola: superficie elevada con borde teal tenue */
+  .soc-panel {
+    @apply relative rounded-lg border bg-[var(--soc-bg-elev)];
+    border-color: var(--soc-line);
+  }
+
+  /* Etiqueta monoespaciada tipo cabecera de consola */
+  .soc-label {
+    @apply font-data text-[10px] uppercase tracking-[0.2em] text-slate-500;
+  }
+
+  /* Tarjeta de estadística (stat tile) al estilo de la referencia */
+  .stat-tile {
+    @apply relative rounded-lg border bg-[var(--soc-bg-elev)] px-4 py-3;
+    border-color: var(--soc-line-soft);
+  }
+
+  /* Marcas de esquina (corner ticks) — detalle HUD de un panel */
+  .soc-ticks::before,
+  .soc-ticks::after {
+    content: "";
+    @apply absolute w-2.5 h-2.5 pointer-events-none;
+    border-color: var(--soc-accent);
+  }
+  .soc-ticks::before { @apply top-0 left-0 border-t border-l rounded-tl-sm; opacity: 0.5; }
+  .soc-ticks::after  { @apply bottom-0 right-0 border-b border-r rounded-br-sm; opacity: 0.5; }
 }

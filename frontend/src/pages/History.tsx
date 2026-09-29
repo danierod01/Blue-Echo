@@ -88,7 +88,7 @@ export default function History() {
           </div>
           <button
             type="submit"
-            className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500 transition"
+            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-black hover:bg-accent-soft transition"
           >
             Buscar
           </button>
@@ -116,7 +116,7 @@ export default function History() {
               className={cn(
                 "rounded-full border px-3 py-0.5 text-xs transition",
                 iocFilter === f.value
-                  ? "border-blue-500 bg-blue-600/20 text-blue-300"
+                  ? "border-accent bg-accent/15 text-accent-soft"
                   : "border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300"
               )}
             >
@@ -137,7 +137,7 @@ export default function History() {
                 verdict === f.value
                   ? f.value
                     ? cn("border font-medium", VERDICT_CHIP[f.value])
-                    : "border-blue-500 bg-blue-600/20 text-blue-300"
+                    : "border-accent bg-accent/15 text-accent-soft"
                   : "border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300"
               )}
             >
@@ -246,7 +246,7 @@ export default function History() {
                       className={cn(
                         "rounded px-2.5 py-1 transition",
                         page === p
-                          ? "bg-blue-600 text-white"
+                          ? "bg-accent text-black"
                           : "hover:bg-gray-800"
                       )}
                     >

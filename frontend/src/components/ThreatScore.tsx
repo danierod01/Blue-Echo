@@ -41,15 +41,16 @@ export default function ThreatScore({ score, verdict, iocValue, iocType }: Props
 
   return (
     <div
-      className="relative overflow-hidden rounded-xl h-full min-h-[280px] flex flex-col justify-between p-6"
-      style={{ background: `linear-gradient(135deg, ${c.dim} 0%, #08080f 60%)`, boxShadow: `0 0 60px ${c.glow}` }}
+      className="soc-ticks relative overflow-hidden rounded-lg border h-full min-h-[280px] flex flex-col justify-between p-6"
+      style={{ background: `linear-gradient(135deg, ${c.dim} 0%, var(--soc-bg-elev) 60%)`, boxShadow: `0 0 50px ${c.glow}`, borderColor: "var(--soc-line)" }}
     >
       {/* Línea de acento superior */}
       <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(to right, transparent, ${c.bar}, transparent)` }} />
 
-      {/* Etiqueta tipo */}
-      <div>
-        <span className="text-[10px] uppercase tracking-[0.2em] font-medium" style={{ color: c.label }}>
+      {/* Cabecera de consola: rótulo fijo + veredicto */}
+      <div className="flex items-center justify-between">
+        <span className="soc-label">Threat Score</span>
+        <span className="text-[10px] uppercase tracking-[0.2em] font-semibold" style={{ color: c.label }}>
           {label}
         </span>
       </div>
