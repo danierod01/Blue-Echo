@@ -17,6 +17,7 @@ from ioc_correlator.api.schemas import (
     HistoryItem,
     HistoryPage,
     MitreTechnique,
+    PivotEntity,
     ExtractedObject,
     PcapIocItem,
     PcapScanResponse,
@@ -32,7 +33,12 @@ from ioc_correlator.database import get_history, get_scan_by_id, get_session, sa
 from ioc_correlator.alerting import maybe_send_alert
 from ioc_correlator.audit import audit, mask_token
 from ioc_correlator.mitre_mapper import map_to_mitre
+from ioc_correlator.pivots import extract_pivots
 from ioc_correlator.report_pdf import build_scan_pdf
+from ioc_correlator.siem_export import to_misp, to_stix
+from ioc_correlator.celery_app import celery_app
+from ioc_correlator.tasks import scan_ioc_task
+from celery.result import AsyncResult
 from ioc_correlator.enricher import enrich, get_sources_status
 from ioc_correlator.extractor import extract_iocs_from_bytes
 from ioc_correlator.scorer import compute_score
@@ -70,6 +76,16 @@ def _build_scan_response(db_scan, breakdown: dict[str, int], geolocation=None) -
             resolved_ip=geolocation.resolved_ip,
         )
 
+    pivots = [
+        PivotEntity(**p)
+        for p in extract_pivots(
+            raw_results,
+            db_scan.ioc_value,
+            db_scan.ioc_type,
+            resolved_ip=geo_out.resolved_ip if geo_out else None,
+        )
+    ]
+
     return ScanResponse(
         id=db_scan.id,
         ioc_value=db_scan.ioc_value,
@@ -82,6 +98,7 @@ def _build_scan_response(db_scan, breakdown: dict[str, int], geolocation=None) -
         created_at=db_scan.created_at,
         mitre_techniques=mitre,
         geolocation=geo_out,
+        pivots=pivots,
     )
 
 
@@ -401,6 +418,79 @@ async def history_detail_pdf(
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/scan/async")
+@limiter.limit("30/minute")
+async def scan_async(
+    request: Request,
+    body: ScanRequest,
+    current_key: str = Depends(require_api_key),
+) -> dict:
+    """Encola un escaneo en segundo plano (roadmap R3, Celery+Redis).
+
+    Devuelve un `task_id` con el que consultar el estado en `/api/tasks/{id}`.
+    Útil para no bloquear la petición en escaneos largos o de muchas fuentes.
+    """
+    task = scan_ioc_task.delay(body.ioc, current_key or None)
+    return {"task_id": task.id, "status": "queued"}
+
+
+@router.get("/tasks/{task_id}")
+@limiter.limit("60/minute")
+async def task_status(
+    request: Request,
+    task_id: str,
+    _: str = Depends(require_api_key),
+) -> dict:
+    """Consulta el estado/resultado de una tarea de escaneo en segundo plano."""
+    res = AsyncResult(task_id, app=celery_app)
+    out: dict = {"task_id": task_id, "status": res.status}
+    if res.successful():
+        out["result"] = res.result
+    elif res.failed():
+        out["error"] = str(res.result)
+    return out
+
+
+@router.get("/history/{scan_id}/export")
+@limiter.limit("20/minute")
+async def history_detail_export(
+    request: Request,
+    scan_id: int,
+    format: str = Query("stix", pattern="^(stix|misp)$"),
+    session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
+) -> Response:
+    """Exporta el escaneo a un formato SIEM/TI estándar (roadmap I2).
+
+    `format=stix`  → bundle STIX 2.1
+    `format=misp`  → evento MISP JSON
+    """
+    db_scan = get_scan_by_id(session, scan_id)
+    if db_scan is None:
+        raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
+    # Mismo aislamiento por token que el resto del historial.
+    if current_key and db_scan.api_key and db_scan.api_key != current_key:
+        raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
+
+    raw = json.loads(db_scan.connector_results)
+    connector_objs = {name: ConnectorResult(**d) for name, d in raw.items()}
+    scoring = compute_score(connector_objs)
+    scan = _build_scan_response(db_scan, scoring.breakdown)
+
+    if format == "misp":
+        payload = to_misp(scan)
+        filename = f"blue-echo-scan-{scan_id}-misp.json"
+    else:
+        payload = to_stix(scan)
+        filename = f"blue-echo-scan-{scan_id}-stix.json"
+
+    return Response(
+        content=json.dumps(payload, indent=2, ensure_ascii=False),
+        media_type="application/json",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 

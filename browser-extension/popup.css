@@ -1,0 +1,90 @@
+:root {
+  --bg: #05080e;
+  --elev: #0a0f18;
+  --ac: #2dd4bf;
+  --ac-soft: #5eead4;
+  --fg: #e2e8f0;
+  --dim: #64748b;
+  --red: #f87171;
+  --orange: #fb923c;
+  --yellow: #fbbf24;
+  --green: #4ade80;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  width: 320px;
+  margin: 0;
+  padding: 14px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+header .logo { color: var(--ac); font-size: 15px; }
+header .brand { font-weight: 700; }
+header .soc { font-size: 9px; letter-spacing: 0.2em; color: rgba(45,212,191,0.5); font-family: monospace; }
+header #opts { margin-left: auto; color: var(--dim); text-decoration: none; font-size: 15px; }
+header #opts:hover { color: var(--fg); }
+
+#form { display: flex; gap: 6px; }
+#ioc {
+  flex: 1; min-width: 0;
+  background: var(--elev);
+  border: 1px solid rgba(45,212,191,0.15);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: var(--fg);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+}
+#ioc:focus { outline: none; border-color: rgba(45,212,191,0.6); }
+#go {
+  background: var(--ac);
+  color: #000;
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+#go:disabled { opacity: 0.5; cursor: default; }
+
+.status {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--dim);
+  font-family: "JetBrains Mono", monospace;
+}
+.status.error { color: var(--red); }
+
+.result {
+  margin-top: 12px;
+  border: 1px solid rgba(45,212,191,0.12);
+  background: var(--elev);
+  border-radius: 8px;
+  padding: 12px;
+}
+.scoreline { display: flex; align-items: baseline; gap: 10px; }
+.score { font-size: 34px; font-weight: 800; line-height: 1; }
+.verdict { font-size: 10px; letter-spacing: 0.18em; font-weight: 700; text-transform: uppercase; }
+.ioctype { font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.1em; }
+.summary { font-size: 12px; line-height: 1.5; color: #cbd5e1; margin: 10px 0 0; }
+
+.v-critical { color: var(--red); }
+.v-malicious { color: var(--orange); }
+.v-suspicious { color: var(--yellow); }
+.v-clean { color: var(--green); }
+
+.hint { margin: 12px 0 0; font-size: 11px; color: var(--dim); }
+.hint a, #opts2 { color: var(--ac-soft); }

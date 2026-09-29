@@ -619,7 +619,7 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   tests FE verdes. **BLOQUE DE HARDENING TERMINADO.** Pendiente solo del desarrollador:
   verificar en Kali (`docker compose`, `pytest`=281, `npm test`=6), mergear
   `feat/invite-tokens`→`main`, y entregables manuales (capturas/vídeo/memoria/tag).
-- **2026-09-29** (cloud, **rama nueva `design/soc-dashboard`**, parte de `feat/invite-tokens`):
+- **2026-09-29** (cloud, **rama nueva `design-soc-dashboard`**, parte de `feat/invite-tokens`):
   **rediseño visual "SOC" (experimental, NO mergeado).** El usuario pidió una identidad tipo
   consola SOC / data-desk (paleta teal/cian sobre negro azulado, inspirada en una plantilla de
   landing de ciberseguridad) manteniendo el **layout de dashboard** existente. Cambios (solo
@@ -641,6 +641,78 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   Es puramente estético y aislado; si no convence, se descarta la rama sin afectar a nada.
   **OJO entrega P3:** un rediseño a días de la entrega es opcional/bajo riesgo — la regla de oro
   es "que funcione bien > que sea vistoso"; no bloquear la entrega por esto.
+- **2026-09-29** (cloud, `feat/invite-tokens`) **Cierre de roadmap — I2 + I3:** el usuario
+  decidió cerrar el roadmap pendiente entero (R2/R3/I2/I3), en orden de riesgo ascendente.
+  **I2 · Export a SIEM ✅:** `siem_export.py` (STIX 2.1 con indicador + `attack-pattern`
+  MITRE + relaciones e IDs deterministas; evento MISP; Python puro, sin deps nuevas).
+  Endpoint `GET /api/history/{id}/export?format=stix|misp` (aislamiento por token → 404;
+  formato inválido → 422). Frontend: `downloadScanExport` + botones STIX/MISP en el
+  dashboard. 13 tests (`test_siem_export.py`) → **suite backend 294 verdes**; build FE OK;
+  6 tests FE verdes. README actualizado (endpoint + manual). **I3 · Plugin de navegador ✅:**
+  `browser-extension/` (Manifest V3): popup de escaneo, menú contextual (clic derecho sobre
+  IOC), página de opciones (URL servidor + API key en `chrome.storage.sync`), icono radar
+  teal SVG, README de instalación (Firefox/Chrome). Habla con `POST /api/scan/json`; usa
+  `host_permissions` para no depender del CORS. Manifest validado (JSON OK).
+  **PENDIENTE (tú):** cargar la extensión en un navegador real y probarla (yo no tengo
+  navegador con extensiones aquí). **PENDIENTE roadmap:** R2 (PostgreSQL) y R3 (Celery+Redis)
+  — los que tocan `docker compose`; se harán re-verificando el arranque limpio tras cada uno.
+  Nota: durante esta sesión el clasificador de Bash estuvo caído un rato; I3 se escribió
+  entero (solo ficheros) mientras tanto y se verificó al recuperarse el terminal.
+- **2026-09-29** (cloud, `feat/invite-tokens`) **Cierre de roadmap — R2 + R3 (¡ROADMAP COMPLETO!):**
+  **R2 · PostgreSQL ✅:** servicio `db` (postgres:16-alpine) en compose con healthcheck +
+  `depends_on: service_healthy`; backend → `postgresql+psycopg://`; driver `psycopg[binary]`;
+  `pool_pre_ping`. **El código mantiene SQLite por defecto** (dev sin Docker + tests), así que
+  la suite no cambió de backend. `.env.example` con `POSTGRES_*`. **R3 · Celery+Redis ✅:**
+  `celery_app.py` (broker/result = Redis, `include=tasks`, eager por env para tests) +
+  `tasks.py` (tarea `scan_ioc` = pipeline completo con su propia `Session(engine)`; por eso
+  R2 va antes que R3: worker y API comparten la Postgres). Endpoints `POST /api/scan/async`
+  y `GET /api/tasks/{id}`. Servicios `redis` + `worker` (mismo image del backend, `command:
+  celery -A ioc_correlator.celery_app worker`) en compose. Deps `celery==5.4.0`/`redis==5.2.1`.
+  6 tests (`test_tasks.py`, eager+mock, sin Redis real). **Suite backend: 300 verdes.** El
+  escaneo síncrono clásico sigue intacto y no depende de la cola. README (sección async +
+  nota de BD) y roadmap actualizados. **CON ESTO EL ROADMAP DEL INFORME P1 §8 QUEDA CERRADO
+  salvo I2 que también se cerró hoy** (solo quedan como "trabajo futuro" ninguno de los que
+  el usuario pidió — todos hechos).
+  **⚠️ PENDIENTE (tú, requiere Docker; yo no levanto contenedores aquí):** verificar
+  `docker compose up --build` en limpio con los 5 servicios (db/redis/worker/backend/frontend);
+  el arranque limpio es el 30% de la nota. Recrear BD no aplica (Postgres nuevo desde cero).
+  Probar el plugin I3 en un navegador real.
+- **2026-09-29** (cloud, `feat/invite-tokens`) **Tanda de seguridad — RBAC + rate limit por token:**
+  el usuario pidió centrarse en seguridad tras cerrar el roadmap. (1) **Roles admin/analyst**:
+  nueva columna `ApiKey.role` (default `analyst`); `create_api_key`/`get_api_key_role` en
+  `database.py`. `invite` acepta `role` (valida admin|analyst → 422 si no); operaciones de
+  administración (`invite`/`tokens`/`revoke`) ahora se autorizan por **token admin en la
+  cabecera** (`_is_admin_key`: master key o rol admin) **o** por `ADMIN_SECRET` en el cuerpo
+  (bootstrap) vía `_require_admin_access`. `GET /auth/me` devuelve nombre **+ rol**. (2)
+  **Rate limiting por token**: `limiter._rate_key` usa `key:<sha256 corto>` si viene
+  `X-API-Key`, si no `ip:<ip>` (login sigue por IP). (3) Frontend: selector de rol y badge
+  admin en `/invite`, rol en el menú de usuario (`App.tsx`), tipos `MeResponse.role`/
+  `TokenInfo.role`. +8 tests (`test_roles.py`) → **suite backend 308 verdes**; build FE OK +
+  6 tests FE. README (tabla de roles + rate limit) y STRIDE (`09 - Seguridad…`: §4 RBAC,
+  filas Spoofing/DoS/EoP, gaps — quitado el gap "sin RBAC") actualizados.
+  **⚠️ MIGRACIÓN BD:** `ApiKey` ganó la columna `role` → en el próximo despliegue recrear la
+  BD (`docker compose down -v`) o añadir la columna a mano; SQLModel no migra en caliente.
+- **2026-09-29** (cloud, `feat/invite-tokens`) **Pivoting (entidades relacionadas):** nuevo
+  `pivots.py` (función pura `extract_pivots`) que deriva IOCs relacionados de los resultados:
+  dominio→IP (geolocation `resolved_ip`), IP→hostnames (shodan `hostnames`, ipinfo
+  `hostname`, securitytrails `nearby_hostnames`), dominio→nameservers (rdap). Deduplica,
+  valida tipo con `detect_ioc_type`, excluye el propio IOC, tope 6/fuente y 12 global.
+  Campo `pivots: list[PivotEntity]` en `ScanResponse`, poblado en `_build_scan_response`.
+  Frontend: componente `Pivots.tsx` (chips clicables agrupados por relación) en el
+  Dashboard, cableado a `mutation.mutate({ioc})` → **escaneo encadenado**. Tipos
+  `PivotEntity` + `ScanResponse.pivots` en el cliente. +7 tests (`test_pivots.py`) →
+  **suite backend 315 verdes**; build FE OK + 6 tests. README (manual) actualizado.
+  Nota: el detalle de historial (`ScanDetail.tsx`) aún no muestra pivotes (posible mejora
+  menor); el flujo de escaneo encadenado vive en el Dashboard, que es donde se demuestra.
+- **2026-09-29** (cloud, `design-soc-dashboard`) **MERGE: features + diseño en una rama.** El
+  usuario quiere probar TODO junto (funcionalidades + rediseño SOC). Fusionado
+  `feat/invite-tokens` dentro de `design-soc-dashboard`: el merge fue casi limpio (git
+  auto-fusionó `App/Dashboard/Invite`; único conflicto real = este `CLAUDE.md`, resuelto
+  conservando ambos historiales). Resultado: `design-soc-dashboard` = roadmap (I2/I3/R2/R3)
+  + seguridad (RBAC + rate limit) + pivoting + **rediseño teal SOC**. `feat/invite-tokens`
+  sigue con el diseño clásico (sin tocar). **⚠️ verificar en Kali** (`docker compose` con los
+  5 servicios, `pytest`=315, `npm test`=6) — la migración de BD (`down -v`) aplica por las
+  columnas nuevas de `ApiKey` y por el cambio a Postgres.
 
 ---
 
@@ -757,12 +829,12 @@ Cotejado con el código el 2026-09-24:
 | I1 | API pública OpenAPI + auth | Media | ✅ Mayormente (`/docs` + auth) |
 | **F4** | **Exportación a PDF del escaneo** | Media | ✅ **Hecho** (2026-09-24): `GET /api/history/{id}/pdf` con fpdf2 (Python puro, sin libs de sistema) + botón "Descargar PDF" en el dashboard |
 | **F5** | **Alertas por webhook (Slack/Discord/Teams)** | Media | ✅ **Hecho** (2026-09-24): `alerting.py`, dispara webhook si `score >= ALERT_SCORE_THRESHOLD`; formatos slack/discord/teams/generic; best-effort (nunca rompe el escaneo). Config en `.env` |
-| R2 | PostgreSQL | Baja | ❌ Backlog (justificar como trabajo futuro) |
-| R3 | Celery + Redis | Baja | ❌ Backlog (justificar como trabajo futuro) |
-| I2 | Export a SIEM | Baja | ❌ Backlog |
+| **R2** | **PostgreSQL** | Baja | ✅ **Hecho** (2026-09-29): servicio `db` (postgres:16-alpine) en `docker-compose.yml` con healthcheck + `depends_on: service_healthy`; backend apunta a `postgresql+psycopg://…`. Driver `psycopg[binary]` en requirements. El código mantiene SQLite por defecto (dev/tests). `.env.example` con `POSTGRES_*`. **⚠️ verificar `docker compose up --build` en Kali (yo no levanto Docker aquí).** Rama `feat/invite-tokens` |
+| **R3** | **Celery + Redis** | Baja | ✅ **Hecho** (2026-09-29): `celery_app.py` + `tasks.py` (tarea `scan_ioc` = enrich→score→IA→guardar en su propia sesión de BD). Endpoints `POST /api/scan/async` (encola, → task_id) y `GET /api/tasks/{id}` (estado/resultado). Servicios `redis` + `worker` en compose. Deps `celery`/`redis`. Tests en modo eager/mockeado (6, `test_tasks.py`). **⚠️ verificar en Kali con Docker.** Rama `feat/invite-tokens` |
+| **I2** | **Export a SIEM** | Baja | ✅ **Hecho** (2026-09-29): `siem_export.py` (STIX 2.1 + MISP, Python puro, IDs deterministas, attack-patterns MITRE). `GET /api/history/{id}/export?format=stix\|misp` con aislamiento por token + botones STIX/MISP en el dashboard. 13 tests (`test_siem_export.py`). Rama `feat/invite-tokens` |
 | I3 | Plugin de navegador | Baja | ❌ Backlog |
 
-**Extras construidos fuera del roadmap** (mejoras adicionales, el profesor no las ha visto): análisis PCAP (scapy), geolocalización con mapa, login UI, rediseño completo de la UI.
+**Extras construidos fuera del roadmap** (mejoras adicionales, el profesor no las ha visto): análisis PCAP (scapy), geolocalización con mapa, login UI, rediseño completo de la UI, **pivoting / entidades relacionadas** (escaneo encadenado).
 
 ### Plan de trabajo P3 (orden)
 

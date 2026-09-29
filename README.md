@@ -130,7 +130,9 @@ Ver la sección [Configuración de API Keys](#configuración-de-api-keys) para e
 docker compose up -d --build
 ```
 
-Este comando construye las imágenes, arranca los dos contenedores en segundo plano y crea el volumen `db_data` donde se almacena la base de datos de forma persistente. El primer arranque tarda 2-4 minutos.
+Este comando construye las imágenes y arranca tres contenedores en segundo plano: **PostgreSQL** (base de datos), **backend** (FastAPI) y **frontend** (Nginx + build de React). Los datos persisten en el volumen `pg_data`. El backend espera a que Postgres esté sano (`depends_on: service_healthy`) antes de arrancar. El primer arranque tarda 2-4 minutos.
+
+> **Base de datos:** en Docker se usa PostgreSQL 16 (credenciales en las variables `POSTGRES_*` del `.env`). Fuera de Docker (desarrollo local directo o tests) el código usa SQLite por defecto, sin configuración extra.
 
 #### 4. Verificar que todo funciona
 
@@ -294,15 +296,29 @@ curl http://localhost/api/history \
 Además de la clave maestra, si defines `ADMIN_SECRET` puedes repartir **tokens de
 acceso personales** sin compartir la clave maestra:
 
-1. Ve a **http://localhost/invite**, introduce el `ADMIN_SECRET`, un **nombre** y
-   (opcional) una **caducidad en días** → se genera un token.
+1. Ve a **http://localhost/invite**, introduce el `ADMIN_SECRET`, un **nombre**, un
+   **rol** y (opcional) una **caducidad en días** → se genera un token.
 2. Cada usuario entra con su token y ve **solo su propio historial** (aislamiento por
    token; el detalle de un escaneo ajeno responde `404`).
 3. Desde la misma página, "Gestionar tokens" permite **listar y revocar** tokens.
 
-Endpoints equivalentes: `POST /api/auth/invite` (crear), `POST /api/auth/tokens`
-(listar), `POST /api/auth/revoke` (revocar), `GET /api/auth/me` (nombre de la sesión).
-Todos los de administración requieren el `ADMIN_SECRET` en el cuerpo.
+**Roles (control de acceso):**
+
+| Rol | Puede |
+|---|---|
+| `analyst` | Escanear, ver **su** historial, exportar sus escaneos |
+| `admin` | Todo lo anterior **+ administrar tokens** (crear/listar/revocar) |
+
+Las operaciones de administración se autorizan por **cualquiera** de estas vías:
+un token con rol **admin** (o la master key) en la cabecera `X-API-Key`, **o** el
+`ADMIN_SECRET` en el cuerpo (útil como *bootstrap* para crear el primer token admin).
+
+**Rate limiting por token:** el límite de peticiones se aplica **por token** cuando la
+petición viene autenticada (y por IP en caso contrario), de modo que un token no comparte
+cupo con toda una red detrás de NAT. El login (`/api/auth/verify`) se limita por IP.
+
+Endpoints: `POST /api/auth/invite` (crear, acepta `role`), `POST /api/auth/tokens`
+(listar), `POST /api/auth/revoke` (revocar), `GET /api/auth/me` (nombre + rol de la sesión).
 
 ---
 
@@ -416,9 +432,12 @@ La primera vez que accedes al panel verás un formulario de login. Introduce la 
    - **Score de amenaza** (0-100 con código de color)
    - **Tabla de resultados por fuente** — veredicto, hallazgo clave, puntos aportados
    - **Técnicas MITRE ATT&CK** mapeadas a partir de los hallazgos
+   - **Entidades relacionadas** (pivoting): la IP a la que resuelve un dominio, los
+     hostnames de una IP, los nameservers, etc. — cada una es **clicable** y lanza un
+     escaneo encadenado, como en una investigación real de Threat Intelligence
    - **Análisis en lenguaje natural** generado por IA
 5. El escaneo queda guardado automáticamente en el historial.
-6. Con el botón **Descargar PDF** obtienes un informe del escaneo (score, veredicto, tabla de fuentes, análisis IA y técnicas MITRE) listo para adjuntar a un ticket o parte de incidente.
+6. Con el botón **Descargar PDF** obtienes un informe del escaneo (score, veredicto, tabla de fuentes, análisis IA y técnicas MITRE) listo para adjuntar a un ticket o parte de incidente. Los botones **STIX** y **MISP** exportan el mismo escaneo a formatos estándar de Threat Intelligence, importables en un SIEM/TIP.
 
 ### Escanear desde un fichero de logs
 
@@ -516,6 +535,27 @@ curl -X POST http://localhost/api/scan \
   -F "file=@/ruta/a/access.log"
 ```
 
+### POST /api/scan/async — Escaneo en segundo plano (cola Celery)
+
+Encola el escaneo en un worker (Celery + Redis) y responde al instante con un
+identificador de tarea, sin bloquear la petición. Útil para escaneos largos o
+de muchas fuentes.
+
+```bash
+# Encolar
+curl -X POST http://localhost/api/scan/async \
+  -H "X-API-Key: tu_clave" -H "Content-Type: application/json" \
+  -d '{"ioc": "185.220.101.45"}'
+# → {"task_id": "…", "status": "queued"}
+
+# Consultar estado / resultado
+curl http://localhost/api/tasks/<task_id> -H "X-API-Key: tu_clave"
+# → {"task_id": "…", "status": "SUCCESS", "result": {"id": 42, "verdict": "critical", "score": 87}}
+```
+
+Requiere el worker y Redis (ambos se levantan con `docker compose`). El escaneo
+síncrono (`POST /api/scan`) sigue disponible y no depende de la cola.
+
 ### GET /api/history — Historial paginado con filtros
 
 ```bash
@@ -557,6 +597,25 @@ curl http://localhost/api/history/42/pdf \
 ```
 
 Devuelve `application/pdf` con el informe del escaneo (score, veredicto, tabla de fuentes, análisis IA y técnicas MITRE).
+
+### GET /api/history/{id}/export — Exportación a SIEM/TIP (STIX 2.1 / MISP)
+
+```bash
+# Bundle STIX 2.1 (indicador + attack-patterns MITRE + relaciones)
+curl "http://localhost/api/history/42/export?format=stix" \
+  -H "X-API-Key: tu_clave" -o ioc-42-stix.json
+
+# Evento MISP (atributo + tags + threat level)
+curl "http://localhost/api/history/42/export?format=misp" \
+  -H "X-API-Key: tu_clave" -o ioc-42-misp.json
+```
+
+Serializa el escaneo a formatos interoperables que consumen las plataformas de
+seguridad reales (Splunk/QRadar/OpenCTI vía STIX, o MISP directamente). El patrón
+STIX se adapta al tipo de IOC (`ipv4-addr`, `domain-name`, `file:hashes`, …) y
+cada técnica MITRE detectada se incluye como `attack-pattern` con su relación
+`indicates`. Los IDs STIX son deterministas, de modo que reexportar el mismo IOC
+produce el mismo identificador (el receptor lo trata como actualización).
 
 ### GET /api/sources — Estado de los conectores
 
@@ -765,7 +824,7 @@ Blue-Echo/
 
 | Capa | Tecnología |
 |---|---|
-| Backend | Python 3.11 + FastAPI + httpx (async) + SQLModel + SQLite |
+| Backend | Python 3.11 + FastAPI + httpx (async) + SQLModel + PostgreSQL (Docker) / SQLite (dev) |
 | IA (principal) | Groq API — LLaMA 3.3-70B Versatile (tier gratuito) |
 | IA (fallback) | Anthropic Claude API — `claude-sonnet-4-20250514` (opcional) |
 | Frontend | React 18 + Vite + TypeScript + Tailwind CSS + shadcn/ui + TanStack Query |

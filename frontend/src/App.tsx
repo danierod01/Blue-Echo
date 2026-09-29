@@ -31,6 +31,7 @@ function UserMenu() {
     staleTime: 60_000,
   });
   const name = me?.name ?? "";
+  const role = me?.role ?? "";
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -65,7 +66,9 @@ function UserMenu() {
           {name && (
             <div className="px-3 py-2 border-b border-white/5">
               <p className="text-sm text-white truncate">{name}</p>
-              <p className="text-[10px] text-gray-500">Sesión activa</p>
+              <p className="text-[10px] text-gray-500">
+                Sesión activa{role ? ` · ${role === "admin" ? "Administrador" : "Analista"}` : ""}
+              </p>
             </div>
           )}
           <NavLink to="/" end onClick={() => setOpen(false)}

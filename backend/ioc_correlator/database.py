@@ -15,6 +15,7 @@ class ApiKey(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     key: str = Field(index=True, unique=True)
     label: str = Field(default="")
+    role: str = Field(default="analyst")                     # "admin" | "analyst"
     active: bool = Field(default=True)                       # revocación
     expires_at: Optional[datetime] = Field(default=None)    # caducidad (None = no caduca)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -50,9 +51,12 @@ def _get_database_url() -> str:
 
 def _make_engine():
     url = _get_database_url()
-    # check_same_thread solo aplica a SQLite; no rompe otros backends
-    connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
-    return create_engine(url, connect_args=connect_args)
+    if url.startswith("sqlite"):
+        # check_same_thread solo aplica a SQLite (acceso multihilo de FastAPI).
+        return create_engine(url, connect_args={"check_same_thread": False})
+    # Otros backends (PostgreSQL en Docker, roadmap R2): pool_pre_ping evita
+    # errores por conexiones que el servidor cerró tras un idle largo.
+    return create_engine(url, pool_pre_ping=True)
 
 
 # El engine se crea una sola vez al importar el módulo
@@ -147,8 +151,9 @@ def create_api_key(
     key: str,
     label: str = "",
     expires_at: Optional[datetime] = None,
+    role: str = "analyst",
 ) -> ApiKey:
-    obj = ApiKey(key=key, label=label, expires_at=expires_at)
+    obj = ApiKey(key=key, label=label, expires_at=expires_at, role=role)
     session.add(obj)
     session.commit()
     session.refresh(obj)
@@ -169,6 +174,17 @@ def get_api_key_label(session: Session, key: str) -> Optional[str]:
     """Devuelve la etiqueta (nombre) asociada a un token, o None si no existe."""
     obj = session.exec(select(ApiKey).where(ApiKey.key == key)).first()
     return obj.label if obj else None
+
+
+def get_api_key_role(session: Session, key: str) -> Optional[str]:
+    """Devuelve el rol de un token válido (admin/analyst), o None si no existe
+    o no está activo/vigente."""
+    obj = session.exec(select(ApiKey).where(ApiKey.key == key)).first()
+    if obj is None or not obj.active:
+        return None
+    if obj.expires_at is not None and _as_utc(obj.expires_at) <= datetime.now(timezone.utc):
+        return None
+    return obj.role
 
 
 def list_api_keys(session: Session) -> list[ApiKey]:

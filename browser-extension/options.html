@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="popup.css">
+  <style>
+    body { width: auto; max-width: 460px; }
+    label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin: 14px 0 5px; }
+    input[type=text], input[type=password] {
+      width: 100%;
+      background: var(--elev);
+      border: 1px solid rgba(45,212,191,0.15);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: var(--fg);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+    }
+    input:focus { outline: none; border-color: rgba(45,212,191,0.6); }
+    .save { margin-top: 18px; }
+    .save button { background: var(--ac); color: #000; border: 0; border-radius: 8px; padding: 8px 18px; font-weight: 600; cursor: pointer; }
+    .ok { color: var(--green); font-size: 12px; margin-left: 10px; }
+    .desc { font-size: 11px; color: var(--dim); margin-top: 4px; }
+  </style>
+  <title>Blue-Echo · Opciones</title>
+</head>
+<body>
+  <header>
+    <span class="logo">◎</span>
+    <span class="brand">BlueEcho</span>
+    <span class="soc">SOC · OPCIONES</span>
+  </header>
+
+  <label for="baseUrl">URL del servidor</label>
+  <input id="baseUrl" type="text" placeholder="https://blueecho.es" autocomplete="off">
+  <p class="desc">Base de tu instancia de Blue-Echo (sin barra final). Ej.: <code>https://blueecho.es</code> o <code>http://localhost</code>.</p>
+
+  <label for="apiKey">API key (opcional)</label>
+  <input id="apiKey" type="password" placeholder="X-API-Key" autocomplete="off">
+  <p class="desc">Si tu servidor tiene autenticación activada, pega aquí tu token de acceso.</p>
+
+  <div class="save">
+    <button id="save" type="button">Guardar</button>
+    <span id="ok" class="ok" hidden>Guardado ✓</span>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

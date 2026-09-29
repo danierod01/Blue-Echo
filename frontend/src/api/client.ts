@@ -65,6 +65,14 @@ export interface ScanResponse {
   created_at: string;
   mitre_techniques: MitreTechnique[];
   geolocation?: GeoLocation | null;
+  pivots?: PivotEntity[];
+}
+
+export interface PivotEntity {
+  value: string;
+  ioc_type: string;
+  relation: string;
+  source: string;
 }
 
 export interface HistoryItem {
@@ -242,6 +250,35 @@ export async function downloadScanPdf(id: number, iocValue?: string): Promise<vo
   URL.revokeObjectURL(url);
 }
 
+/** Descarga el escaneo en formato SIEM/TI (STIX 2.1 o MISP) — roadmap I2. */
+export async function downloadScanExport(
+  id: number,
+  format: "stix" | "misp",
+  iocValue?: string,
+): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/history/${id}/export?format=${format}`, {
+    headers: authHeaders(),
+  });
+  if (res.status === 401) {
+    clearStoredApiKey();
+    window.location.href = "/login";
+    throw new Error("Sesión expirada.");
+  }
+  if (!res.ok) {
+    throw new Error(`No se pudo exportar (HTTP ${res.status}).`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const safe = (iocValue ?? String(id)).replace(/[^a-zA-Z0-9._-]/g, "_");
+  a.download = `blue-echo-${safe}-${format}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function getSources(): Promise<SourceStatus[]> {
   const res = await fetch(`${BASE_URL}/api/sources`, {
     headers: authHeaders(),
@@ -251,6 +288,7 @@ export async function getSources(): Promise<SourceStatus[]> {
 
 export interface MeResponse {
   name: string;
+  role: string;
 }
 
 export async function getMe(): Promise<MeResponse> {
@@ -263,6 +301,7 @@ export async function getMe(): Promise<MeResponse> {
 export interface TokenInfo {
   id: number;
   label: string;
+  role: string;
   key_preview: string;
   active: boolean;
   created_at: string;

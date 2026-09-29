@@ -51,6 +51,14 @@ class GeoLocation(BaseModel):
     resolved_ip: Optional[str] = None
 
 
+class PivotEntity(BaseModel):
+    """Entidad relacionada con el IOC escaneado, para pivotar (escaneo encadenado)."""
+    value: str            # IOC relacionado (IP o dominio)
+    ioc_type: str         # "ipv4" | "ipv6" | "domain"
+    relation: str         # descripción legible de la relación
+    source: str           # conector que aportó la relación
+
+
 class ScanResponse(BaseModel):
     id: int
     ioc_value: str
@@ -63,6 +71,7 @@ class ScanResponse(BaseModel):
     created_at: datetime
     mitre_techniques: list[MitreTechnique] = []
     geolocation: Optional[GeoLocation] = None
+    pivots: list[PivotEntity] = []
 
 
 # ---------------------------------------------------------------------------
