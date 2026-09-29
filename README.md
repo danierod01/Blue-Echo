@@ -1,5 +1,8 @@
 # Blue-Echo
 
+![CI](https://github.com/danierod01/Blue-Echo/actions/workflows/ci.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+
 Plataforma web de correlación de Indicadores de Compromiso (IOCs) contra 18 fuentes de Threat Intelligence, con scoring automático, mapping a MITRE ATT&CK y análisis ejecutivo generado por IA.
 
 Dado un IOC (IP, hash, dominio, URL) o un fichero de logs, consulta todas las fuentes en paralelo, calcula un score de amenaza 0-100, mapea las técnicas ATT&CK relevantes y genera un resumen ejecutivo en español.
@@ -754,6 +757,22 @@ Blue-Echo/
 | IA (fallback) | Anthropic Claude API — `claude-sonnet-4-20250514` (opcional) |
 | Frontend | React 18 + Vite + TypeScript + Tailwind CSS + shadcn/ui + TanStack Query |
 | Infra | Docker Compose + Nginx + Hetzner Cloud VPS Ubuntu 24.04 |
+
+---
+
+## Integración continua (CI)
+
+Cada push y pull request dispara el workflow de **GitHub Actions** (`.github/workflows/ci.yml`):
+
+- **Backend:** `pytest` (batería completa) + `pip-audit` de dependencias.
+- **Frontend:** `npm ci` + `npm run build` (TypeScript + Vite) + `npm audit`.
+
+Las auditorías de dependencias se ejecutan como aviso (no bloquean el build) para que un
+CVE nuevo aguas arriba no impida integrar, pero quede registrado en el log del job.
+
+## Licencia
+
+Publicado bajo licencia **MIT** — ver [`LICENSE`](LICENSE).
 
 ---
 

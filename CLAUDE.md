@@ -582,6 +582,14 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   `routes._run_scan` y en `auth.py`. +4 tests (`test_audit.py`) → **281 verdes**; build OK.
   STRIDE actualizado (Tampering=cabeceras, Repudiation=auditoría). CORS se deja
   configurable (default `*` solo dev; cierre real = `.env` de prod, ya documentado).
+- **2026-09-29** (cloud, `feat/invite-tokens`) **Tanda 3 (CI/CD + producción):**
+  healthchecks en `docker-compose.yml` YA existían (backend + `depends_on:
+  service_healthy`). Añadido **CI de GitHub Actions** (`.github/workflows/ci.yml`):
+  job backend (pytest + pip-audit) y job frontend (npm ci + build + npm audit); las
+  auditorías con `continue-on-error` (avisan, no bloquean). Añadido **LICENSE** (MIT) +
+  badges de CI y licencia en el README + secciones "Integración continua" y "Licencia".
+  YAML validado. **PENDIENTE en tandas siguientes:** UX (404, error boundary,
+  favicon/meta, toasts); tests de frontend (Vitest).
 
 ---
 
