@@ -31,6 +31,12 @@ anthropic==0.40.0
 slowapi==0.1.9
 limits==3.14.0
 
+# Cola de tareas en segundo plano (roadmap R3): Celery con Redis como broker
+# y backend de resultados. Solo se usa en el modo async (docker-compose levanta
+# un worker); el escaneo síncrono clásico sigue funcionando sin ellos.
+celery==5.4.0
+redis==5.2.1
+
 # Análisis de PCAPs
 scapy==2.7.0
 

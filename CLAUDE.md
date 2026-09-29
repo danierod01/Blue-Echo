@@ -636,6 +636,25 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   — los que tocan `docker compose`; se harán re-verificando el arranque limpio tras cada uno.
   Nota: durante esta sesión el clasificador de Bash estuvo caído un rato; I3 se escribió
   entero (solo ficheros) mientras tanto y se verificó al recuperarse el terminal.
+- **2026-09-29** (cloud, `feat/invite-tokens`) **Cierre de roadmap — R2 + R3 (¡ROADMAP COMPLETO!):**
+  **R2 · PostgreSQL ✅:** servicio `db` (postgres:16-alpine) en compose con healthcheck +
+  `depends_on: service_healthy`; backend → `postgresql+psycopg://`; driver `psycopg[binary]`;
+  `pool_pre_ping`. **El código mantiene SQLite por defecto** (dev sin Docker + tests), así que
+  la suite no cambió de backend. `.env.example` con `POSTGRES_*`. **R3 · Celery+Redis ✅:**
+  `celery_app.py` (broker/result = Redis, `include=tasks`, eager por env para tests) +
+  `tasks.py` (tarea `scan_ioc` = pipeline completo con su propia `Session(engine)`; por eso
+  R2 va antes que R3: worker y API comparten la Postgres). Endpoints `POST /api/scan/async`
+  y `GET /api/tasks/{id}`. Servicios `redis` + `worker` (mismo image del backend, `command:
+  celery -A ioc_correlator.celery_app worker`) en compose. Deps `celery==5.4.0`/`redis==5.2.1`.
+  6 tests (`test_tasks.py`, eager+mock, sin Redis real). **Suite backend: 300 verdes.** El
+  escaneo síncrono clásico sigue intacto y no depende de la cola. README (sección async +
+  nota de BD) y roadmap actualizados. **CON ESTO EL ROADMAP DEL INFORME P1 §8 QUEDA CERRADO
+  salvo I2 que también se cerró hoy** (solo quedan como "trabajo futuro" ninguno de los que
+  el usuario pidió — todos hechos).
+  **⚠️ PENDIENTE (tú, requiere Docker; yo no levanto contenedores aquí):** verificar
+  `docker compose up --build` en limpio con los 5 servicios (db/redis/worker/backend/frontend);
+  el arranque limpio es el 30% de la nota. Recrear BD no aplica (Postgres nuevo desde cero).
+  Probar el plugin I3 en un navegador real.
 
 ---
 
@@ -753,7 +772,7 @@ Cotejado con el código el 2026-09-24:
 | **F4** | **Exportación a PDF del escaneo** | Media | ✅ **Hecho** (2026-09-24): `GET /api/history/{id}/pdf` con fpdf2 (Python puro, sin libs de sistema) + botón "Descargar PDF" en el dashboard |
 | **F5** | **Alertas por webhook (Slack/Discord/Teams)** | Media | ✅ **Hecho** (2026-09-24): `alerting.py`, dispara webhook si `score >= ALERT_SCORE_THRESHOLD`; formatos slack/discord/teams/generic; best-effort (nunca rompe el escaneo). Config en `.env` |
 | **R2** | **PostgreSQL** | Baja | ✅ **Hecho** (2026-09-29): servicio `db` (postgres:16-alpine) en `docker-compose.yml` con healthcheck + `depends_on: service_healthy`; backend apunta a `postgresql+psycopg://…`. Driver `psycopg[binary]` en requirements. El código mantiene SQLite por defecto (dev/tests). `.env.example` con `POSTGRES_*`. **⚠️ verificar `docker compose up --build` en Kali (yo no levanto Docker aquí).** Rama `feat/invite-tokens` |
-| R3 | Celery + Redis | Baja | ❌ Backlog (justificar como trabajo futuro) |
+| **R3** | **Celery + Redis** | Baja | ✅ **Hecho** (2026-09-29): `celery_app.py` + `tasks.py` (tarea `scan_ioc` = enrich→score→IA→guardar en su propia sesión de BD). Endpoints `POST /api/scan/async` (encola, → task_id) y `GET /api/tasks/{id}` (estado/resultado). Servicios `redis` + `worker` en compose. Deps `celery`/`redis`. Tests en modo eager/mockeado (6, `test_tasks.py`). **⚠️ verificar en Kali con Docker.** Rama `feat/invite-tokens` |
 | **I2** | **Export a SIEM** | Baja | ✅ **Hecho** (2026-09-29): `siem_export.py` (STIX 2.1 + MISP, Python puro, IDs deterministas, attack-patterns MITRE). `GET /api/history/{id}/export?format=stix\|misp` con aislamiento por token + botones STIX/MISP en el dashboard. 13 tests (`test_siem_export.py`). Rama `feat/invite-tokens` |
 | I3 | Plugin de navegador | Baja | ❌ Backlog |
 

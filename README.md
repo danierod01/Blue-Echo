@@ -518,6 +518,27 @@ curl -X POST http://localhost/api/scan \
   -F "file=@/ruta/a/access.log"
 ```
 
+### POST /api/scan/async — Escaneo en segundo plano (cola Celery)
+
+Encola el escaneo en un worker (Celery + Redis) y responde al instante con un
+identificador de tarea, sin bloquear la petición. Útil para escaneos largos o
+de muchas fuentes.
+
+```bash
+# Encolar
+curl -X POST http://localhost/api/scan/async \
+  -H "X-API-Key: tu_clave" -H "Content-Type: application/json" \
+  -d '{"ioc": "185.220.101.45"}'
+# → {"task_id": "…", "status": "queued"}
+
+# Consultar estado / resultado
+curl http://localhost/api/tasks/<task_id> -H "X-API-Key: tu_clave"
+# → {"task_id": "…", "status": "SUCCESS", "result": {"id": 42, "verdict": "critical", "score": 87}}
+```
+
+Requiere el worker y Redis (ambos se levantan con `docker compose`). El escaneo
+síncrono (`POST /api/scan`) sigue disponible y no depende de la cola.
+
 ### GET /api/history — Historial paginado con filtros
 
 ```bash

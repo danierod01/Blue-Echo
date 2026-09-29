@@ -34,6 +34,9 @@ from ioc_correlator.audit import audit, mask_token
 from ioc_correlator.mitre_mapper import map_to_mitre
 from ioc_correlator.report_pdf import build_scan_pdf
 from ioc_correlator.siem_export import to_misp, to_stix
+from ioc_correlator.celery_app import celery_app
+from ioc_correlator.tasks import scan_ioc_task
+from celery.result import AsyncResult
 from ioc_correlator.enricher import enrich, get_sources_status
 from ioc_correlator.extractor import extract_iocs_from_bytes
 from ioc_correlator.scorer import compute_score
@@ -404,6 +407,39 @@ async def history_detail_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.post("/scan/async")
+@limiter.limit("30/minute")
+async def scan_async(
+    request: Request,
+    body: ScanRequest,
+    current_key: str = Depends(require_api_key),
+) -> dict:
+    """Encola un escaneo en segundo plano (roadmap R3, Celery+Redis).
+
+    Devuelve un `task_id` con el que consultar el estado en `/api/tasks/{id}`.
+    Útil para no bloquear la petición en escaneos largos o de muchas fuentes.
+    """
+    task = scan_ioc_task.delay(body.ioc, current_key or None)
+    return {"task_id": task.id, "status": "queued"}
+
+
+@router.get("/tasks/{task_id}")
+@limiter.limit("60/minute")
+async def task_status(
+    request: Request,
+    task_id: str,
+    _: str = Depends(require_api_key),
+) -> dict:
+    """Consulta el estado/resultado de una tarea de escaneo en segundo plano."""
+    res = AsyncResult(task_id, app=celery_app)
+    out: dict = {"task_id": task_id, "status": res.status}
+    if res.successful():
+        out["result"] = res.result
+    elif res.failed():
+        out["error"] = str(res.result)
+    return out
 
 
 @router.get("/history/{scan_id}/export")
