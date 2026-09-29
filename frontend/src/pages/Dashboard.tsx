@@ -9,6 +9,7 @@ import ThreatScore from "@/components/ThreatScore";
 import ResultsTable from "@/components/ResultsTable";
 import AiSummary from "@/components/AiSummary";
 import MitreAttack from "@/components/MitreAttack";
+import Pivots from "@/components/Pivots";
 import GeoMap from "@/components/GeoMap";
 import HistoryList from "@/components/HistoryList";
 import SourcesStatus from "@/components/SourcesStatus";
@@ -273,6 +274,12 @@ export default function Dashboard() {
             <div className="animate-[fadeSlideIn_0.4s_ease_0.3s_forwards] opacity-0">
               <MitreAttack techniques={result.mitre_techniques} />
             </div>
+
+            {result.pivots && result.pivots.length > 0 && (
+              <div className="animate-[fadeSlideIn_0.4s_ease_0.35s_forwards] opacity-0">
+                <Pivots pivots={result.pivots} onScan={(ioc) => mutation.mutate({ ioc })} />
+              </div>
+            )}
 
             <div className="animate-[fadeSlideIn_0.4s_ease_0.4s_forwards] opacity-0">
               {result.geolocation ? (

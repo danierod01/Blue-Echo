@@ -670,6 +670,18 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   filas Spoofing/DoS/EoP, gaps — quitado el gap "sin RBAC") actualizados.
   **⚠️ MIGRACIÓN BD:** `ApiKey` ganó la columna `role` → en el próximo despliegue recrear la
   BD (`docker compose down -v`) o añadir la columna a mano; SQLModel no migra en caliente.
+- **2026-09-29** (cloud, `feat/invite-tokens`) **Pivoting (entidades relacionadas):** nuevo
+  `pivots.py` (función pura `extract_pivots`) que deriva IOCs relacionados de los resultados:
+  dominio→IP (geolocation `resolved_ip`), IP→hostnames (shodan `hostnames`, ipinfo
+  `hostname`, securitytrails `nearby_hostnames`), dominio→nameservers (rdap). Deduplica,
+  valida tipo con `detect_ioc_type`, excluye el propio IOC, tope 6/fuente y 12 global.
+  Campo `pivots: list[PivotEntity]` en `ScanResponse`, poblado en `_build_scan_response`.
+  Frontend: componente `Pivots.tsx` (chips clicables agrupados por relación) en el
+  Dashboard, cableado a `mutation.mutate({ioc})` → **escaneo encadenado**. Tipos
+  `PivotEntity` + `ScanResponse.pivots` en el cliente. +7 tests (`test_pivots.py`) →
+  **suite backend 315 verdes**; build FE OK + 6 tests. README (manual) actualizado.
+  Nota: el detalle de historial (`ScanDetail.tsx`) aún no muestra pivotes (posible mejora
+  menor); el flujo de escaneo encadenado vive en el Dashboard, que es donde se demuestra.
 
 ---
 
@@ -791,7 +803,7 @@ Cotejado con el código el 2026-09-24:
 | **I2** | **Export a SIEM** | Baja | ✅ **Hecho** (2026-09-29): `siem_export.py` (STIX 2.1 + MISP, Python puro, IDs deterministas, attack-patterns MITRE). `GET /api/history/{id}/export?format=stix\|misp` con aislamiento por token + botones STIX/MISP en el dashboard. 13 tests (`test_siem_export.py`). Rama `feat/invite-tokens` |
 | I3 | Plugin de navegador | Baja | ❌ Backlog |
 
-**Extras construidos fuera del roadmap** (mejoras adicionales, el profesor no las ha visto): análisis PCAP (scapy), geolocalización con mapa, login UI, rediseño completo de la UI.
+**Extras construidos fuera del roadmap** (mejoras adicionales, el profesor no las ha visto): análisis PCAP (scapy), geolocalización con mapa, login UI, rediseño completo de la UI, **pivoting / entidades relacionadas** (escaneo encadenado).
 
 ### Plan de trabajo P3 (orden)
 

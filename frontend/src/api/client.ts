@@ -65,6 +65,14 @@ export interface ScanResponse {
   created_at: string;
   mitre_techniques: MitreTechnique[];
   geolocation?: GeoLocation | null;
+  pivots?: PivotEntity[];
+}
+
+export interface PivotEntity {
+  value: string;
+  ioc_type: string;
+  relation: string;
+  source: string;
 }
 
 export interface HistoryItem {

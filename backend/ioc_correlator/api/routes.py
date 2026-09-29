@@ -17,6 +17,7 @@ from ioc_correlator.api.schemas import (
     HistoryItem,
     HistoryPage,
     MitreTechnique,
+    PivotEntity,
     ExtractedObject,
     PcapIocItem,
     PcapScanResponse,
@@ -32,6 +33,7 @@ from ioc_correlator.database import get_history, get_scan_by_id, get_session, sa
 from ioc_correlator.alerting import maybe_send_alert
 from ioc_correlator.audit import audit, mask_token
 from ioc_correlator.mitre_mapper import map_to_mitre
+from ioc_correlator.pivots import extract_pivots
 from ioc_correlator.report_pdf import build_scan_pdf
 from ioc_correlator.siem_export import to_misp, to_stix
 from ioc_correlator.celery_app import celery_app
@@ -74,6 +76,16 @@ def _build_scan_response(db_scan, breakdown: dict[str, int], geolocation=None) -
             resolved_ip=geolocation.resolved_ip,
         )
 
+    pivots = [
+        PivotEntity(**p)
+        for p in extract_pivots(
+            raw_results,
+            db_scan.ioc_value,
+            db_scan.ioc_type,
+            resolved_ip=geo_out.resolved_ip if geo_out else None,
+        )
+    ]
+
     return ScanResponse(
         id=db_scan.id,
         ioc_value=db_scan.ioc_value,
@@ -86,6 +98,7 @@ def _build_scan_response(db_scan, breakdown: dict[str, int], geolocation=None) -
         created_at=db_scan.created_at,
         mitre_techniques=mitre,
         geolocation=geo_out,
+        pivots=pivots,
     )
 
 

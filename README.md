@@ -432,6 +432,9 @@ La primera vez que accedes al panel verás un formulario de login. Introduce la 
    - **Score de amenaza** (0-100 con código de color)
    - **Tabla de resultados por fuente** — veredicto, hallazgo clave, puntos aportados
    - **Técnicas MITRE ATT&CK** mapeadas a partir de los hallazgos
+   - **Entidades relacionadas** (pivoting): la IP a la que resuelve un dominio, los
+     hostnames de una IP, los nameservers, etc. — cada una es **clicable** y lanza un
+     escaneo encadenado, como en una investigación real de Threat Intelligence
    - **Análisis en lenguaje natural** generado por IA
 5. El escaneo queda guardado automáticamente en el historial.
 6. Con el botón **Descargar PDF** obtienes un informe del escaneo (score, veredicto, tabla de fuentes, análisis IA y técnicas MITRE) listo para adjuntar a un ticket o parte de incidente. Los botones **STIX** y **MISP** exportan el mismo escaneo a formatos estándar de Threat Intelligence, importables en un SIEM/TIP.
