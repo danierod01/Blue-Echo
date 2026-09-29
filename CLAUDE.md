@@ -466,6 +466,12 @@ Estado a fecha 2026-09-28 (rama `feat/invite-tokens`):
       `feat/invite-tokens` a `main`.**
 - [ ] Antes de entregar: tag `v1.0-practica3`.
 - [ ] Cerrar en prod: `CORS_ORIGINS=https://blueecho.es` en el `.env` del VPS.
+- [~] **Secretos en historial git** (2026-09-29): escaneado (`.env`, claves privadas,
+      `.db/.pem/.key`, valores de API keys) → **limpio**, salvo que la clave `miapi2026`
+      aparecía en una nota de Obsidian (ya **redactada** en HEAD, pero **sigue en el
+      historial** de la rama). ACCIÓN [tú]: si `miapi2026` es/era una clave real,
+      **cámbiala en el `.env` del VPS**; si quieres un historial 100% limpio, reescribir
+      historial (git filter-repo) antes del tag — para una clave dev débil, rotar suele bastar.
 
 ### ⚠️ La memoria de la P3 es un documento NUEVO (no se reutiliza la de P1)
 

@@ -81,7 +81,7 @@ for row in c.execute('SELECT id, substr(key,1,16), label FROM apikey'): print(ro
 |---|---|
 | HTTP 500 / NetworkError al escanear tras añadir sesiones | La BD antigua no tenía la columna `api_key`; SQLModel no migra en caliente. Recrear volumen con `docker compose down -v`. |
 | Nginx crasheaba en local (`cannot load certificate blueecho.es`) | El compose de producción exige el cert de Let's Encrypt. En local hay que usar el override: `-f docker-compose.dev.yml`. |
-| "Un token nuevo ve el historial de otro" (falsa alarma) | No era un bug: el escaneo estaba bajo la clave `miapi2026`. Cada clave ve solo lo suyo; verificado inspeccionando la BD. |
+| "Un token nuevo ve el historial de otro" (falsa alarma) | No era un bug: el escaneo estaba bajo otra clave/token. Cada clave ve solo lo suyo; verificado inspeccionando la BD. |
 | El nombre de sesión no cambiaba al re-loguear en el mismo navegador | `queryClient.clear()` en login y logout. |
 
 ## Evidencias
