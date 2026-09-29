@@ -14,6 +14,7 @@ from ioc_correlator.audit import audit, mask_token
 from ioc_correlator.database import (
     create_api_key,
     get_api_key_label,
+    get_api_key_role,
     get_session,
     is_valid_api_key,
     list_api_keys,
@@ -34,46 +35,70 @@ class VerifyResponse(BaseModel):
 
 
 class InviteRequest(BaseModel):
-    admin_secret: str
+    admin_secret: str = ""     # opcional si se autentica con un token admin en la cabecera
     label: str = ""
     expires_in_days: Optional[int] = None  # None = no caduca
+    role: str = "analyst"      # "admin" | "analyst"
 
 
 class InviteResponse(BaseModel):
     token: str
     label: str
+    role: str
 
 
 class MeResponse(BaseModel):
     name: str
+    role: str
 
 
 class AdminRequest(BaseModel):
-    admin_secret: str
+    admin_secret: str = ""
 
 
 class RevokeRequest(BaseModel):
-    admin_secret: str
+    admin_secret: str = ""
     token_id: int
 
 
 class TokenInfo(BaseModel):
     id: int
     label: str
+    role: str
     key_preview: str          # solo un prefijo, nunca el token completo
     active: bool
     created_at: datetime
     expires_at: Optional[datetime]
 
 
-def _require_admin(admin_secret: str) -> None:
-    """Valida el ADMIN_SECRET para operaciones de administración de tokens."""
+def _is_admin_key(key: str, session: Session) -> bool:
+    """True si la key es la master key (BLUE_ECHO_API_KEY) o un token con rol admin."""
+    if not key:
+        return False
+    master = os.getenv("BLUE_ECHO_API_KEY", "").strip()
+    if master and hmac.compare_digest(key.encode(), master.encode()):
+        return True
+    return get_api_key_role(session, key) == "admin"
+
+
+def _require_admin_access(admin_secret: str, request: Request, session: Session) -> None:
+    """Autoriza operaciones de administración de tokens por cualquiera de estas vías:
+
+    1. Un token con rol **admin** (o la master key) en la cabecera `X-API-Key`.
+    2. El `ADMIN_SECRET` del servidor en el cuerpo (bootstrap: para crear el
+       primer token admin cuando aún no existe ninguno).
+    """
+    header_key = request.headers.get("X-API-Key", "")
+    if _is_admin_key(header_key, session):
+        return
+
     expected = os.getenv("ADMIN_SECRET", "").strip()
     if not expected:
-        raise HTTPException(status_code=503, detail="Sistema de invitaciones no configurado.")
-    if not hmac.compare_digest(admin_secret.encode(), expected.encode()):
-        audit("admin_auth_failed")
-        raise HTTPException(status_code=403, detail="Código de acceso incorrecto.")
+        raise HTTPException(status_code=503, detail="Sistema de administración no configurado.")
+    if admin_secret and hmac.compare_digest(admin_secret.encode(), expected.encode()):
+        return
+    audit("admin_auth_failed")
+    raise HTTPException(status_code=403, detail="Se requieren privilegios de administrador.")
 
 
 def _check_key(api_key: str, session: Session) -> bool:
@@ -108,12 +133,17 @@ async def invite(
     body: InviteRequest,
     session: Session = Depends(get_session),
 ) -> InviteResponse:
-    """Genera un token de acceso. Requiere el ADMIN_SECRET del servidor."""
-    _require_admin(body.admin_secret)
+    """Genera un token de acceso. Requiere privilegios de administrador
+    (ADMIN_SECRET o un token admin en la cabecera)."""
+    _require_admin_access(body.admin_secret, request, session)
 
     label = body.label.strip()
     if not label:
         raise HTTPException(status_code=422, detail="El nombre es obligatorio.")
+
+    role = body.role.strip().lower()
+    if role not in ("admin", "analyst"):
+        raise HTTPException(status_code=422, detail="Rol inválido (admin | analyst).")
 
     expires_at = None
     if body.expires_in_days is not None:
@@ -122,9 +152,9 @@ async def invite(
         expires_at = datetime.now(timezone.utc) + timedelta(days=body.expires_in_days)
 
     token = secrets.token_urlsafe(32)
-    create_api_key(session, key=token, label=label, expires_at=expires_at)
-    audit("invite_created", label=label, token=mask_token(token))
-    return InviteResponse(token=token, label=label)
+    create_api_key(session, key=token, label=label, expires_at=expires_at, role=role)
+    audit("invite_created", label=label, role=role, token=mask_token(token))
+    return InviteResponse(token=token, label=label, role=role)
 
 
 @auth_router.post("/auth/tokens", response_model=list[TokenInfo])
@@ -134,12 +164,13 @@ async def list_tokens(
     body: AdminRequest,
     session: Session = Depends(get_session),
 ) -> list[TokenInfo]:
-    """Lista los tokens emitidos (solo un prefijo de cada uno). Requiere ADMIN_SECRET."""
-    _require_admin(body.admin_secret)
+    """Lista los tokens emitidos (solo un prefijo de cada uno). Requiere admin."""
+    _require_admin_access(body.admin_secret, request, session)
     return [
         TokenInfo(
             id=k.id,
             label=k.label,
+            role=k.role,
             key_preview=k.key[:8] + "…",
             active=k.active,
             created_at=k.created_at,
@@ -156,8 +187,8 @@ async def revoke(
     body: RevokeRequest,
     session: Session = Depends(get_session),
 ) -> dict:
-    """Revoca (desactiva) un token por su id. Requiere ADMIN_SECRET."""
-    _require_admin(body.admin_secret)
+    """Revoca (desactiva) un token por su id. Requiere admin."""
+    _require_admin_access(body.admin_secret, request, session)
     if not revoke_api_key(session, body.token_id):
         raise HTTPException(status_code=404, detail="Token no encontrado.")
     audit("token_revoked", token_id=body.token_id)
@@ -181,6 +212,11 @@ async def me(
     current_key: str = Depends(require_api_key),
     session: Session = Depends(get_session),
 ) -> MeResponse:
-    """Devuelve el nombre asociado al token actual (para mostrarlo en la UI)."""
+    """Devuelve el nombre y el rol del token actual (para mostrarlo en la UI)."""
     label = get_api_key_label(session, current_key) if current_key else None
-    return MeResponse(name=label or "Administrador")
+    # Sin auth (dev) o master key → admin; si no, el rol del token en BD.
+    if not current_key or _is_admin_key(current_key, session):
+        role = "admin"
+    else:
+        role = get_api_key_role(session, current_key) or "analyst"
+    return MeResponse(name=label or "Administrador", role=role)

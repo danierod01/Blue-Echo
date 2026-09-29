@@ -280,6 +280,7 @@ export async function getSources(): Promise<SourceStatus[]> {
 
 export interface MeResponse {
   name: string;
+  role: string;
 }
 
 export async function getMe(): Promise<MeResponse> {
@@ -292,6 +293,7 @@ export async function getMe(): Promise<MeResponse> {
 export interface TokenInfo {
   id: number;
   label: string;
+  role: string;
   key_preview: string;
   active: boolean;
   created_at: string;

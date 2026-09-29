@@ -1,3 +1,4 @@
+import hashlib
 import os
 
 from slowapi import Limiter
@@ -20,4 +21,18 @@ def _get_real_ip(request: Request) -> str:
     return request.client.host if request.client else "127.0.0.1"
 
 
-limiter = Limiter(key_func=_get_real_ip)
+def _rate_key(request: Request) -> str:
+    """Clave de rate limiting: por **token** si viene autenticado, si no por IP.
+
+    Así un token no comparte cupo con toda una red detrás de NAT, y un abuso se
+    puede acotar al token concreto. Se prefija para no colisionar IP con token.
+    """
+    api_key = request.headers.get("X-API-Key", "").strip()
+    if api_key:
+        # No exponemos el token en claves/logs: usamos un hash corto estable.
+        digest = hashlib.sha256(api_key.encode()).hexdigest()[:16]
+        return f"key:{digest}"
+    return f"ip:{_get_real_ip(request)}"
+
+
+limiter = Limiter(key_func=_rate_key)

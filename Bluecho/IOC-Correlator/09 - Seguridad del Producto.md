@@ -31,8 +31,8 @@ o PCAP subidos, IOCs manipulados, respuestas de las APIs externas).
 | **T**ampering (manipulación) | Manipular peticiones o el tráfico en tránsito | **HTTPS/TLS** con Let's Encrypt (Certbot, auto-renovación) + **cabeceras de seguridad** en Nginx (HSTS, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy y **CSP**), tanto en producción como en el Nginx de desarrollo (salvo HSTS). Validación y normalización de toda entrada; Pydantic valida los cuerpos JSON. |
 | **R**epudiation (repudio) | Un actor niega haber hecho una consulta | Persistencia del historial con timestamp (`created_at`) y **atribución por token** (`ScanResult.api_key` + `ApiKey.label`). Además, **log de auditoría** (`audit.py`, logger `blueecho.audit`) registra escaneos, invitaciones, revocaciones e intentos de acceso fallidos (con el token enmascarado). |
 | **I**nformation Disclosure (fuga de información) | Filtrado de API keys o de datos internos | Secretos solo por variables de entorno, nunca en el código ni en el repo (`.gitignore`). El backend no se publica al exterior (`expose`, no `ports`): único punto de entrada Nginx:80/443. Errores controlados que no exponen trazas internas. |
-| **D**enial of Service (denegación) | Saturar la API o agotar recursos/cuotas | **Rate limiting por IP** (`slowapi`): límites por endpoint (`/auth/verify` 5/min, escaneo configurable). **Límite de tamaño de fichero** en uploads (`MAX_UPLOAD_SIZE_MB`, HTTP 413). Semáforo de 5 peticiones concurrentes a las fuentes. Timeouts en todas las llamadas HTTP externas. |
-| **E**levation of Privilege (elevación) | Ejecutar código o salir del contenedor | Contenedor backend corre como **usuario no root** (`appuser`). Imagen `slim` multi-stage (menos superficie). Dependencias auditadas sin CVEs conocidos (§6). Sin `eval`/deserialización de datos no confiables en el flujo de la app. |
+| **D**enial of Service (denegación) | Saturar la API o agotar recursos/cuotas | **Rate limiting por token** (o por IP sin autenticar) con `slowapi`: límites por endpoint (`/auth/verify` 5/min por IP, escaneo configurable). **Límite de tamaño de fichero** en uploads (`MAX_UPLOAD_SIZE_MB`, HTTP 413). Semáforo de 5 peticiones concurrentes a las fuentes. Timeouts en todas las llamadas HTTP externas. |
+| **E**levation of Privilege (elevación) | Escalar de analyst a admin, ejecutar código o salir del contenedor | **RBAC**: rol `admin`/`analyst` por token; las operaciones de administración exigen rol admin (o `ADMIN_SECRET`), validado en tiempo constante. Contenedor backend corre como **usuario no root** (`appuser`). Imagen `slim` multi-stage (menos superficie). Dependencias auditadas sin CVEs conocidos (§6). Sin `eval`/deserialización de datos no confiables en el flujo de la app. |
 
 ## 3. Gestión de secretos
 
@@ -53,14 +53,24 @@ o PCAP subidos, IOCs manipulados, respuestas de las APIs externas).
 - **Autenticación:** cabecera `X-API-Key` requerida en todos los endpoints de datos.
   El endpoint público `/api/auth/verify` (usado por el login del frontend) comprueba la
   clave y está limitado a 5 intentos/minuto por IP para frenar fuerza bruta.
-- **Modelo de acceso:** dos niveles. (1) `BLUE_ECHO_API_KEY` es la **clave maestra**;
-  (2) además, cualquiera con el `ADMIN_SECRET` puede generar en `/invite` **tokens de
-  acceso personales** (`secrets.token_urlsafe(32)`) con una etiqueta identificativa,
+- **Modelo de acceso:** (1) `BLUE_ECHO_API_KEY` es la **clave maestra** (rol admin
+  implícito); (2) además, cualquiera con privilegios de administración puede generar en
+  `/invite` **tokens de acceso personales** (`secrets.token_urlsafe(32)`) con etiqueta,
   almacenados en la tabla `ApiKey`. Cada token ve **solo su propio historial**
   (aislamiento por token; el detalle de un escaneo ajeno devuelve 404, no 403, para no
   revelar su existencia). Es el patrón *Personal Access Token* (como GitHub/Stripe). Si
   `BLUE_ECHO_API_KEY` no está configurada, la app entra en **modo desarrollo sin
   restricciones** (documentado); en producción **debe** estar fijada.
+- **RBAC (roles):** cada token tiene un rol —`admin` o `analyst` (columna `ApiKey.role`)—.
+  El `analyst` solo escanea, ve su historial y exporta lo suyo; el `admin` (o la master
+  key) puede además **administrar tokens** (crear/listar/revocar). Las operaciones de
+  administración se autorizan por un token admin en la cabecera `X-API-Key` **o** por el
+  `ADMIN_SECRET` en el cuerpo (bootstrap para el primer admin). `GET /api/auth/me` expone
+  nombre y rol para la UI.
+- **Rate limiting por identidad:** el throttling se aplica **por token** cuando la petición
+  está autenticada (clave = hash SHA-256 corto del token, nunca el token en claro) y **por
+  IP** en caso contrario. Así un token abusivo se acota sin penalizar a toda una red NAT, y
+  el login (`/auth/verify`, sin token en cabecera) sigue limitado por IP contra fuerza bruta.
 - **Aislamiento de red:** el backend FastAPI no se expone al host (`expose: 8000` en la
   red interna de Docker); Nginx es el único punto de entrada y hace de reverse proxy.
 - **Limitación honesta:** al ser clave única no hay trazabilidad por usuario ni control
@@ -111,17 +121,15 @@ o PCAP subidos, IOCs manipulados, respuestas de las APIs externas).
 ## 8. Resumen de controles y gaps
 
 **Implementado:** auth X-API-Key (comparación constante), tokens personales por invitación
-con **historial aislado por token** (404 ante recursos ajenos) y ciclo de vida completo
-(caducidad + revocación), rate limiting por IP, HTTPS, **cabeceras de seguridad + CSP** en
+con **historial aislado por token** (404 ante recursos ajenos), **roles admin/analyst (RBAC)**
+y ciclo de vida completo (caducidad + revocación), **rate limiting por token** (o por IP sin
+autenticar), HTTPS, **cabeceras de seguridad + CSP** en
 Nginx, **log de auditoría**, límite de tamaño de subida, validación de entradas, parseo
 defensivo de fuentes, secretos fuera del repo, contenedor no root, backend no expuesto,
 dependencias sin CVEs.
 
 **Gaps conocidos (documentados como trabajo futuro):**
 - CORS por defecto `*` → restringir a `https://blueecho.es` en producción.
-- Multiusuario por token con etiqueta e **invalidación de tokens** (revocación +
-  caducidad opcional, gestionables desde `/invite`). Sin RBAC con roles diferenciados
-  (todos los tokens tienen los mismos permisos) → mejora de trabajo futuro.
 - Sin política de retención/purga del historial.
 - Verificación manual pendiente de que el historial de git no contiene secretos reales.
 - `ADMIN_SECRET`: al configurarlo se habilita `/invite`; debe ser fuerte y rotarse si se filtra.

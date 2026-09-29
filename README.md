@@ -296,15 +296,29 @@ curl http://localhost/api/history \
 Además de la clave maestra, si defines `ADMIN_SECRET` puedes repartir **tokens de
 acceso personales** sin compartir la clave maestra:
 
-1. Ve a **http://localhost/invite**, introduce el `ADMIN_SECRET`, un **nombre** y
-   (opcional) una **caducidad en días** → se genera un token.
+1. Ve a **http://localhost/invite**, introduce el `ADMIN_SECRET`, un **nombre**, un
+   **rol** y (opcional) una **caducidad en días** → se genera un token.
 2. Cada usuario entra con su token y ve **solo su propio historial** (aislamiento por
    token; el detalle de un escaneo ajeno responde `404`).
 3. Desde la misma página, "Gestionar tokens" permite **listar y revocar** tokens.
 
-Endpoints equivalentes: `POST /api/auth/invite` (crear), `POST /api/auth/tokens`
-(listar), `POST /api/auth/revoke` (revocar), `GET /api/auth/me` (nombre de la sesión).
-Todos los de administración requieren el `ADMIN_SECRET` en el cuerpo.
+**Roles (control de acceso):**
+
+| Rol | Puede |
+|---|---|
+| `analyst` | Escanear, ver **su** historial, exportar sus escaneos |
+| `admin` | Todo lo anterior **+ administrar tokens** (crear/listar/revocar) |
+
+Las operaciones de administración se autorizan por **cualquiera** de estas vías:
+un token con rol **admin** (o la master key) en la cabecera `X-API-Key`, **o** el
+`ADMIN_SECRET` en el cuerpo (útil como *bootstrap* para crear el primer token admin).
+
+**Rate limiting por token:** el límite de peticiones se aplica **por token** cuando la
+petición viene autenticada (y por IP en caso contrario), de modo que un token no comparte
+cupo con toda una red detrás de NAT. El login (`/api/auth/verify`) se limita por IP.
+
+Endpoints: `POST /api/auth/invite` (crear, acepta `role`), `POST /api/auth/tokens`
+(listar), `POST /api/auth/revoke` (revocar), `GET /api/auth/me` (nombre + rol de la sesión).
 
 ---
 

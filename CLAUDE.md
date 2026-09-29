@@ -655,6 +655,21 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   `docker compose up --build` en limpio con los 5 servicios (db/redis/worker/backend/frontend);
   el arranque limpio es el 30% de la nota. Recrear BD no aplica (Postgres nuevo desde cero).
   Probar el plugin I3 en un navegador real.
+- **2026-09-29** (cloud, `feat/invite-tokens`) **Tanda de seguridad — RBAC + rate limit por token:**
+  el usuario pidió centrarse en seguridad tras cerrar el roadmap. (1) **Roles admin/analyst**:
+  nueva columna `ApiKey.role` (default `analyst`); `create_api_key`/`get_api_key_role` en
+  `database.py`. `invite` acepta `role` (valida admin|analyst → 422 si no); operaciones de
+  administración (`invite`/`tokens`/`revoke`) ahora se autorizan por **token admin en la
+  cabecera** (`_is_admin_key`: master key o rol admin) **o** por `ADMIN_SECRET` en el cuerpo
+  (bootstrap) vía `_require_admin_access`. `GET /auth/me` devuelve nombre **+ rol**. (2)
+  **Rate limiting por token**: `limiter._rate_key` usa `key:<sha256 corto>` si viene
+  `X-API-Key`, si no `ip:<ip>` (login sigue por IP). (3) Frontend: selector de rol y badge
+  admin en `/invite`, rol en el menú de usuario (`App.tsx`), tipos `MeResponse.role`/
+  `TokenInfo.role`. +8 tests (`test_roles.py`) → **suite backend 308 verdes**; build FE OK +
+  6 tests FE. README (tabla de roles + rate limit) y STRIDE (`09 - Seguridad…`: §4 RBAC,
+  filas Spoofing/DoS/EoP, gaps — quitado el gap "sin RBAC") actualizados.
+  **⚠️ MIGRACIÓN BD:** `ApiKey` ganó la columna `role` → en el próximo despliegue recrear la
+  BD (`docker compose down -v`) o añadir la columna a mano; SQLModel no migra en caliente.
 
 ---
 

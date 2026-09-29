@@ -7,6 +7,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 export default function Invite() {
   const [secret, setSecret]   = useState("");
   const [label, setLabel]     = useState("");
+  const [role, setRole]       = useState("analyst");
   const [expiresDays, setExpiresDays] = useState("");
   const [token, setToken]     = useState<string | null>(null);
   const [error, setError]     = useState<string | null>(null);
@@ -50,6 +51,7 @@ export default function Invite() {
         body: JSON.stringify({
           admin_secret: secret,
           label,
+          role,
           expires_in_days: expiresDays ? Number(expiresDays) : null,
         }),
       });
@@ -124,6 +126,20 @@ export default function Invite() {
               <p className="text-[11px] text-gray-600 mt-1.5">
                 Aparecerá en la sesión de quien use este token.
               </p>
+            </div>
+
+            <div>
+              <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wider">
+                Rol
+              </label>
+              <select
+                value={role}
+                onChange={e => setRole(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-blue-500/60 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+              >
+                <option value="analyst">Analista (solo escanear y ver lo suyo)</option>
+                <option value="admin">Administrador (además, gestionar tokens)</option>
+              </select>
             </div>
 
             <div>
@@ -206,6 +222,9 @@ export default function Invite() {
                 <li key={t.id} className="flex items-center justify-between gap-2 text-xs border-b border-white/5 pb-1.5">
                   <div className="min-w-0">
                     <span className="text-gray-200">{t.label || "(sin nombre)"}</span>
+                    {t.role === "admin" && (
+                      <span className="ml-2 rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wider bg-blue-500/15 text-blue-300 border border-blue-500/30">admin</span>
+                    )}
                     <span className="font-data text-gray-600 ml-2">{t.key_preview}</span>
                     {!t.active && <span className="ml-2 text-red-400">revocado</span>}
                     {t.expires_at && t.active && (
