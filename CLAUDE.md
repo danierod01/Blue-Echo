@@ -590,6 +590,15 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   badges de CI y licencia en el README + secciones "Integración continua" y "Licencia".
   YAML validado. **PENDIENTE en tandas siguientes:** UX (404, error boundary,
   favicon/meta, toasts); tests de frontend (Vitest).
+- **2026-09-29** (cloud, `feat/invite-tokens`) **Tanda 4 (UX):** corregido bug real:
+  `index.html` referenciaba `/favicon.svg` pero `public/` estaba vacío (404) → creado
+  `frontend/public/favicon.svg` (radar azul). Añadidas meta OG/Twitter + theme-color.
+  Nueva página **404** (`pages/NotFound.tsx` + ruta `*` en App). **Error boundary**
+  global (`components/ErrorBoundary.tsx`) envolviendo App en `main.tsx` (evita pantalla
+  en blanco ante error de render, con botón recargar). Build OK. **PENDIENTE:** toasts
+  (queda como micro-paso; toca muchos puntos de error inline, mejor con verificación
+  visual); tests de frontend (Vitest, Tanda 5). Falta también consolidar una nota
+  Obsidian "Fase P3-03" con las tandas 1-4 (hardening a producción) para la memoria.
 
 ---
 

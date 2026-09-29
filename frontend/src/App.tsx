@@ -7,6 +7,7 @@ import History from "@/pages/History";
 import ScanDetail from "@/pages/ScanDetail";
 import Login from "@/pages/Login";
 import Invite from "@/pages/Invite";
+import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { clearStoredApiKey, getStoredApiKey, getMe } from "@/api/client";
 import { cn } from "@/lib/utils";
@@ -137,6 +138,7 @@ export default function App() {
           <Route path="/" element={<ProtectedRoute><Dashboard key={location.key} /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
           <Route path="/history/:id" element={<ProtectedRoute><ScanDetail /></ProtectedRoute>} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
     </div>
