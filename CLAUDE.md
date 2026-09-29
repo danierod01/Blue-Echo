@@ -728,6 +728,18 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   dentro del panel de historial (pegado a "Recientes"), y en la cabecera solo aparece un botón
   **"Historial"** cuando está oculto (para reabrirlo). El indicador "ONLINE" se mantiene.
   **Pendiente (tú):** solo cargar el plugin de navegador en Firefox/Chrome y probarlo.
+- **2026-09-29** (cloud, `design-soc-dashboard`) **Fix UX del fallback de IA en PCAP.** El
+  usuario vio que el "Análisis IA — tráfico de red" ponía *"Sin análisis de IA disponible"*.
+  Diagnóstico: NO es un bug de código — es el **análisis local** (fallback heurístico), que
+  salta cuando no hay `GROQ_API_KEY`/`ANTHROPIC_API_KEY` funcionando (mismas keys que el
+  escaneo normal; el heurístico del IOC está mejor redactado y por eso no cantaba). Arreglado
+  el **texto del fallback** en `_local_pcap_analysis` (`ai_analyst.py`): ya no se disculpa;
+  sustituida la sección "Vector de ataque probable" (que decía "sin IA…") por **"Valoración
+  del tráfico"** con heurística real (conexión top, HTTP sin cifrar, DNS/DGA), y el caso sin
+  indicadores da una frase con confianza. +3 tests (`test_ai_analyst.py`) → **318 verdes**.
+  **ACCIÓN [tú] para tener IA real (Groq/Claude) también en PCAP:** poner `GROQ_API_KEY`
+  (tier gratuito) o `ANTHROPIC_API_KEY` en el `.env` (ya están en `.env.example`). Comprobar
+  con `docker compose logs backend | grep ai_analyst` (si no hay warning = no hay key).
 
 ---
 

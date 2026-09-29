@@ -1,6 +1,6 @@
 import pytest
 
-from ioc_correlator.ai_analyst import _local_analysis, generate_summary
+from ioc_correlator.ai_analyst import _local_analysis, _local_pcap_analysis, generate_summary
 from ioc_correlator.connectors.base import ConnectorResult
 from ioc_correlator.scorer import ScoringResult
 
@@ -112,6 +112,43 @@ def test_local_analysis_returns_string():
     r = _local_analysis("x.com", "domain", make_scoring(0, "clean"), {})
     assert isinstance(r, str)
     assert len(r) > 20
+
+
+# ---------------------------------------------------------------------------
+# Tests del análisis local de PCAP (fallback sin IA)
+# ---------------------------------------------------------------------------
+
+_PCAP_STATS = {
+    "total_packets": 10410,
+    "total_bytes": 9_630_000,
+    "protocols": {"TCP": 10390, "UDP": 20},
+    "top_connections": [{"src": "20.150.90.33:443", "dst": "10.11.30.101:54938", "packets": 3675}],
+    "dns_queries": ["a.com", "b.com"],
+    "http_hosts": ["evil.com"],
+    "tls_sni": ["x.com"],
+}
+
+
+def test_local_pcap_no_apologetic_text():
+    # El fallback no debe "disculparse" por la ausencia de IA.
+    r = _local_pcap_analysis("captura.pcap", _PCAP_STATS)
+    assert "Sin análisis de IA" not in r
+    assert "no es posible determinar el vector" not in r
+
+
+def test_local_pcap_has_sections_and_indicators():
+    r = _local_pcap_analysis("captura.pcap", _PCAP_STATS)
+    assert "## Resumen del tráfico" in r
+    assert "## Indicadores sospechosos" in r
+    assert "## Valoración del tráfico" in r
+    assert "## Recomendaciones de respuesta" in r
+    assert "10.11.30.101:54938" in r          # conexión de mayor volumen
+
+
+def test_local_pcap_empty_stats_is_confident():
+    r = _local_pcap_analysis("vacio.pcap", {"total_packets": 0, "total_bytes": 0, "protocols": {}})
+    assert "Sin análisis de IA" not in r
+    assert "## Valoración del tráfico" in r
 
 
 # ---------------------------------------------------------------------------

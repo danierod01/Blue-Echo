@@ -386,15 +386,33 @@ def _local_pcap_analysis(filename: str, stats: dict) -> str:
         indicators.append(f"- **HTTP**: tráfico no cifrado hacia {len(stats['http_hosts'])} hosts.")
     sections.append(
         "## Indicadores sospechosos\n"
-        + ("\n".join(indicators) if indicators else "Sin análisis de IA no es posible determinar indicadores con certeza.")
+        + ("\n".join(indicators) if indicators
+           else "No se han detectado indicadores destacables en el tráfico analizado.")
     )
 
-    sections.append(
-        "## Vector de ataque probable\n"
-        "Sin análisis de IA disponible, no es posible determinar el vector. "
-        "Revisar manualmente los indicadores listados, especialmente conexiones de mayor "
-        "volumen y consultas DNS a dominios desconocidos."
-    )
+    # Valoración heurística basada en los patrones observados (sin depender de IA).
+    valoracion: list[str] = []
+    if top_conns:
+        valoracion.append(
+            f"La conexión de mayor volumen es hacia **{top_conns[0]['dst']}** "
+            "— conviene priorizar su análisis en fuentes de Threat Intelligence."
+        )
+    if stats.get("http_hosts"):
+        valoracion.append(
+            "Hay tráfico **HTTP sin cifrar**, susceptible de inspección directa en busca "
+            "de descargas de payloads o exfiltración de datos."
+        )
+    if stats.get("dns_queries"):
+        valoracion.append(
+            "Revisa las consultas **DNS** en busca de dominios generados por algoritmo (DGA) "
+            "o registrados recientemente, patrón habitual en C2 de malware."
+        )
+    if not valoracion:
+        valoracion.append(
+            "El volumen y la distribución de protocolos no evidencian un patrón claramente "
+            "anómalo; contrasta las IPs y dominios listados con tus fuentes de inteligencia."
+        )
+    sections.append("## Valoración del tráfico\n" + " ".join(valoracion))
 
     sections.append(
         "## Recomendaciones de respuesta\n"
