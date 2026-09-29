@@ -28,8 +28,8 @@ o PCAP subidos, IOCs manipulados, respuestas de las APIs externas).
 | Categoría STRIDE | Amenaza concreta | Mitigación implementada |
 |---|---|---|
 | **S**poofing (suplantación) | Alguien usa la API sin ser un usuario legítimo | Autenticación por cabecera `X-API-Key`; comparación en **tiempo constante** con `hmac.compare_digest` (evita *timing attacks*). Rutas protegidas con la dependency `require_api_key`. |
-| **T**ampering (manipulación) | Manipular peticiones o el tráfico en tránsito | **HTTPS/TLS** con Let's Encrypt (Certbot, auto-renovación). Validación y normalización de toda entrada antes de procesarla. Pydantic valida los cuerpos JSON. |
-| **R**epudiation (repudio) | Un actor niega haber hecho una consulta | Persistencia del historial con timestamp (`created_at`) en BD y **atribución por token**: cada escaneo se guarda con el token que lo creó (`ScanResult.api_key`), y cada token lleva una etiqueta identificativa (`ApiKey.label`). |
+| **T**ampering (manipulación) | Manipular peticiones o el tráfico en tránsito | **HTTPS/TLS** con Let's Encrypt (Certbot, auto-renovación) + **cabeceras de seguridad** en Nginx (HSTS, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy y **CSP**), tanto en producción como en el Nginx de desarrollo (salvo HSTS). Validación y normalización de toda entrada; Pydantic valida los cuerpos JSON. |
+| **R**epudiation (repudio) | Un actor niega haber hecho una consulta | Persistencia del historial con timestamp (`created_at`) y **atribución por token** (`ScanResult.api_key` + `ApiKey.label`). Además, **log de auditoría** (`audit.py`, logger `blueecho.audit`) registra escaneos, invitaciones, revocaciones e intentos de acceso fallidos (con el token enmascarado). |
 | **I**nformation Disclosure (fuga de información) | Filtrado de API keys o de datos internos | Secretos solo por variables de entorno, nunca en el código ni en el repo (`.gitignore`). El backend no se publica al exterior (`expose`, no `ports`): único punto de entrada Nginx:80/443. Errores controlados que no exponen trazas internas. |
 | **D**enial of Service (denegación) | Saturar la API o agotar recursos/cuotas | **Rate limiting por IP** (`slowapi`): límites por endpoint (`/auth/verify` 5/min, escaneo configurable). **Límite de tamaño de fichero** en uploads (`MAX_UPLOAD_SIZE_MB`, HTTP 413). Semáforo de 5 peticiones concurrentes a las fuentes. Timeouts en todas las llamadas HTTP externas. |
 | **E**levation of Privilege (elevación) | Ejecutar código o salir del contenedor | Contenedor backend corre como **usuario no root** (`appuser`). Imagen `slim` multi-stage (menos superficie). Dependencias auditadas sin CVEs conocidos (§6). Sin `eval`/deserialización de datos no confiables en el flujo de la app. |
@@ -111,9 +111,11 @@ o PCAP subidos, IOCs manipulados, respuestas de las APIs externas).
 ## 8. Resumen de controles y gaps
 
 **Implementado:** auth X-API-Key (comparación constante), tokens personales por invitación
-con **historial aislado por token** (404 ante recursos ajenos), rate limiting por IP,
-HTTPS, límite de tamaño de subida, validación de entradas, parseo defensivo de fuentes,
-secretos fuera del repo, contenedor no root, backend no expuesto, dependencias sin CVEs.
+con **historial aislado por token** (404 ante recursos ajenos) y ciclo de vida completo
+(caducidad + revocación), rate limiting por IP, HTTPS, **cabeceras de seguridad + CSP** en
+Nginx, **log de auditoría**, límite de tamaño de subida, validación de entradas, parseo
+defensivo de fuentes, secretos fuera del repo, contenedor no root, backend no expuesto,
+dependencias sin CVEs.
 
 **Gaps conocidos (documentados como trabajo futuro):**
 - CORS por defecto `*` → restringir a `https://blueecho.es` en producción.

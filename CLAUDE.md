@@ -570,10 +570,18 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   enmascarada) y `POST /auth/revoke` (ambos con `ADMIN_SECRET`); `/auth/invite` acepta
   `expires_in_days`. Frontend: panel "Gestionar tokens" en `/invite` (listar/revocar +
   campo caducidad). +7 tests → **277 verdes**; build frontend OK. STRIDE/matriz al día.
-  **PENDIENTE en tandas siguientes:** cabeceras de seguridad HTTP (nginx), CORS default,
-  log de auditoría; CI GitHub Actions + healthchecks + LICENSE; UX (404, error boundary,
-  favicon/meta, toasts); tests de frontend (Vitest). **OJO migración:** `ApiKey` ganó
-  columnas → recrear BD (`down -v`) en el próximo despliegue.
+  **PENDIENTE en tandas siguientes:** CI GitHub Actions + healthchecks + LICENSE;
+  UX (404, error boundary, favicon/meta, toasts); tests de frontend (Vitest).
+  **OJO migración:** `ApiKey` ganó columnas → recrear BD (`down -v`) en el próximo despliegue.
+- **2026-09-29** (cloud, `feat/invite-tokens`) **Tanda 2 (seguridad, resto):** las
+  cabeceras de seguridad de producción (`nginx.conf`) YA existían (HSTS, X-Frame-Options,
+  X-Content-Type-Options, Referrer-Policy, Permissions-Policy, CSP); **añadidas también al
+  `nginx.dev.conf`** (todas salvo HSTS) para que se vean en la demo local. Añadido **log
+  de auditoría** (`ioc_correlator/audit.py`, logger `blueecho.audit`): registra escaneos,
+  invitaciones, revocaciones y accesos fallidos con token enmascarado; enganchado en
+  `routes._run_scan` y en `auth.py`. +4 tests (`test_audit.py`) → **281 verdes**; build OK.
+  STRIDE actualizado (Tampering=cabeceras, Repudiation=auditoría). CORS se deja
+  configurable (default `*` solo dev; cierre real = `.env` de prod, ya documentado).
 
 ---
 

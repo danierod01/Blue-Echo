@@ -30,6 +30,7 @@ from ioc_correlator.geolocator import geolocate
 from ioc_correlator.pcap_analyzer import analyze_pcap, is_pcap
 from ioc_correlator.database import get_history, get_scan_by_id, get_session, save_scan
 from ioc_correlator.alerting import maybe_send_alert
+from ioc_correlator.audit import audit, mask_token
 from ioc_correlator.mitre_mapper import map_to_mitre
 from ioc_correlator.report_pdf import build_scan_pdf
 from ioc_correlator.enricher import enrich, get_sources_status
@@ -127,6 +128,15 @@ async def _run_scan(
     )
 
     await maybe_send_alert(ioc_value, ioc_type.value, scoring.score, scoring.verdict)
+
+    audit(
+        "scan",
+        ioc=ioc_value,
+        type=ioc_type.value,
+        score=scoring.score,
+        verdict=scoring.verdict,
+        token=mask_token(api_key),
+    )
 
     return db_scan, scoring.breakdown
 

@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from sqlmodel import Session
 
 from ioc_correlator.api.limiter import limiter
+from ioc_correlator.audit import audit, mask_token
 from ioc_correlator.database import (
     create_api_key,
     get_api_key_label,
@@ -71,6 +72,7 @@ def _require_admin(admin_secret: str) -> None:
     if not expected:
         raise HTTPException(status_code=503, detail="Sistema de invitaciones no configurado.")
     if not hmac.compare_digest(admin_secret.encode(), expected.encode()):
+        audit("admin_auth_failed")
         raise HTTPException(status_code=403, detail="Código de acceso incorrecto.")
 
 
@@ -121,6 +123,7 @@ async def invite(
 
     token = secrets.token_urlsafe(32)
     create_api_key(session, key=token, label=label, expires_at=expires_at)
+    audit("invite_created", label=label, token=mask_token(token))
     return InviteResponse(token=token, label=label)
 
 
@@ -157,6 +160,7 @@ async def revoke(
     _require_admin(body.admin_secret)
     if not revoke_api_key(session, body.token_id):
         raise HTTPException(status_code=404, detail="Token no encontrado.")
+    audit("token_revoked", token_id=body.token_id)
     return {"revoked": body.token_id}
 
 
@@ -167,6 +171,7 @@ async def require_api_key(
     """Valida la API key y la devuelve para que los endpoints puedan filtrar por usuario."""
     key = api_key or ""
     if not _check_key(key, session):
+        audit("auth_failed", token=mask_token(key) if key else "-")
         raise HTTPException(status_code=401, detail="API key inválida o ausente.")
     return key
 
