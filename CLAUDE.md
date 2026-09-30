@@ -740,6 +740,17 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   **ACCIÓN [tú] para tener IA real (Groq/Claude) también en PCAP:** poner `GROQ_API_KEY`
   (tier gratuito) o `ANTHROPIC_API_KEY` en el `.env` (ya están en `.env.example`). Comprobar
   con `docker compose logs backend | grep ai_analyst` (si no hay warning = no hay key).
+- **2026-09-30** (cloud, `design-soc-dashboard`) **Cierre del ÚLTIMO ítem del roadmap: F7.**
+  Cotejado el roadmap completo del Informe P1 §8 (17 ítems: S1-S4, F1-F7, R1-R3, I1-I3):
+  **16/17 estaban ya en código**; el único abierto era **F7**, cuyo entregable prometido no
+  era código sino un **estudio comparativo + decisión** (Anthropic vs Ollama). Escrita la nota
+  `10 - Estudio del Motor de IA (F7).md`: Ollama inviable en el CX23 (4 GB) sin degradar la
+  calidad; se adoptó una **tercera opción**, Groq (Llama 3.3 70B) primario + Claude fallback +
+  análisis heurístico local, en **cascada con degradación elegante**. Incluye tabla comparativa
+  (calidad/coste/RAM/latencia/privacidad) y la justificación del cambio para la memoria P3
+  (apts. 4 y 5). Tabla de roadmap del CLAUDE.md: F7 ⚠️→✅. **CON ESTO EL ROADMAP DEL INFORME P1
+  §8 QUEDA 100% COMPLETO** (17/17). Solo documentación; sin cambios de código ni tests (siguen
+  318 verdes). **Pendiente (tú):** (opcional) medir latencia real Groq vs Claude para el vídeo.
 
 ---
 
@@ -851,7 +862,7 @@ Cotejado con el código el 2026-09-24:
 | F2 | ThreatFox + más conectores | Alta | ✅ Hecho (superado: 11 conectores nuevos) |
 | F3 | WHOIS/RDAP dominios | Media | ✅ Hecho (`rdap.py`) |
 | F6 | Mapping MITRE ATT&CK | Media-Alta | ✅ Hecho |
-| F7 | Estudio motor IA (Anthropic vs Ollama) | Alta | ⚠️ Modificado → Groq (Llama 3.3 70B) primario + Claude fallback + análisis local. **Justificar en memoria** |
+| F7 | Estudio motor IA (Anthropic vs Ollama) | Alta | ✅ **Hecho** (2026-09-30): estudio comparativo + decisión justificada en `Bluecho/IOC-Correlator/10 - Estudio del Motor de IA (F7).md`. Ollama inviable en CX23 (4 GB) sin degradar calidad; adoptado **Groq (Llama 3.3 70B) primario + Claude fallback + análisis local** (cascada con degradación elegante). Cambio justificado para la memoria (apts. 4 y 5) |
 | R1 | Paginación real en historial | Baja | ✅ Hecho (`items`/`total`) |
 | I1 | API pública OpenAPI + auth | Media | ✅ Mayormente (`/docs` + auth) |
 | **F4** | **Exportación a PDF del escaneo** | Media | ✅ **Hecho** (2026-09-24): `GET /api/history/{id}/pdf` con fpdf2 (Python puro, sin libs de sistema) + botón "Descargar PDF" en el dashboard |
