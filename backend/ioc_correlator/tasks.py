@@ -28,13 +28,13 @@ from ioc_correlator.database import (
 )
 from ioc_correlator.enricher import enrich
 from ioc_correlator.scorer import compute_score
-from ioc_correlator.utils.validators import IOCType, detect_ioc_type
+from ioc_correlator.utils.validators import IOCType, detect_ioc_type, refang
 
 logger = logging.getLogger(__name__)
 
 
 async def _async_scan(ioc_value: str, api_key: str | None) -> dict:
-    ioc_value = ioc_value.strip()
+    ioc_value = refang(ioc_value.strip())
     ioc_type: IOCType = detect_ioc_type(ioc_value)
     if ioc_type == IOCType.UNKNOWN:
         return {"error": f"No se reconoce el tipo de IOC: '{ioc_value}'."}

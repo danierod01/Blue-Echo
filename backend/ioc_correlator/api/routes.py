@@ -44,13 +44,15 @@ from ioc_correlator.mitre_mapper import map_to_mitre
 from ioc_correlator.pivots import extract_pivots
 from ioc_correlator.report_pdf import build_scan_pdf
 from ioc_correlator.siem_export import to_misp, to_stix
+from ioc_correlator.response_actions import generate_block_rules
+from ioc_correlator.detection_rules import generate_detection_rules
 from ioc_correlator.celery_app import celery_app
 from ioc_correlator.tasks import scan_ioc_task
 from celery.result import AsyncResult
 from ioc_correlator.enricher import enrich, get_sources_status
 from ioc_correlator.extractor import extract_iocs_from_bytes
 from ioc_correlator.scorer import compute_score
-from ioc_correlator.utils.validators import IOCType, detect_ioc_type, is_valid_ioc
+from ioc_correlator.utils.validators import IOCType, detect_ioc_type, is_valid_ioc, refang
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -119,7 +121,7 @@ async def _run_scan(
     api_key: str = "",
 ) -> tuple:
     """Núcleo del escaneo: enrich → score → save. Devuelve (db_scan, breakdown)."""
-    ioc_value = ioc_value.strip()
+    ioc_value = refang(ioc_value.strip())  # normaliza IOCs neutralizados (hxxp://, 1[.]2[.]3[.]4)
     ioc_type: IOCType = detect_ioc_type(ioc_value)
 
     if ioc_type == IOCType.UNKNOWN:
@@ -532,6 +534,71 @@ async def history_detail_export(
     )
 
 
+@router.get("/history/{scan_id}/blocklist")
+@limiter.limit("20/minute")
+async def history_detail_blocklist(
+    request: Request,
+    scan_id: int,
+    session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
+) -> dict:
+    """Genera reglas de bloqueo/respuesta a partir del escaneo (detección → respuesta).
+
+    Devuelve `{ioc, ioc_type, formats: {iptables|pf|cisco|windows|hosts|…: texto}}`
+    con las reglas aplicables según el tipo de IOC, listas para pegar.
+    """
+    db_scan = get_scan_by_id(session, scan_id)
+    if db_scan is None:
+        raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
+    if current_key and db_scan.api_key and db_scan.api_key != current_key:
+        raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
+
+    formats = generate_block_rules(
+        db_scan.ioc_value,
+        db_scan.ioc_type,
+        verdict=db_scan.verdict,
+        score=db_scan.score,
+    )
+    return {
+        "ioc": db_scan.ioc_value,
+        "ioc_type": db_scan.ioc_type,
+        "formats": formats,
+    }
+
+
+@router.get("/history/{scan_id}/detection-rules")
+@limiter.limit("20/minute")
+async def history_detail_detection_rules(
+    request: Request,
+    scan_id: int,
+    session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
+) -> dict:
+    """Genera reglas de detección (Sigma / Suricata / YARA) a partir del escaneo.
+
+    Devuelve `{ioc, ioc_type, formats: {sigma|suricata|yara: texto}}` con las
+    reglas aplicables según el tipo de IOC (red para IP/dominio/URL, YARA para
+    hashes). Convierte la inteligencia en detección desplegable.
+    """
+    db_scan = get_scan_by_id(session, scan_id)
+    if db_scan is None:
+        raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
+    if current_key and db_scan.api_key and db_scan.api_key != current_key:
+        raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
+
+    formats = generate_detection_rules(
+        db_scan.ioc_value,
+        db_scan.ioc_type,
+        verdict=db_scan.verdict,
+        score=db_scan.score,
+    )
+    return {
+        "ioc": db_scan.ioc_value,
+        "ioc_type": db_scan.ioc_type,
+        "formats": formats,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Watchlist — monitorización continua (SOC-B)
 # ---------------------------------------------------------------------------
@@ -562,7 +629,7 @@ async def watchlist_add(
     current_key: str = Depends(require_api_key),
 ) -> dict:
     """Añade un IOC a la watchlist para monitorización continua."""
-    ioc = body.ioc.strip()
+    ioc = refang(body.ioc.strip())
     ioc_type = detect_ioc_type(ioc)
     if ioc_type == IOCType.UNKNOWN:
         raise HTTPException(status_code=422, detail=f"No se reconoce el tipo de IOC: '{ioc}'.")

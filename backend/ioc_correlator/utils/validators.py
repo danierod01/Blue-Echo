@@ -29,13 +29,54 @@ _RE_DOMAIN = re.compile(
 _RE_URL = re.compile(r"^https?://", re.IGNORECASE)
 
 
+# ---------------------------------------------------------------------------
+# Refang: normalización de IOCs "neutralizados" (defanged)
+# ---------------------------------------------------------------------------
+# Los analistas copian IOCs de informes de amenazas, correos de phishing o
+# feeds donde el indicador viene "desactivado" para que no sea clicable:
+#   hxxp://1[.]2[.]3[.]4/x   evil[dot]com   user[at]host   8[.]8[.]8[.]8
+# refang() lo revierte a su forma real. Es idempotente: aplicado sobre un IOC
+# ya normal no lo modifica.
+_DEFANG_PATTERNS = [
+    (re.compile(r"h[xX]{2}p", re.IGNORECASE), "http"),   # hxxp/hxxps -> http/https
+    (re.compile(r"fxp://", re.IGNORECASE), "ftp://"),
+    (re.compile(r"\[\s*(?:dot|\.)\s*\]", re.IGNORECASE), "."),   # [dot] [.]
+    (re.compile(r"\(\s*(?:dot|\.)\s*\)", re.IGNORECASE), "."),   # (dot) (.)
+    (re.compile(r"\{\s*(?:dot|\.)\s*\}", re.IGNORECASE), "."),   # {dot} {.}
+    (re.compile(r"\[\s*(?:at|@)\s*\]", re.IGNORECASE), "@"),     # [at] [@]
+    (re.compile(r"\(\s*(?:at|@)\s*\)", re.IGNORECASE), "@"),     # (at) (@)
+    (re.compile(r"\[\s*:\s*//\s*\]"), "://"),                    # [://]
+    (re.compile(r"\[\s*:\s*\]"), ":"),                           # [:]
+    (re.compile(r"\\\."), "."),                                  # \. (punto escapado)
+]
+
+
+def refang(value: str) -> str:
+    """Revierte la notación 'defanged' de un IOC a su forma real.
+
+    Ejemplos:
+        hxxp://1[.]2[.]3[.]4  -> http://1.2.3.4
+        evil[dot]com          -> evil.com
+        8[.]8[.]8[.]8         -> 8.8.8.8
+    """
+    if not value:
+        return value
+    result = value.strip()
+    for pattern, replacement in _DEFANG_PATTERNS:
+        result = pattern.sub(replacement, result)
+    return result.strip()
+
+
 def detect_ioc_type(value: str) -> IOCType:
     """Devuelve el IOCType del string recibido.
 
     El orden de comprobación importa:
     URL → IP → Hash → Dominio → UNKNOWN
+
+    Se aplica refang() primero, de modo que un IOC neutralizado
+    (`1[.]2[.]3[.]4`, `hxxp://…`) se reconoce igual que su forma real.
     """
-    value = value.strip()
+    value = refang(value.strip())
 
     if _RE_URL.match(value):
         return IOCType.URL

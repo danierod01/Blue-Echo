@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, History, FileDown, Loader2, PanelRightClose, PanelRightOpen, Share2 } from "lucide-react";
+import { AlertCircle, History, FileDown, Loader2, PanelRightClose, PanelRightOpen, Share2, ShieldBan, Radar } from "lucide-react";
 import SkeletonResults from "@/components/SkeletonResults";
 import EmptyState from "@/components/EmptyState";
 import SearchBar from "@/components/SearchBar";
@@ -11,6 +11,7 @@ import AiSummary from "@/components/AiSummary";
 import TriagePanel from "@/components/TriagePanel";
 import MitreAttack from "@/components/MitreAttack";
 import Pivots from "@/components/Pivots";
+import RulesModal from "@/components/RulesModal";
 import GeoMap from "@/components/GeoMap";
 import HistoryList from "@/components/HistoryList";
 import SourcesStatus from "@/components/SourcesStatus";
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const [pcapResult, setPcapResult] = useState<PcapScanResponse | null>(null);
   const [errorMsg, setError]        = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [rulesModal, setRulesModal] = useState<"block" | "detection" | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     try { return localStorage.getItem("be_sidebar") !== "0"; } catch { return true; }
   });
@@ -238,6 +240,24 @@ export default function Dashboard() {
               </button>
               <button
                 type="button"
+                onClick={() => setRulesModal("detection")}
+                className="flex items-center gap-2 rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-accent/60 hover:text-accent"
+                title="Generar reglas de detección (Sigma / Suricata / YARA)"
+              >
+                <Radar size={13} />
+                Detección
+              </button>
+              <button
+                type="button"
+                onClick={() => setRulesModal("block")}
+                className="flex items-center gap-2 rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-accent/60 hover:text-accent"
+                title="Generar reglas de bloqueo (iptables / pf / DNS…)"
+              >
+                <ShieldBan size={13} />
+                Bloqueo
+              </button>
+              <button
+                type="button"
                 onClick={handleDownloadPdf}
                 disabled={downloadingPdf}
                 className="flex items-center gap-2 rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-accent/60 hover:text-accent disabled:opacity-50"
@@ -311,6 +331,11 @@ export default function Dashboard() {
               )}
             </div>
           </div>
+        )}
+
+        {/* Modal de reglas de bloqueo / detección */}
+        {result && rulesModal && (
+          <RulesModal scanId={result.id} kind={rulesModal} onClose={() => setRulesModal(null)} />
         )}
 
         {/* Resultados PCAP */}

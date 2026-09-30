@@ -286,6 +286,37 @@ export async function downloadScanExport(
   URL.revokeObjectURL(url);
 }
 
+export interface RuleBundle {
+  ioc: string;
+  ioc_type: string;
+  formats: Record<string, string>;
+}
+
+async function fetchRuleBundle(id: number, path: string): Promise<RuleBundle> {
+  const res = await fetch(`${BASE_URL}/api/history/${id}/${path}`, {
+    headers: authHeaders(),
+  });
+  if (res.status === 401) {
+    clearStoredApiKey();
+    window.location.href = "/login";
+    throw new Error("Sesión expirada.");
+  }
+  if (!res.ok) {
+    throw new Error(`No se pudieron generar las reglas (HTTP ${res.status}).`);
+  }
+  return res.json();
+}
+
+/** Reglas de bloqueo/respuesta (iptables, pf, cisco, hosts…). */
+export function getBlockRules(id: number): Promise<RuleBundle> {
+  return fetchRuleBundle(id, "blocklist");
+}
+
+/** Reglas de detección (Sigma, Suricata, YARA). */
+export function getDetectionRules(id: number): Promise<RuleBundle> {
+  return fetchRuleBundle(id, "detection-rules");
+}
+
 export async function getSources(): Promise<SourceStatus[]> {
   const res = await fetch(`${BASE_URL}/api/sources`, {
     headers: authHeaders(),
