@@ -29,7 +29,13 @@ from ioc_correlator.api.schemas import (
 from ioc_correlator.ai_analyst import generate_pcap_summary, generate_summary
 from ioc_correlator.geolocator import geolocate
 from ioc_correlator.pcap_analyzer import analyze_pcap, is_pcap
-from ioc_correlator.database import get_history, get_scan_by_id, get_session, save_scan
+from ioc_correlator.database import (
+    get_history, get_scan_by_id, get_session, save_scan,
+    WatchedIoc,
+    add_watched_ioc, list_watched_iocs, remove_watched_ioc, record_watch_check,
+    list_watch_alerts, ack_watch_alert,
+    get_stats,
+)
 from ioc_correlator.alerting import maybe_send_alert
 from ioc_correlator.audit import audit, mask_token
 from ioc_correlator.mitre_mapper import map_to_mitre
@@ -493,6 +499,127 @@ async def history_detail_export(
         media_type="application/json",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ---------------------------------------------------------------------------
+# Watchlist — monitorización continua (SOC-B)
+# ---------------------------------------------------------------------------
+
+def _watched_out(w) -> dict:
+    return {
+        "id": w.id, "ioc_value": w.ioc_value, "ioc_type": w.ioc_type, "note": w.note,
+        "last_score": w.last_score, "last_verdict": w.last_verdict,
+        "last_checked_at": w.last_checked_at, "created_at": w.created_at,
+    }
+
+
+def _alert_out(a) -> dict:
+    return {
+        "id": a.id, "ioc_value": a.ioc_value, "ioc_type": a.ioc_type,
+        "old_verdict": a.old_verdict, "new_verdict": a.new_verdict,
+        "old_score": a.old_score, "new_score": a.new_score,
+        "acknowledged": a.acknowledged, "created_at": a.created_at,
+    }
+
+
+@router.post("/watchlist")
+@limiter.limit("30/minute")
+async def watchlist_add(
+    request: Request,
+    body: ScanRequest,
+    session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
+) -> dict:
+    """Añade un IOC a la watchlist para monitorización continua."""
+    ioc = body.ioc.strip()
+    ioc_type = detect_ioc_type(ioc)
+    if ioc_type == IOCType.UNKNOWN:
+        raise HTTPException(status_code=422, detail=f"No se reconoce el tipo de IOC: '{ioc}'.")
+    w = add_watched_ioc(session, ioc_value=ioc, ioc_type=ioc_type.value, api_key=current_key or None)
+    return _watched_out(w)
+
+
+@router.get("/watchlist")
+@limiter.limit("60/minute")
+async def watchlist_list(
+    request: Request,
+    session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
+) -> list[dict]:
+    """Lista los IOCs monitorizados del usuario."""
+    return [_watched_out(w) for w in list_watched_iocs(session, api_key=current_key or None)]
+
+
+@router.get("/watchlist/alerts")
+@limiter.limit("60/minute")
+async def watchlist_alerts(
+    request: Request,
+    session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
+) -> list[dict]:
+    """Alertas de cambio de veredicto (sin reconocer primero)."""
+    return [_alert_out(a) for a in list_watch_alerts(session, api_key=current_key or None)]
+
+
+@router.post("/watchlist/alerts/{alert_id}/ack")
+@limiter.limit("60/minute")
+async def watchlist_ack_alert(
+    request: Request,
+    alert_id: int,
+    session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
+) -> dict:
+    """Marca una alerta como reconocida."""
+    if not ack_watch_alert(session, alert_id, api_key=current_key or None):
+        raise HTTPException(status_code=404, detail="Alerta no encontrada.")
+    return {"acknowledged": alert_id}
+
+
+@router.post("/watchlist/{watched_id}/check")
+@limiter.limit("20/minute")
+async def watchlist_check_now(
+    request: Request,
+    watched_id: int,
+    session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
+) -> dict:
+    """Re-escanea ahora un IOC monitorizado (enrich + score, sin IA) y registra
+    el resultado; si el veredicto cambió, genera la alerta."""
+    w = session.get(WatchedIoc, watched_id)
+    if w is None or (current_key and w.api_key and w.api_key != current_key):
+        raise HTTPException(status_code=404, detail="IOC monitorizado no encontrado.")
+    ioc_type = detect_ioc_type(w.ioc_value)
+    results = await enrich(w.ioc_value, ioc_type)
+    scoring = compute_score(results)
+    alert = record_watch_check(session, w, score=scoring.score, verdict=scoring.verdict)
+    out = _watched_out(w)
+    out["alert"] = _alert_out(alert) if alert else None
+    return out
+
+
+@router.delete("/watchlist/{watched_id}")
+@limiter.limit("30/minute")
+async def watchlist_remove(
+    request: Request,
+    watched_id: int,
+    session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
+) -> dict:
+    """Elimina un IOC de la watchlist."""
+    if not remove_watched_ioc(session, watched_id, api_key=current_key or None):
+        raise HTTPException(status_code=404, detail="IOC monitorizado no encontrado.")
+    return {"removed": watched_id}
+
+
+@router.get("/stats")
+@limiter.limit("60/minute")
+async def stats(
+    request: Request,
+    session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
+) -> dict:
+    """Métricas agregadas del historial del usuario para el dashboard SOC (SOC-D)."""
+    return get_stats(session, api_key=current_key or None)
 
 
 @router.get("/sources", response_model=list[SourceStatus], dependencies=[Depends(require_api_key)])

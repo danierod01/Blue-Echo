@@ -41,3 +41,13 @@ celery_app.conf.update(
     task_always_eager=_truthy(os.getenv("CELERY_TASK_ALWAYS_EAGER", "")),
     task_eager_propagates=True,
 )
+
+# Programación periódica (Celery Beat) — monitorización continua de la watchlist.
+# El beat despierta cada WATCHLIST_BEAT_SECONDS; la tarea solo re-escanea los IOCs
+# cuyo último chequeo es más antiguo que WATCHLIST_CHECK_INTERVAL_MINUTES.
+celery_app.conf.beat_schedule = {
+    "check-watchlist": {
+        "task": "check_watchlist",
+        "schedule": float(os.getenv("WATCHLIST_BEAT_SECONDS", "300")),
+    },
+}

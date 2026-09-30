@@ -41,6 +41,40 @@ class ScanResult(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class WatchedIoc(SQLModel, table=True):
+    """IOC bajo monitorización continua (roadmap SOC-B). Se re-escanea de forma
+    periódica y se genera una alerta cuando su veredicto cambia."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    ioc_value: str = Field(index=True)
+    ioc_type: str
+    note: str = Field(default="")
+
+    last_score: Optional[int] = Field(default=None)
+    last_verdict: Optional[str] = Field(default=None)
+    last_checked_at: Optional[datetime] = Field(default=None)
+
+    active: bool = Field(default=True)
+    api_key: Optional[str] = Field(default=None, index=True)   # dueño (aislamiento por token)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class WatchAlert(SQLModel, table=True):
+    """Alerta generada cuando el veredicto de un IOC monitorizado cambia."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    watched_ioc_id: int = Field(index=True)
+    ioc_value: str
+    ioc_type: str
+
+    old_verdict: Optional[str] = Field(default=None)
+    new_verdict: str = Field(default="")
+    old_score: Optional[int] = Field(default=None)
+    new_score: int = Field(default=0)
+
+    acknowledged: bool = Field(default=False)
+    api_key: Optional[str] = Field(default=None, index=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 # ---------------------------------------------------------------------------
 # Engine y sesión
 # ---------------------------------------------------------------------------
@@ -203,3 +237,180 @@ def revoke_api_key(session: Session, token_id: int) -> bool:
     session.add(obj)
     session.commit()
     return True
+
+
+# ---------------------------------------------------------------------------
+# Watchlist — monitorización continua (SOC-B)
+# ---------------------------------------------------------------------------
+
+def add_watched_ioc(
+    session: Session, *, ioc_value: str, ioc_type: str,
+    api_key: Optional[str] = None, note: str = "",
+) -> WatchedIoc:
+    """Añade un IOC a la watchlist del usuario (idempotente por valor+dueño)."""
+    existing = session.exec(
+        select(WatchedIoc).where(
+            WatchedIoc.ioc_value == ioc_value,
+            WatchedIoc.api_key == (api_key or None),
+        )
+    ).first()
+    if existing:
+        if not existing.active:
+            existing.active = True
+            session.add(existing)
+            session.commit()
+            session.refresh(existing)
+        return existing
+    obj = WatchedIoc(ioc_value=ioc_value, ioc_type=ioc_type, api_key=api_key or None, note=note)
+    session.add(obj)
+    session.commit()
+    session.refresh(obj)
+    return obj
+
+
+def list_watched_iocs(session: Session, api_key: Optional[str] = None) -> list[WatchedIoc]:
+    """IOCs monitorizados del usuario (activos primero, más recientes primero)."""
+    stmt = select(WatchedIoc).where(WatchedIoc.active == True)  # noqa: E712
+    if api_key:
+        stmt = stmt.where(WatchedIoc.api_key == api_key)
+    return list(session.exec(stmt.order_by(WatchedIoc.created_at.desc())).all())
+
+
+def remove_watched_ioc(session: Session, watched_id: int, api_key: Optional[str] = None) -> bool:
+    """Elimina (desactiva) un IOC monitorizado. Respeta el aislamiento por token."""
+    obj = session.get(WatchedIoc, watched_id)
+    if obj is None:
+        return False
+    if api_key and obj.api_key and obj.api_key != api_key:
+        return False
+    obj.active = False
+    session.add(obj)
+    session.commit()
+    return True
+
+
+def iocs_due_for_check(session: Session, older_than_minutes: int) -> list[WatchedIoc]:
+    """IOCs activos que no se han comprobado desde hace `older_than_minutes`."""
+    from datetime import timedelta
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=older_than_minutes)
+    rows = session.exec(select(WatchedIoc).where(WatchedIoc.active == True)).all()  # noqa: E712
+    due = []
+    for r in rows:
+        if r.last_checked_at is None or _as_utc(r.last_checked_at) <= cutoff:
+            due.append(r)
+    return due
+
+
+def record_watch_check(
+    session: Session, watched: WatchedIoc, *, score: int, verdict: str,
+) -> Optional[WatchAlert]:
+    """Actualiza el último estado de un IOC monitorizado y, si el veredicto
+    cambió respecto al anterior, crea y devuelve una WatchAlert."""
+    old_verdict = watched.last_verdict
+    old_score = watched.last_score
+
+    alert: Optional[WatchAlert] = None
+    # Solo alerta si ya había un veredicto previo y es distinto.
+    if old_verdict is not None and old_verdict != verdict:
+        alert = WatchAlert(
+            watched_ioc_id=watched.id, ioc_value=watched.ioc_value, ioc_type=watched.ioc_type,
+            old_verdict=old_verdict, new_verdict=verdict,
+            old_score=old_score, new_score=score, api_key=watched.api_key,
+        )
+        session.add(alert)
+
+    watched.last_verdict = verdict
+    watched.last_score = score
+    watched.last_checked_at = datetime.now(timezone.utc)
+    session.add(watched)
+    session.commit()
+    if alert:
+        session.refresh(alert)
+    return alert
+
+
+def list_watch_alerts(session: Session, api_key: Optional[str] = None, limit: int = 50) -> list[WatchAlert]:
+    """Alertas de cambio de veredicto (sin reconocer primero, más recientes primero)."""
+    stmt = select(WatchAlert)
+    if api_key:
+        stmt = stmt.where(WatchAlert.api_key == api_key)
+    stmt = stmt.order_by(WatchAlert.acknowledged.asc(), WatchAlert.created_at.desc()).limit(limit)
+    return list(session.exec(stmt).all())
+
+
+def ack_watch_alert(session: Session, alert_id: int, api_key: Optional[str] = None) -> bool:
+    """Marca una alerta como reconocida. Respeta el aislamiento por token."""
+    obj = session.get(WatchAlert, alert_id)
+    if obj is None:
+        return False
+    if api_key and obj.api_key and obj.api_key != api_key:
+        return False
+    obj.acknowledged = True
+    session.add(obj)
+    session.commit()
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Estadísticas / analítica SOC (SOC-D)
+# ---------------------------------------------------------------------------
+
+def get_stats(session: Session, api_key: Optional[str] = None, days: int = 14, top: int = 10) -> dict:
+    """Agrega métricas del historial de escaneos del usuario para el dashboard.
+
+    Devuelve: total, distribución por veredicto y por tipo de IOC, serie temporal
+    (últimos `days` días), top amenazas y un resumen de la watchlist.
+    """
+    from datetime import timedelta
+
+    stmt = select(ScanResult)
+    if api_key:
+        stmt = stmt.where(ScanResult.api_key == api_key)
+    rows = list(session.exec(stmt.order_by(col(ScanResult.created_at).desc())).all())
+
+    verdict_counts: dict[str, int] = {}
+    type_counts: dict[str, int] = {}
+    for r in rows:
+        verdict_counts[r.verdict] = verdict_counts.get(r.verdict, 0) + 1
+        type_counts[r.ioc_type] = type_counts.get(r.ioc_type, 0) + 1
+
+    # Serie temporal de los últimos `days` días (rellena huecos con 0).
+    today = datetime.now(timezone.utc).date()
+    buckets = {(today - timedelta(days=i)): 0 for i in range(days - 1, -1, -1)}
+    for r in rows:
+        d = _as_utc(r.created_at).date()
+        if d in buckets:
+            buckets[d] += 1
+    timeline = [{"date": d.isoformat(), "count": c} for d, c in buckets.items()]
+
+    # Top amenazas: mayor score, deduplicado por IOC (se queda el más reciente).
+    seen: set[str] = set()
+    top_threats: list[dict] = []
+    for r in sorted(rows, key=lambda x: x.score, reverse=True):
+        if r.verdict not in ("malicious", "critical") or r.ioc_value in seen:
+            continue
+        seen.add(r.ioc_value)
+        top_threats.append({
+            "ioc_value": r.ioc_value, "ioc_type": r.ioc_type,
+            "score": r.score, "verdict": r.verdict,
+        })
+        if len(top_threats) >= top:
+            break
+
+    # Resumen de la watchlist.
+    wl_stmt = select(WatchedIoc).where(WatchedIoc.active == True)  # noqa: E712
+    al_stmt = select(WatchAlert).where(WatchAlert.acknowledged == False)  # noqa: E712
+    if api_key:
+        wl_stmt = wl_stmt.where(WatchedIoc.api_key == api_key)
+        al_stmt = al_stmt.where(WatchAlert.api_key == api_key)
+    watched_total = len(list(session.exec(wl_stmt).all()))
+    open_alerts = len(list(session.exec(al_stmt).all()))
+
+    return {
+        "total_scans": len(rows),
+        "verdict_counts": verdict_counts,
+        "type_counts": type_counts,
+        "timeline": timeline,
+        "top_threats": top_threats,
+        "watchlist": {"watched": watched_total, "open_alerts": open_alerts},
+    }
