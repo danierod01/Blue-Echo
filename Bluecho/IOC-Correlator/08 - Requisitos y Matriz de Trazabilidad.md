@@ -63,9 +63,15 @@ Estas no son requisitos originales de la P1 sino el roadmap prometido; se incluy
 | MJ-R1 | Paginación real en el historial | Cumplido |
 | MJ-I1 | API pública documentada (OpenAPI `/docs`) + auth | Cumplido |
 | MJ-AUTH | Multiusuario: invitaciones autoservicio (`/auth/invite`), token con etiqueta, historial **aislado por token**, sesión con nombre (`/auth/me`), **revocación y caducidad de tokens** (`/auth/tokens`, `/auth/revoke`) | Cumplido (feat/invite-tokens, 2026-09-28/29) |
-| MJ-R2/R3/I2/I3 | PostgreSQL, Celery+Redis, export SIEM, plugin navegador | Backlog (trabajo futuro justificado) |
+| MJ-R2 | PostgreSQL (servicio `db`, `psycopg`; SQLite por defecto fuera de Docker) | Cumplido (P3, 2026-09-29) |
+| MJ-R3 | Celery + Redis (cola async: `/scan/async`, `/tasks/{id}`) | Cumplido (P3, 2026-09-29) |
+| MJ-I2 | Export a SIEM/TIP (STIX 2.1 + MISP) | Cumplido (P3, 2026-09-29) |
+| MJ-I3 | Plugin de navegador (Manifest V3) | Cumplido (P3, 2026-09-29) |
+| MJ-RBAC | Roles admin/analyst + rate limiting **por token** | Cumplido (P3, 2026-09-29) |
 
-**Extras fuera del roadmap:** análisis PCAP (scapy), geolocalización con mapa, login con X-API-Key, rediseño completo de la UI.
+**El roadmap del Informe P1 §8 queda 100% cerrado (17/17).**
+
+**Extras fuera del roadmap:** análisis PCAP (scapy), geolocalización con mapa, login con X-API-Key, rediseño completo de la UI, **pivoting / entidades relacionadas** (escaneo encadenado), **watchlist + monitorización continua** (Celery Beat, alerta al cambiar el veredicto), **dashboard analítico SOC** (Recharts) y **triaje del analista** (A-lite: estado + nota + etiquetas por escaneo).
 
 ---
 
@@ -92,7 +98,7 @@ Estas no son requisitos originales de la P1 sino el roadmap prometido; se incluy
 | RNF-03 | `docker-compose.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, `deploy.sh` | (verificación manual `docker compose up`) | mem. §7 · vídeo `pend.` |
 | RNF-04 | `frontend/nginx.conf`, `docker-compose.yml` (`expose` backend) | (manual) | mem. §5 · vídeo `pend.` |
 | RNF-05 | `connectors/base.py` (`api_key` desde env), `backend/Dockerfile` (`appuser`), `.gitignore` | (revisión) | mem. §7 · vídeo `pend.` |
-| RNF-06 | `backend/tests/` (17 ficheros, 262 tests) | `pytest` | mem. §8 · vídeo `pend.` |
+| RNF-06 | `backend/tests/` (**336 tests** verdes) + `frontend` (Vitest, 6) | `pytest` / `npm test` | mem. §8 · vídeo `pend.` |
 | RNF-07 | Async + caché; medir latencia real | (benchmark manual) | mem. §8 · vídeo `pend.` |
 
 **Mejoras (extracto):**
@@ -104,6 +110,13 @@ Estas no son requisitos originales de la P1 sino el roadmap prometido; se incluy
 | MJ-F6 (MITRE) | `backend/ioc_correlator/mitre_mapper.py`, `frontend/.../MitreAttack.tsx` | (tests scorer/enricher) | mem. §6 · vídeo `pend.` |
 | MJ-S1/S2 (auth+rate) | `backend/ioc_correlator/api/auth.py`, `limiter.py` | `tests/test_scan_endpoint.py` | mem. §7 · vídeo `pend.` |
 | MJ-AUTH (invitaciones + aislamiento) | `api/auth.py` (`/auth/invite`, `/auth/me`, `_check_key`), `database.py` (`ApiKey`, `create_api_key`, filtro `get_history`), `routes.py` (404 escaneo ajeno), `frontend/.../Invite.tsx` | `tests/test_auth_invite.py` (8 tests: invitación, `/me`, verify, aislamiento) | mem. §6/§7 · vídeo `pend.` |
+| MJ-RBAC (roles + rate por token) | `database.py` (`ApiKey.role`, `get_api_key_role`), `api/auth.py` (`_is_admin_key`, `_require_admin_access`), `limiter.py` (`_rate_key`) | `tests/test_roles.py` (8) | mem. §7 · vídeo `pend.` |
+| MJ-I2 (SIEM) | `backend/ioc_correlator/siem_export.py`, `routes.py` `GET /api/history/{id}/export`, `frontend/.../client.ts` (`downloadScanExport`) | `tests/test_siem_export.py` (13) | mem. §6 · vídeo `pend.` |
+| MJ-R3 (async) | `backend/ioc_correlator/celery_app.py`, `tasks.py`, `routes.py` (`/scan/async`, `/tasks/{id}`) | `tests/test_tasks.py` (6) | mem. §5/§6 · vídeo `pend.` |
+| MJ-PIVOT (pivoting) | `backend/ioc_correlator/pivots.py` (`extract_pivots`), `_build_scan_response`, `frontend/.../Pivots.tsx` | `tests/test_pivots.py` (7) | mem. §6 · vídeo `pend.` |
+| MJ-WATCH (watchlist + monitorización) | `database.py` (`WatchedIoc`, `WatchAlert`, `iocs_due_for_check`, `record_watch_check`), `tasks.py` (`check_watchlist_task`, Beat), `celery_app.py` (`beat_schedule`), `routes.py` (`/watchlist*`), `frontend/.../Watchlist.tsx` | `tests/test_watchlist.py` (10) | mem. §6 · vídeo `pend.` |
+| MJ-STATS (dashboard analítico) | `database.py` (`get_stats`), `routes.py` `GET /api/stats`, `frontend/.../Analytics.tsx` (Recharts) | `tests/test_watchlist.py` (stats) | mem. §6 · vídeo `pend.` |
+| MJ-TRIAGE (triaje del analista) | `database.py` (`ScanResult.triage/note/tags`, `update_scan_triage`, `parse_tags`), `routes.py` `PATCH /api/history/{id}/triage`, `frontend/.../TriagePanel.tsx` | `tests/test_triage.py` (8) | mem. §6 · vídeo `pend.` |
 
 ---
 
