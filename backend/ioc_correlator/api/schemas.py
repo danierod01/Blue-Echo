@@ -72,6 +72,15 @@ class ScanResponse(BaseModel):
     mitre_techniques: list[MitreTechnique] = []
     geolocation: Optional[GeoLocation] = None
     pivots: list[PivotEntity] = []
+    triage: str = "new"
+    note: str = ""
+    tags: list[str] = []
+
+
+class TriageUpdate(BaseModel):
+    triage: Optional[str] = None
+    note: Optional[str] = None
+    tags: Optional[list[str]] = None
 
 
 # ---------------------------------------------------------------------------
@@ -85,6 +94,8 @@ class HistoryItem(BaseModel):
     score: int
     verdict: str
     created_at: datetime
+    triage: str = "new"
+    tags: list[str] = []
 
 
 class HistoryPage(BaseModel):

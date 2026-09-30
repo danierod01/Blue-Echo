@@ -8,6 +8,7 @@ import BulkScanPanel from "@/components/BulkScanPanel";
 import ThreatScore from "@/components/ThreatScore";
 import ResultsTable from "@/components/ResultsTable";
 import AiSummary from "@/components/AiSummary";
+import TriagePanel from "@/components/TriagePanel";
 import MitreAttack from "@/components/MitreAttack";
 import Pivots from "@/components/Pivots";
 import GeoMap from "@/components/GeoMap";
@@ -276,6 +277,16 @@ export default function Dashboard() {
 
             <div className="animate-[fadeSlideIn_0.4s_ease_0.2s_forwards] opacity-0">
               <AiSummary summary={result.ai_summary} />
+            </div>
+
+            <div className="animate-[fadeSlideIn_0.4s_ease_0.25s_forwards] opacity-0">
+              <TriagePanel
+                scanId={result.id}
+                triage={result.triage}
+                note={result.note}
+                tags={result.tags}
+                onUpdated={() => queryClient.invalidateQueries({ queryKey: ["history"] })}
+              />
             </div>
 
             <div className="animate-[fadeSlideIn_0.4s_ease_0.3s_forwards] opacity-0">

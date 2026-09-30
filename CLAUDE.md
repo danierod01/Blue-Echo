@@ -770,6 +770,22 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   (`WATCHLIST_*`) actualizados. **⚠️ MIGRACIÓN BD:** 2 tablas nuevas → recrear BD (`down -v`) al
   desplegar. **⚠️ compose:** el worker ahora lleva `--beat`. **Pendiente (tú):** verificar en Kali
   (`docker compose` con el beat corriendo; para demo, bajar `WATCHLIST_CHECK_INTERVAL_MINUTES`).
+- **2026-09-30** (cloud, `feat/soc-watchlist-analytics`) **A-lite · Triaje del analista.** El
+  usuario preguntó si "A" (gestión de casos tipo TheHive) no convertiría la herramienta en otra
+  cosa; acordamos que sí desplaza el centro de gravedad del producto, así que se hizo **A-lite**:
+  triaje ligero *sobre el propio escaneo*, sin gestor de casos. Cada `ScanResult` gana
+  `triage` (estados `new`/`investigating`/`confirmed`/`false_positive`/`resolved`), `note`
+  (nota libre) y `tags` (lista JSON, dedupe + tope 10). Backend: `update_scan_triage`
+  (valida estado → `ValueError`, respeta propietario → `None` si ajeno) y `parse_tags`
+  (deserialización defensiva) en `database.py`; `TriageUpdate` en schemas; `triage`/`tags` en
+  `HistoryItem` y `triage`/`note`/`tags` en `ScanResponse`; endpoint **PATCH
+  `/api/history/{id}/triage`** (`422` estado inválido, `404` no encontrado/ajeno, devuelve el
+  `ScanResponse` actualizado). Frontend: `TriagePanel.tsx` (botones de estado, chips de
+  etiquetas, textarea de nota, guardar → toast) bajo el `AiSummary` en el Dashboard; badge de
+  estado + etiquetas en `HistoryList`; `updateTriage` + tipos en `client.ts`. +8 tests
+  (`test_triage.py`) → **suite backend 336 verdes**; build FE OK + 6 tests FE. README (endpoint
+  + manual) actualizado. **⚠️ MIGRACIÓN BD:** `ScanResult` gana 3 columnas → recrear BD
+  (`down -v`) al desplegar. **Pendiente (tú):** verlo en Kali junto con B+D.
 
 ---
 
@@ -891,7 +907,7 @@ Cotejado con el código el 2026-09-24:
 | **I2** | **Export a SIEM** | Baja | ✅ **Hecho** (2026-09-29): `siem_export.py` (STIX 2.1 + MISP, Python puro, IDs deterministas, attack-patterns MITRE). `GET /api/history/{id}/export?format=stix\|misp` con aislamiento por token + botones STIX/MISP en el dashboard. 13 tests (`test_siem_export.py`). Rama `feat/invite-tokens` |
 | **I3** | **Plugin de navegador** | Baja | ✅ **Hecho** (2026-09-29): `browser-extension/` (Manifest V3): popup de escaneo, menú contextual sobre IOCs, página de opciones (URL + API key), README de instalación. Habla con `POST /api/scan/json`. Rama `feat/invite-tokens` |
 
-**Extras construidos fuera del roadmap** (mejoras adicionales, el profesor no las ha visto): análisis PCAP (scapy), geolocalización con mapa, login UI, rediseño completo de la UI, **pivoting / entidades relacionadas** (escaneo encadenado), **watchlist + monitorización continua** (Celery Beat, alerta al cambiar el veredicto) y **dashboard analítico SOC** (Recharts) — rama `feat/soc-watchlist-analytics`.
+**Extras construidos fuera del roadmap** (mejoras adicionales, el profesor no las ha visto): análisis PCAP (scapy), geolocalización con mapa, login UI, rediseño completo de la UI, **pivoting / entidades relacionadas** (escaneo encadenado), **watchlist + monitorización continua** (Celery Beat, alerta al cambiar el veredicto) y **dashboard analítico SOC** (Recharts) y **triaje del analista** (A-lite: estado + nota + etiquetas por escaneo) — rama `feat/soc-watchlist-analytics`.
 
 ### Plan de trabajo P3 (orden)
 

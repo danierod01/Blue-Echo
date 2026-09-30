@@ -617,6 +617,23 @@ cada técnica MITRE detectada se incluye como `attack-pattern` con su relación
 `indicates`. Los IDs STIX son deterministas, de modo que reexportar el mismo IOC
 produce el mismo identificador (el receptor lo trata como actualización).
 
+### PATCH /api/history/{id}/triage — Triaje del analista
+
+```bash
+curl -X PATCH http://localhost/api/history/42/triage \
+  -H "X-API-Key: tu_clave" -H "Content-Type: application/json" \
+  -d '{"triage": "investigating", "note": "Revisar logs de firewall", "tags": ["tor", "c2"]}'
+```
+
+Marca cada escaneo con un **estado de triaje** (`new`, `investigating`, `confirmed`,
+`false_positive`, `resolved`), una **nota libre** del analista y **etiquetas** para
+clasificarlo. Es flujo de trabajo de SOC ligero: convierte un resultado de escaneo en
+algo accionable y con seguimiento, sin necesidad de un gestor de casos completo. Los
+tres campos son opcionales (se actualiza solo lo que se envía), el estado se valida
+(`422` si no es válido) y solo el propietario del escaneo puede modificarlo (aislamiento
+por token, `404` si es ajeno). El estado y las etiquetas se muestran también en la lista
+de historial.
+
 ### Watchlist — monitorización continua
 
 ```bash

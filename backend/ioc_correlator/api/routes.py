@@ -25,6 +25,7 @@ from ioc_correlator.api.schemas import (
     ScanRequest,
     ScanResponse,
     SourceStatus,
+    TriageUpdate,
 )
 from ioc_correlator.ai_analyst import generate_pcap_summary, generate_summary
 from ioc_correlator.geolocator import geolocate
@@ -35,6 +36,7 @@ from ioc_correlator.database import (
     add_watched_ioc, list_watched_iocs, remove_watched_ioc, record_watch_check,
     list_watch_alerts, ack_watch_alert,
     get_stats,
+    update_scan_triage, parse_tags, TRIAGE_STATES,
 )
 from ioc_correlator.alerting import maybe_send_alert
 from ioc_correlator.audit import audit, mask_token
@@ -105,6 +107,9 @@ def _build_scan_response(db_scan, breakdown: dict[str, int], geolocation=None) -
         mitre_techniques=mitre,
         geolocation=geo_out,
         pivots=pivots,
+        triage=getattr(db_scan, "triage", "new"),
+        note=getattr(db_scan, "note", ""),
+        tags=parse_tags(getattr(db_scan, "tags", "[]")),
     )
 
 
@@ -340,6 +345,8 @@ async def history(
                 score=s.score,
                 verdict=s.verdict,
                 created_at=s.created_at,
+                triage=s.triage,
+                tags=parse_tags(s.tags),
             )
             for s in scans
         ],
@@ -459,6 +466,30 @@ async def task_status(
     elif res.failed():
         out["error"] = str(res.result)
     return out
+
+
+@router.patch("/history/{scan_id}/triage", response_model=ScanResponse)
+@limiter.limit("60/minute")
+async def update_triage(
+    request: Request,
+    scan_id: int,
+    body: TriageUpdate,
+    session: Session = Depends(get_session),
+    current_key: str = Depends(require_api_key),
+) -> ScanResponse:
+    """Actualiza el triaje del analista (estado/nota/etiquetas) de un escaneo (A-lite)."""
+    if body.triage is not None and body.triage not in TRIAGE_STATES:
+        raise HTTPException(status_code=422, detail=f"Estado de triaje inválido: {body.triage}")
+    db_scan = update_scan_triage(
+        session, scan_id, api_key=current_key or None,
+        triage=body.triage, note=body.note, tags=body.tags,
+    )
+    if db_scan is None:
+        raise HTTPException(status_code=404, detail="Escaneo no encontrado.")
+    raw = json.loads(db_scan.connector_results)
+    connector_objs = {name: ConnectorResult(**d) for name, d in raw.items()}
+    scoring = compute_score(connector_objs)
+    return _build_scan_response(db_scan, scoring.breakdown)
 
 
 @router.get("/history/{scan_id}/export")

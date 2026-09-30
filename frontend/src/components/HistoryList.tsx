@@ -1,6 +1,7 @@
 import { Clock } from "lucide-react";
 import { cn, VERDICT_COLOR, VERDICT_LABEL, formatDate } from "@/lib/utils";
 import type { HistoryItem } from "@/api/client";
+import { TRIAGE_META } from "@/components/TriagePanel";
 
 interface Props {
   items: HistoryItem[];
@@ -43,6 +44,28 @@ export default function HistoryList({ items, onSelect }: Props) {
                 {formatDate(item.created_at)}
               </span>
             </div>
+            {((item.triage && item.triage !== "new") || (item.tags && item.tags.length > 0)) && (
+              <div className="flex flex-wrap items-center gap-1 mt-1">
+                {item.triage && item.triage !== "new" && TRIAGE_META[item.triage] && (
+                  <span
+                    className={cn(
+                      "rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
+                      TRIAGE_META[item.triage].cls,
+                    )}
+                  >
+                    {TRIAGE_META[item.triage].label}
+                  </span>
+                )}
+                {item.tags?.slice(0, 4).map((t) => (
+                  <span
+                    key={t}
+                    className="rounded border border-accent/20 bg-accent/10 px-1.5 py-0.5 font-data text-[10px] text-accent-soft"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
           </button>
         </li>
       ))}

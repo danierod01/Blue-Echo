@@ -66,7 +66,12 @@ export interface ScanResponse {
   mitre_techniques: MitreTechnique[];
   geolocation?: GeoLocation | null;
   pivots?: PivotEntity[];
+  triage?: TriageState;
+  note?: string;
+  tags?: string[];
 }
+
+export type TriageState = "new" | "investigating" | "confirmed" | "false_positive" | "resolved";
 
 export interface PivotEntity {
   value: string;
@@ -82,6 +87,8 @@ export interface HistoryItem {
   score: number;
   verdict: "clean" | "suspicious" | "malicious" | "critical";
   created_at: string;
+  triage?: TriageState;
+  tags?: string[];
 }
 
 export interface HistoryPage {
@@ -426,4 +433,20 @@ export interface SocStats {
 export async function getStats(): Promise<SocStats> {
   const res = await fetch(`${BASE_URL}/api/stats`, { headers: authHeaders() });
   return handleResponse<SocStats>(res);
+}
+
+// ---------------------------------------------------------------------------
+// Triaje del analista (A-lite)
+// ---------------------------------------------------------------------------
+
+export async function updateTriage(
+  id: number,
+  body: { triage?: TriageState; note?: string; tags?: string[] },
+): Promise<ScanResponse> {
+  const res = await fetch(`${BASE_URL}/api/history/${id}/triage`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(body),
+  });
+  return handleResponse<ScanResponse>(res);
 }

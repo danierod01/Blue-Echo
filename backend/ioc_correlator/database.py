@@ -38,7 +38,16 @@ class ScanResult(SQLModel, table=True):
     # Token que creó este escaneo (None = sin auth / dev mode)
     api_key: Optional[str] = Field(default=None, index=True)
 
+    # Triaje del analista (A-lite): estado + nota + etiquetas (JSON list)
+    triage: str = Field(default="new")     # new|investigating|confirmed|false_positive|resolved
+    note: str = Field(default="")
+    tags: str = Field(default="[]")        # JSON: lista de strings
+
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+# Estados de triaje válidos (A-lite).
+TRIAGE_STATES = ("new", "investigating", "confirmed", "false_positive", "resolved")
 
 
 class WatchedIoc(SQLModel, table=True):
@@ -173,6 +182,47 @@ def get_history(
 
 def get_scan_by_id(session: Session, scan_id: int) -> Optional[ScanResult]:
     return session.get(ScanResult, scan_id)
+
+
+def update_scan_triage(
+    session: Session, scan_id: int, api_key: Optional[str] = None, *,
+    triage: Optional[str] = None, note: Optional[str] = None,
+    tags: Optional[list[str]] = None,
+) -> Optional[ScanResult]:
+    """Actualiza el triaje (estado/nota/etiquetas) de un escaneo. Respeta el
+    aislamiento por token: devuelve None si no existe o es de otro usuario."""
+    scan = session.get(ScanResult, scan_id)
+    if scan is None:
+        return None
+    if api_key and scan.api_key and scan.api_key != api_key:
+        return None
+    if triage is not None:
+        if triage not in TRIAGE_STATES:
+            raise ValueError(f"Estado de triaje inválido: {triage}")
+        scan.triage = triage
+    if note is not None:
+        scan.note = note
+    if tags is not None:
+        # Normaliza: strings no vacíos, sin duplicados, máx 10.
+        clean = []
+        for t in tags:
+            t = str(t).strip()
+            if t and t not in clean:
+                clean.append(t)
+        scan.tags = json.dumps(clean[:10], ensure_ascii=False)
+    session.add(scan)
+    session.commit()
+    session.refresh(scan)
+    return scan
+
+
+def parse_tags(raw: str) -> list[str]:
+    """Deserializa el campo tags (JSON list) de forma defensiva."""
+    try:
+        val = json.loads(raw or "[]")
+        return [str(t) for t in val] if isinstance(val, list) else []
+    except (ValueError, TypeError):
+        return []
 
 
 def _as_utc(dt: datetime) -> datetime:
