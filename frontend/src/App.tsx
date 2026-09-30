@@ -3,6 +3,8 @@ import { Routes, Route, NavLink, useNavigate, useLocation, Link } from "react-ro
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Radar, LogOut, ChevronDown } from "lucide-react";
 import Dashboard from "@/pages/Dashboard";
+import Watchlist from "@/pages/Watchlist";
+import Analytics from "@/pages/Analytics";
 import History from "@/pages/History";
 import ScanDetail from "@/pages/ScanDetail";
 import Login from "@/pages/Login";
@@ -75,6 +77,14 @@ function UserMenu() {
             className={({ isActive }) => cn("flex items-center gap-2 px-3 py-2 text-sm transition-colors", isActive ? "text-white" : "text-gray-400 hover:text-white")}>
             Dashboard
           </NavLink>
+          <NavLink to="/watchlist" onClick={() => setOpen(false)}
+            className={({ isActive }) => cn("flex items-center gap-2 px-3 py-2 text-sm transition-colors", isActive ? "text-white" : "text-gray-400 hover:text-white")}>
+            Watchlist
+          </NavLink>
+          <NavLink to="/analytics" onClick={() => setOpen(false)}
+            className={({ isActive }) => cn("flex items-center gap-2 px-3 py-2 text-sm transition-colors", isActive ? "text-white" : "text-gray-400 hover:text-white")}>
+            Analítica
+          </NavLink>
           <NavLink to="/history" onClick={() => setOpen(false)}
             className={({ isActive }) => cn("flex items-center gap-2 px-3 py-2 text-sm transition-colors", isActive ? "text-white" : "text-gray-400 hover:text-white")}>
             Historial
@@ -108,7 +118,7 @@ function Header() {
         {hasSession && (
           <>
             <nav className="flex gap-1">
-              {[{ to: "/", label: "Escaneo", end: true }, { to: "/history", label: "Historial" }].map(({ to, label, end }) => (
+              {[{ to: "/", label: "Escaneo", end: true }, { to: "/watchlist", label: "Watchlist" }, { to: "/analytics", label: "Analítica" }, { to: "/history", label: "Historial" }].map(({ to, label, end }) => (
                 <NavLink key={to} to={to} end={end}
                   className={({ isActive }) => cn(
                     "px-3 py-1 text-sm rounded transition-colors",
@@ -145,6 +155,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/invite" element={<Invite />} />
           <Route path="/" element={<ProtectedRoute><Dashboard key={location.key} /></ProtectedRoute>} />
+          <Route path="/watchlist" element={<ProtectedRoute><Watchlist /></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
           <Route path="/history/:id" element={<ProtectedRoute><ScanDetail /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />

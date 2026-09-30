@@ -339,3 +339,91 @@ export async function verifyApiKey(apiKey: string): Promise<boolean> {
   const data = await res.json();
   return data.valid === true;
 }
+
+// ---------------------------------------------------------------------------
+// Watchlist / monitorización continua (SOC-B)
+// ---------------------------------------------------------------------------
+
+export interface WatchedIoc {
+  id: number;
+  ioc_value: string;
+  ioc_type: string;
+  note: string;
+  last_score: number | null;
+  last_verdict: string | null;
+  last_checked_at: string | null;
+  created_at: string;
+}
+
+export interface WatchAlert {
+  id: number;
+  ioc_value: string;
+  ioc_type: string;
+  old_verdict: string | null;
+  new_verdict: string;
+  old_score: number | null;
+  new_score: number;
+  acknowledged: boolean;
+  created_at: string;
+}
+
+export async function addWatched(ioc: string): Promise<WatchedIoc> {
+  const res = await fetch(`${BASE_URL}/api/watchlist`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ ioc }),
+  });
+  return handleResponse<WatchedIoc>(res);
+}
+
+export async function listWatched(): Promise<WatchedIoc[]> {
+  const res = await fetch(`${BASE_URL}/api/watchlist`, { headers: authHeaders() });
+  return handleResponse<WatchedIoc[]>(res);
+}
+
+export async function removeWatched(id: number): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/watchlist/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  await handleResponse<unknown>(res);
+}
+
+export async function checkWatched(id: number): Promise<WatchedIoc & { alert: WatchAlert | null }> {
+  const res = await fetch(`${BASE_URL}/api/watchlist/${id}/check`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  return handleResponse<WatchedIoc & { alert: WatchAlert | null }>(res);
+}
+
+export async function listWatchAlerts(): Promise<WatchAlert[]> {
+  const res = await fetch(`${BASE_URL}/api/watchlist/alerts`, { headers: authHeaders() });
+  return handleResponse<WatchAlert[]>(res);
+}
+
+export async function ackWatchAlert(id: number): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/watchlist/alerts/${id}/ack`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  await handleResponse<unknown>(res);
+}
+
+// ---------------------------------------------------------------------------
+// Estadísticas / dashboard SOC (SOC-D)
+// ---------------------------------------------------------------------------
+
+export interface SocStats {
+  total_scans: number;
+  verdict_counts: Record<string, number>;
+  type_counts: Record<string, number>;
+  timeline: { date: string; count: number }[];
+  top_threats: { ioc_value: string; ioc_type: string; score: number; verdict: string }[];
+  watchlist: { watched: number; open_alerts: number };
+}
+
+export async function getStats(): Promise<SocStats> {
+  const res = await fetch(`${BASE_URL}/api/stats`, { headers: authHeaders() });
+  return handleResponse<SocStats>(res);
+}

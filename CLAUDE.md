@@ -751,6 +751,25 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   (apts. 4 y 5). Tabla de roadmap del CLAUDE.md: F7 ⚠️→✅. **CON ESTO EL ROADMAP DEL INFORME P1
   §8 QUEDA 100% COMPLETO** (17/17). Solo documentación; sin cambios de código ni tests (siguen
   318 verdes). **Pendiente (tú):** (opcional) medir latencia real Groq vs Claude para el vídeo.
+- **2026-09-30** (cloud, **rama nueva `feat/soc-watchlist-analytics`**, parte de
+  `design-soc-dashboard`) **Funcionalidades SOC "gordas": B (watchlist + monitorización
+  continua) + D (dashboard analítico).** El usuario pidió features reales de SOC/SIEM en rama
+  aparte para no mezclar con lo ya validado. **B ✅:** modelos `WatchedIoc` + `WatchAlert`
+  (aislamiento por token); tarea Celery periódica `check_watchlist` (Beat cada
+  `WATCHLIST_BEAT_SECONDS`, worker con `--beat`) que re-escanea (enrich+score, **sin IA**) los
+  IOCs vencidos (`WATCHLIST_CHECK_INTERVAL_MINUTES`) y **crea alerta al cambiar el veredicto**
+  (+ webhook best-effort); endpoints `/api/watchlist` (add/list/delete), `/watchlist/{id}/check`
+  (manual), `/watchlist/alerts` (+`/{id}/ack`). Página `Watchlist.tsx` (añadir, tabla, panel de
+  alertas, comprobar-ahora). **D ✅:** `get_stats()` (total, distribución veredicto/tipo, serie
+  14d, top amenazas, resumen watchlist) + `GET /api/stats`; página `Analytics.tsx` con Recharts
+  (área temporal, donut de veredictos con **colores de estado reservados**, barras de tipo con
+  **un solo tono teal** para magnitud, top amenazas como tabla) — seguí la skill `dataviz`
+  (estado=color reservado+leyenda; magnitud=tono único, sin paleta categórica que validar).
+  Navegación: enlaces Watchlist/Analítica en `App`. +10 tests (`test_watchlist.py`) → **suite
+  backend 328 verdes**; build FE OK + 6 tests. README (endpoints watchlist+stats) y `.env.example`
+  (`WATCHLIST_*`) actualizados. **⚠️ MIGRACIÓN BD:** 2 tablas nuevas → recrear BD (`down -v`) al
+  desplegar. **⚠️ compose:** el worker ahora lleva `--beat`. **Pendiente (tú):** verificar en Kali
+  (`docker compose` con el beat corriendo; para demo, bajar `WATCHLIST_CHECK_INTERVAL_MINUTES`).
 
 ---
 
@@ -872,7 +891,7 @@ Cotejado con el código el 2026-09-24:
 | **I2** | **Export a SIEM** | Baja | ✅ **Hecho** (2026-09-29): `siem_export.py` (STIX 2.1 + MISP, Python puro, IDs deterministas, attack-patterns MITRE). `GET /api/history/{id}/export?format=stix\|misp` con aislamiento por token + botones STIX/MISP en el dashboard. 13 tests (`test_siem_export.py`). Rama `feat/invite-tokens` |
 | **I3** | **Plugin de navegador** | Baja | ✅ **Hecho** (2026-09-29): `browser-extension/` (Manifest V3): popup de escaneo, menú contextual sobre IOCs, página de opciones (URL + API key), README de instalación. Habla con `POST /api/scan/json`. Rama `feat/invite-tokens` |
 
-**Extras construidos fuera del roadmap** (mejoras adicionales, el profesor no las ha visto): análisis PCAP (scapy), geolocalización con mapa, login UI, rediseño completo de la UI, **pivoting / entidades relacionadas** (escaneo encadenado).
+**Extras construidos fuera del roadmap** (mejoras adicionales, el profesor no las ha visto): análisis PCAP (scapy), geolocalización con mapa, login UI, rediseño completo de la UI, **pivoting / entidades relacionadas** (escaneo encadenado), **watchlist + monitorización continua** (Celery Beat, alerta al cambiar el veredicto) y **dashboard analítico SOC** (Recharts) — rama `feat/soc-watchlist-analytics`.
 
 ### Plan de trabajo P3 (orden)
 

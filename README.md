@@ -617,6 +617,35 @@ cada técnica MITRE detectada se incluye como `attack-pattern` con su relación
 `indicates`. Los IDs STIX son deterministas, de modo que reexportar el mismo IOC
 produce el mismo identificador (el receptor lo trata como actualización).
 
+### Watchlist — monitorización continua
+
+```bash
+# Añadir un IOC a la watchlist
+curl -X POST http://localhost/api/watchlist \
+  -H "X-API-Key: tu_clave" -H "Content-Type: application/json" \
+  -d '{"ioc": "185.220.101.45"}'
+
+curl http://localhost/api/watchlist            -H "X-API-Key: tu_clave"   # listar
+curl -X POST http://localhost/api/watchlist/1/check -H "X-API-Key: tu_clave"  # comprobar ya
+curl http://localhost/api/watchlist/alerts     -H "X-API-Key: tu_clave"   # alertas de cambio
+```
+
+Un **worker Celery con scheduler (beat)** re-escanea periódicamente los IOCs de la
+watchlist (enrich + score, sin IA) y **genera una alerta cuando el veredicto cambia**
+(p. ej. una IP que pasa de `clean` a `malicious`); si el score supera el umbral,
+además dispara el webhook de alertas. Frecuencia configurable con
+`WATCHLIST_BEAT_SECONDS` y `WATCHLIST_CHECK_INTERVAL_MINUTES`.
+
+### GET /api/stats — Métricas para el dashboard analítico
+
+```bash
+curl http://localhost/api/stats -H "X-API-Key: tu_clave"
+```
+
+Devuelve el total de escaneos, la distribución por veredicto y por tipo de IOC, la
+serie temporal de los últimos 14 días, el top de amenazas y un resumen de la
+watchlist. Alimenta la página **Analítica** (gráficas con Recharts).
+
 ### GET /api/sources — Estado de los conectores
 
 ```bash
