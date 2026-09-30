@@ -315,7 +315,12 @@ export default function Dashboard() {
 
             {result.pivots && result.pivots.length > 0 && (
               <div className="animate-[fadeSlideIn_0.4s_ease_0.35s_forwards] opacity-0">
-                <Pivots pivots={result.pivots} onScan={(ioc) => mutation.mutate({ ioc })} />
+                <Pivots
+                  pivots={result.pivots}
+                  onScan={(ioc) => mutation.mutate({ ioc })}
+                  centerValue={result.ioc_value}
+                  centerType={result.ioc_type}
+                />
               </div>
             )}
 
