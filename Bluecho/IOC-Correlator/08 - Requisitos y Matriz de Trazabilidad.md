@@ -71,7 +71,7 @@ Estas no son requisitos originales de la P1 sino el roadmap prometido; se incluy
 
 **El roadmap del Informe P1 §8 queda 100% cerrado (17/17).**
 
-**Extras fuera del roadmap:** análisis PCAP (scapy), geolocalización con mapa, login con X-API-Key, rediseño completo de la UI, **pivoting / entidades relacionadas** (escaneo encadenado), **watchlist + monitorización continua** (Celery Beat, alerta al cambiar el veredicto), **dashboard analítico SOC** (Recharts) y **triaje del analista** (A-lite: estado + nota + etiquetas por escaneo).
+**Extras fuera del roadmap:** análisis PCAP (scapy), geolocalización con mapa, login con X-API-Key, rediseño completo de la UI, **pivoting / entidades relacionadas** (escaneo encadenado), **watchlist + monitorización continua** (Celery Beat, alerta al cambiar el veredicto), **dashboard analítico SOC** (Recharts), **triaje del analista** (A-lite: estado + nota + etiquetas por escaneo), **refang de IOCs neutralizados**, **reglas de detección** (Sigma/Suricata/YARA), **reglas de bloqueo/respuesta** (iptables/pf/DNS…) y **grafo visual de pivoting** (SVG).
 
 ---
 
@@ -98,7 +98,7 @@ Estas no son requisitos originales de la P1 sino el roadmap prometido; se incluy
 | RNF-03 | `docker-compose.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, `deploy.sh` | (verificación manual `docker compose up`) | mem. §7 · vídeo `pend.` |
 | RNF-04 | `frontend/nginx.conf`, `docker-compose.yml` (`expose` backend) | (manual) | mem. §5 · vídeo `pend.` |
 | RNF-05 | `connectors/base.py` (`api_key` desde env), `backend/Dockerfile` (`appuser`), `.gitignore` | (revisión) | mem. §7 · vídeo `pend.` |
-| RNF-06 | `backend/tests/` (**336 tests** verdes) + `frontend` (Vitest, 6) | `pytest` / `npm test` | mem. §8 · vídeo `pend.` |
+| RNF-06 | `backend/tests/` (**376 tests** verdes) + `frontend` (Vitest, 8) | `pytest` / `npm test` | mem. §8 · vídeo `pend.` |
 | RNF-07 | Async + caché; medir latencia real | (benchmark manual) | mem. §8 · vídeo `pend.` |
 
 **Mejoras (extracto):**
@@ -117,6 +117,10 @@ Estas no son requisitos originales de la P1 sino el roadmap prometido; se incluy
 | MJ-WATCH (watchlist + monitorización) | `database.py` (`WatchedIoc`, `WatchAlert`, `iocs_due_for_check`, `record_watch_check`), `tasks.py` (`check_watchlist_task`, Beat), `celery_app.py` (`beat_schedule`), `routes.py` (`/watchlist*`), `frontend/.../Watchlist.tsx` | `tests/test_watchlist.py` (10) | mem. §6 · vídeo `pend.` |
 | MJ-STATS (dashboard analítico) | `database.py` (`get_stats`), `routes.py` `GET /api/stats`, `frontend/.../Analytics.tsx` (Recharts) | `tests/test_watchlist.py` (stats) | mem. §6 · vídeo `pend.` |
 | MJ-TRIAGE (triaje del analista) | `database.py` (`ScanResult.triage/note/tags`, `update_scan_triage`, `parse_tags`), `routes.py` `PATCH /api/history/{id}/triage`, `frontend/.../TriagePanel.tsx` | `tests/test_triage.py` (8) | mem. §6 · vídeo `pend.` |
+| MJ-REFANG (higiene de entrada) | `utils/validators.py` (`refang`, integrado en `detect_ioc_type` y en los puntos de escaneo) | `tests/test_refang.py` (20) | mem. §6 · vídeo `pend.` |
+| MJ-DETECT (reglas de detección) | `detection_rules.py` (Sigma/Suricata/YARA, IDs deterministas), `routes.py` `GET /api/history/{id}/detection-rules`, `frontend/.../RulesModal.tsx` | `tests/test_detection_rules.py` (10) | mem. §6 · vídeo `pend.` |
+| MJ-BLOCK (reglas de bloqueo/respuesta) | `response_actions.py` (iptables/pf/Cisco/Windows/DNS…), `routes.py` `GET /api/history/{id}/blocklist`, `frontend/.../RulesModal.tsx` | `tests/test_response_actions.py` (10) | mem. §6 · vídeo `pend.` |
+| MJ-GRAPH (grafo de pivoting) | `frontend/.../PivotGraph.tsx` (SVG node-link, paleta CVD-validada), `Pivots.tsx` (toggle grafo/lista) | `PivotGraph.test.tsx` (2) | mem. §6 · vídeo `pend.` |
 
 ---
 

@@ -786,6 +786,29 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   (`test_triage.py`) → **suite backend 336 verdes**; build FE OK + 6 tests FE. README (endpoint
   + manual) actualizado. **⚠️ MIGRACIÓN BD:** `ScanResult` gana 3 columnas → recrear BD
   (`down -v`) al desplegar. **Pendiente (tú):** verlo en Kali junto con B+D.
+- **2026-09-30** (cloud, **rama nueva `feat/detection-response`**, parte de
+  `feat/soc-watchlist-analytics`) **Detección → respuesta: refang, reglas de detección,
+  reglas de bloqueo y grafo de pivoting.** El usuario pidió 4 features de valor real
+  (1+2+3+5), hechas en rama aparte y en orden de riesgo ascendente. **F1 · Higiene de
+  entrada (refang)** ✅: `validators.refang()` normaliza IOCs neutralizados (`hxxp://`,
+  `1[.]2[.]3[.]4`, `evil[dot]com`, `user[at]host`, `\.`); `detect_ioc_type` refanga
+  primero y `_run_scan`/`watchlist_add`/`_async_scan` guardan el IOC ya normalizado. 20
+  tests (`test_refang.py`). **F3 · Reglas de bloqueo/respuesta** ✅:
+  `response_actions.generate_block_rules()` (iptables/nftables/pf/Cisco/Windows para IPs;
+  hosts/Unbound/BIND RPZ/Pi-hole para dominios; Squid+sinkhole para URLs; nota EDR para
+  hashes) + `GET /api/history/{id}/blocklist` (aislamiento por token). 10 tests. **F2 ·
+  Reglas de detección** ✅: `detection_rules.generate_detection_rules()` (Sigma IP/dominio/
+  URL/hash; Suricata IP/dominio/URL; YARA hashes; IDs deterministas uuid5/SID) + `GET
+  /api/history/{id}/detection-rules`. 10 tests. **F5 · Grafo de pivoting** ✅:
+  `PivotGraph.tsx` (node-link en SVG puro, sin librerías; IOC central + pivotes radiales
+  clicables; paleta de relaciones categórica **validada para CVD** en dark con la skill
+  `dataviz`: teal-600/amber-600/violet/rose + leyenda); toggle Grafo/Lista en `Pivots.tsx`.
+  2 tests FE. Frontend: `RulesModal.tsx` (tabs por formato, copiar/descargar) + botones
+  "Detección" y "Bloqueo" en el dashboard; `getBlockRules`/`getDetectionRules` en el
+  cliente. **Suite backend 376 verdes; build FE OK + 8 tests FE.** README (endpoints +
+  nota de defang) actualizado. **Sin migración de BD** (solo lógica nueva; no cambian
+  modelos). **Pendiente (tú):** verlo en el navegador (grafo, modales de reglas, pegar un
+  IOC defanged).
 
 ---
 
@@ -907,7 +930,7 @@ Cotejado con el código el 2026-09-24:
 | **I2** | **Export a SIEM** | Baja | ✅ **Hecho** (2026-09-29): `siem_export.py` (STIX 2.1 + MISP, Python puro, IDs deterministas, attack-patterns MITRE). `GET /api/history/{id}/export?format=stix\|misp` con aislamiento por token + botones STIX/MISP en el dashboard. 13 tests (`test_siem_export.py`). Rama `feat/invite-tokens` |
 | **I3** | **Plugin de navegador** | Baja | ✅ **Hecho** (2026-09-29): `browser-extension/` (Manifest V3): popup de escaneo, menú contextual sobre IOCs, página de opciones (URL + API key), README de instalación. Habla con `POST /api/scan/json`. Rama `feat/invite-tokens` |
 
-**Extras construidos fuera del roadmap** (mejoras adicionales, el profesor no las ha visto): análisis PCAP (scapy), geolocalización con mapa, login UI, rediseño completo de la UI, **pivoting / entidades relacionadas** (escaneo encadenado), **watchlist + monitorización continua** (Celery Beat, alerta al cambiar el veredicto) y **dashboard analítico SOC** (Recharts) y **triaje del analista** (A-lite: estado + nota + etiquetas por escaneo) — rama `feat/soc-watchlist-analytics`.
+**Extras construidos fuera del roadmap** (mejoras adicionales, el profesor no las ha visto): análisis PCAP (scapy), geolocalización con mapa, login UI, rediseño completo de la UI, **pivoting / entidades relacionadas** (escaneo encadenado), **watchlist + monitorización continua** (Celery Beat, alerta al cambiar el veredicto) y **dashboard analítico SOC** (Recharts) y **triaje del analista** (A-lite: estado + nota + etiquetas por escaneo) — rama `feat/soc-watchlist-analytics`. Y en `feat/detection-response`: **refang** de IOCs neutralizados, **reglas de detección** (Sigma/Suricata/YARA), **reglas de bloqueo/respuesta** (iptables/pf/DNS…) y **grafo visual de pivoting** (SVG).
 
 ### Plan de trabajo P3 (orden)
 

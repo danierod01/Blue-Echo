@@ -500,6 +500,10 @@ curl -X POST http://localhost/api/scan/json \
   -d '{"ioc": "185.220.101.45"}'
 ```
 
+> **Entrada neutralizada (defanged):** se aceptan IOCs tal como aparecen en informes
+> de amenazas o correos de phishing —`hxxp://185[.]220[.]101[.]45`, `evil[dot]com`,
+> `user[at]host`— y se normalizan automáticamente antes de escanear (refang).
+
 Respuesta:
 ```json
 {
@@ -633,6 +637,31 @@ tres campos son opcionales (se actualiza solo lo que se envía), el estado se va
 (`422` si no es válido) y solo el propietario del escaneo puede modificarlo (aislamiento
 por token, `404` si es ajeno). El estado y las etiquetas se muestran también en la lista
 de historial.
+
+### GET /api/history/{id}/detection-rules — Reglas de detección
+
+```bash
+curl http://localhost/api/history/42/detection-rules -H "X-API-Key: tu_clave"
+```
+
+Convierte el IOC en **detección desplegable**. Devuelve `{ioc, ioc_type, formats}`
+con reglas listas para pegar: **Sigma** (agnóstico de SIEM, para IP/dominio/URL/hash),
+**Suricata/Snort** (IDS de red, para IP/dominio/URL) y **YARA** (ficheros/EDR, para
+hashes). Los IDs son deterministas (uuid5 en Sigma, SID derivado en Suricata), de modo
+que reimportar la misma regla no genera duplicados. Aislamiento por token (`404` si el
+escaneo es ajeno). En la UI: botón **"Detección"** en el dashboard.
+
+### GET /api/history/{id}/blocklist — Reglas de bloqueo/respuesta
+
+```bash
+curl http://localhost/api/history/42/blocklist -H "X-API-Key: tu_clave"
+```
+
+Cierra el ciclo **detección → respuesta**: genera reglas de bloqueo aplicables según el
+tipo de IOC — `iptables`/`nftables`/`pf`/Cisco ACL/Windows Firewall para IPs;
+`hosts`/Unbound/BIND RPZ/Pi-hole para dominios; Squid + sinkhole para URLs; y una nota
+para hashes (van en EDR/AV). Cada regla lleva su cabecera de procedencia. Aislamiento por
+token. En la UI: botón **"Bloqueo"** en el dashboard.
 
 ### Watchlist — monitorización continua
 
