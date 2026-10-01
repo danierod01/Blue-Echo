@@ -136,17 +136,6 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {/* Botón para reabrir el historial: solo visible cuando está oculto */}
-            {history.length > 0 && !sidebarOpen && (
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="hidden lg:flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-1 text-xs text-slate-400 transition hover:border-accent/50 hover:text-white"
-                title="Mostrar historial"
-              >
-                <PanelRightOpen size={14} />
-                Historial
-              </button>
-            )}
             <div className="flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 font-data text-[11px] text-accent-soft">
               <span className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_6px_var(--soc-accent)] animate-pulse" />
               ONLINE
@@ -356,6 +345,22 @@ export default function Dashboard() {
           <EmptyState />
         )}
       </div>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* Pestaña lateral para reabrir el historial (cuando está oculto)    */}
+      {/* ---------------------------------------------------------------- */}
+      {history.length > 0 && !sidebarOpen && (
+        <aside className="shrink-0 hidden lg:block">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="sticky top-4 flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/50 px-2 py-3 text-[11px] text-slate-400 transition hover:border-accent/50 hover:text-white [writing-mode:vertical-rl]"
+            title="Mostrar historial"
+          >
+            <PanelRightOpen size={14} className="rotate-180" />
+            Historial
+          </button>
+        </aside>
+      )}
 
       {/* ---------------------------------------------------------------- */}
       {/* Sidebar — historial reciente                                      */}
