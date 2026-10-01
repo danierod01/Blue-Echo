@@ -809,6 +809,13 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   nota de defang) actualizado. **Sin migración de BD** (solo lógica nueva; no cambian
   modelos). **Pendiente (tú):** verlo en el navegador (grafo, modales de reglas, pegar un
   IOC defanged).
+- **2026-10-01** (cloud, `feat/detection-response`) **Guion del vídeo.** Creada la nota
+  `Bluecho/IOC-Correlator/11 - Guion del Video.md`: guion minuto a minuto (~15 min, margen
+  sobre el mínimo de 10) con checklist previo, IOCs de demo, y una columna que mapea cada
+  escena a los requisitos (RF/RNF/MJ) para rellenar luego la columna *Evidencia (vídeo)* de
+  la matriz. Recoge los requisitos del enunciado (MP4 1080p, narrado, producto real, cortes
+  señalados, YouTube no listado + probar en incógnito, declarar Claude Code). Solo
+  documentación; sin cambios de código.
 
 ---
 
