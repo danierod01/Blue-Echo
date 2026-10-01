@@ -7,6 +7,26 @@ Blue-Echo"*).
 
 Implementa el ítem **I3** del roadmap de la Práctica 1.
 
+## El plugin es un cliente opcional, no la aplicación
+
+La **aplicación** es el dashboard web desplegado (p. ej. `https://blueecho.es`):
+se abre en el navegador y se usa entera **sin instalar nada**. El plugin es solo
+un **cliente ligero** de la API pública (`POST /api/scan/json`), una comodidad
+para escanear un IOC desde cualquier página sin abrir el dashboard.
+
+Por tanto, **para evaluar el producto no hace falta instalar el plugin**: basta
+con abrir la URL desplegada. El plugin:
+
+- se **demuestra en el vídeo** cargándolo en tu navegador y apuntándolo al
+  servidor desplegado (`URL = https://blueecho.es` + API key en Opciones);
+- si alguien quiere probarlo, se instala **"descomprimido"** desde este repo
+  (ver *Instalación*) apuntando al mismo servidor. No está publicado en la
+  Chrome Web Store / Firefox AMO (eso requiere revisión + cuota, innecesario aquí).
+
+Como declara `host_permissions: <all_urls>`, funciona contra **cualquier**
+instancia de Blue-Echo accesible (localhost o el servidor de Hetzner) con solo
+cambiar la URL en sus Opciones — no depende de tener el backend en local.
+
 ## Qué hace
 
 - **Popup** (icono de la barra): escribe o pega un IOC y pulsa *Escanear*; se

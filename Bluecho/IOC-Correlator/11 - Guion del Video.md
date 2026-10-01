@@ -62,6 +62,19 @@ cada escena → al terminar, copiar el minuto real a la columna *Evidencia (víd
 - Si una fuente no tiene API key y devuelve "sin datos", **dilo** — el enunciado exige declarar lo simulado/no disponible; aquí no se simula nada, simplemente esa fuente queda inactiva.
 - Deja para el final la frase de **declaración de IA** (apartado 12) bien clara.
 
+## Nota sobre el plugin de navegador (I3)
+
+El plugin es un **cliente opcional** de la API, no la aplicación. El profesor evalúa
+el producto desde el **dashboard desplegado** (no necesita instalar nada). Si quieres
+enseñarlo en el vídeo (opcional, ~40 s, p. ej. tras la escena de API/estado):
+
+1. Cárgalo en tu navegador (modo desarrollador, carpeta `browser-extension/`).
+2. En Opciones pon `URL = https://blueecho.es` + tu API key.
+3. Selecciona un IOC en cualquier web → clic derecho → *Escanear en Blue-Echo*, o
+   usa el popup. Enseña que funciona **contra el servidor desplegado**.
+
+Deja dicho en voz que es un extra y que la herramienta se usa entera desde el dashboard.
+
 ## Tras grabar
 
 - [ ] Rellenar la columna **Evidencia (vídeo)** de la matriz con el minuto real de cada requisito.
