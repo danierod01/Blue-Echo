@@ -7,6 +7,7 @@ import ResultsTable from "@/components/ResultsTable";
 import AiSummary from "@/components/AiSummary";
 import MitreAttack from "@/components/MitreAttack";
 import GeoMap from "@/components/GeoMap";
+import Pivots from "@/components/Pivots";
 import PcapAnalysisView from "@/components/PcapAnalysisView";
 import { formatDate } from "@/lib/utils";
 
@@ -77,28 +78,41 @@ export default function ScanDetail() {
 
       {/* Vista IOC normal */}
       {!isPcap && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1">
-            <ThreatScore
-              score={base.score}
-              verdict={base.verdict}
-              iocValue={base.ioc_value}
-              iocType={base.ioc_type}
-            />
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <div className="lg:col-span-1">
+              <ThreatScore
+                score={base.score}
+                verdict={base.verdict}
+                iocValue={base.ioc_value}
+                iocType={base.ioc_type}
+              />
+            </div>
+            <div className="lg:col-span-2 flex flex-col gap-4">
+              <ResultsTable
+                connectorResults={base.connector_results}
+                breakdown={base.breakdown}
+                iocType={base.ioc_type}
+              />
+              {base.ai_summary && <AiSummary summary={base.ai_summary} />}
+              <MitreAttack techniques={base.mitre_techniques ?? []} />
+              {base.geolocation && (
+                <GeoMap geo={base.geolocation} iocValue={base.ioc_value} />
+              )}
+            </div>
           </div>
-          <div className="lg:col-span-2 flex flex-col gap-4">
-            <ResultsTable
-              connectorResults={base.connector_results}
-              breakdown={base.breakdown}
-              iocType={base.ioc_type}
+
+          {/* Entidades relacionadas (pivoting) — al pulsar un pivote se escanea
+              en el dashboard mediante el parámetro ?ioc= */}
+          {base.pivots && base.pivots.length > 0 && (
+            <Pivots
+              pivots={base.pivots}
+              centerValue={base.ioc_value}
+              centerType={base.ioc_type}
+              onScan={(ioc) => navigate(`/?ioc=${encodeURIComponent(ioc)}`)}
             />
-            {base.ai_summary && <AiSummary summary={base.ai_summary} />}
-            <MitreAttack techniques={base.mitre_techniques ?? []} />
-            {base.geolocation && (
-              <GeoMap geo={base.geolocation} iocValue={base.ioc_value} />
-            )}
-          </div>
-        </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, History, FileDown, Loader2, PanelRightClose, PanelRightOpen, Share2, ShieldBan, Radar } from "lucide-react";
 import SkeletonResults from "@/components/SkeletonResults";
@@ -34,10 +35,22 @@ export default function Dashboard() {
   });
   const queryClient                 = useQueryClient();
   const { toast }                   = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     try { localStorage.setItem("be_sidebar", sidebarOpen ? "1" : "0"); } catch { /* ignore */ }
   }, [sidebarOpen]);
+
+  // Escaneo lanzado desde fuera vía ?ioc= (p. ej. un pivote pulsado en el historial).
+  useEffect(() => {
+    const ioc = searchParams.get("ioc");
+    if (ioc) {
+      setMode("single");
+      mutation.mutate({ ioc });
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   async function handleDownloadPdf() {
     if (!result) return;
