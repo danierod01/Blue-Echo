@@ -816,6 +816,40 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   la matriz. Recoge los requisitos del enunciado (MP4 1080p, narrado, producto real, cortes
   señalados, YouTube no listado + probar en incógnito, declarar Claude Code). Solo
   documentación; sin cambios de código.
+- **2026-10-06** (Kali + cloud, `feat/detection-response`) **Sesión larga de pruebas guiadas
+  (QA) en Kali con el usuario — varios BUGS REALES cazados y arreglados antes del vídeo.**
+  Arranque limpio OK (5 servicios). Encontrado y corregido, en orden:
+  (1) **Celery Beat crasheaba** (Permission denied al escribir `celerybeat-schedule`; el
+  contenedor corre como no-root) → `beat_schedule_filename=/tmp/celerybeat-schedule`
+  (`CELERYBEAT_SCHEDULE`). (2) **Login daba "API key incorrecta"**: era el **rate limit**
+  de `/auth/verify` (5/min) + un **502** de Nginx porque al reconstruir solo el backend se
+  recreaba con IP nueva y Nginx cacheaba la vieja → **lección: reiniciar también `frontend`
+  o `up` sin especificar servicios**. (3) **URL defanged → HTTP 500**: `urlparse` reventaba
+  con los corchetes en geolocalización → capturado `ValueError` + se pasa el IOC ya refanged
+  a `geolocate` (+2 tests). (4) **Mapa de geolocalización gris**: la CSP (`img-src`) bloqueaba
+  los tiles; probados OSM (bloquea por `no-referrer`) y Carto (ahora pide API key) →
+  **adoptado Esri `World_Dark_Gray_Base`** (gratis, sin clave, oscuro) + CSP a
+  `server.arcgisonline.com`. (5) **IA sonaba genérica**: el modelo Groq `llama-3.3-70b-versatile`
+  devolvía **404 model_not_found** (retirado) y caía al heurístico local → default a
+  **`openai/gpt-oss-120b`** (`GROQ_MODEL`); ahora el análisis es rico y específico.
+  **Mejoras de UX pedidas por el usuario:** botón "Historial" a pestaña lateral; en el
+  **detalle de historial** añadidos ThreatScore compacto (`items-start`), **grafo de pivoting**
+  y los **botones STIX/MISP/Detección/Bloqueo/PDF**; pivote del historial → escanea en el
+  dashboard vía `?ioc=`; panel de **alertas de la watchlist siempre visible** (estado vacío);
+  **OpenAPI movida a `/api/docs`** (Nginx solo reenvía `/api`). **Seguridad — reorganización
+  de tokens:** se revirtió un intento de hacer opcional el código de invitación (mal); ahora
+  **`/invite` = canje con código obligatorio** (sin gestión de tokens) y **nuevo panel
+  `/admin`** (solo rol admin, autorizado por la sesión) para **crear/listar/revocar** tokens.
+  Verificado en navegador: escaneo IP/limpia, bulk, defang, reglas Sigma/Suricata/iptables +
+  copiar/descargar, triaje, watchlist (+beat cada 1 min), analítica, error controlado de input
+  inválido, y el panel admin creando/revocando. Suite backend **378 verdes**, FE build + 8 tests.
+  **⚠️ PENDIENTE (próxima sesión), decisión del usuario:** separar el **código de invitación**
+  del `ADMIN_SECRET` con una env propia **`INVITE_CODE`**, de modo que repartir el código deje
+  a la persona **autorregistrarse en `/invite` como ANALISTA** (rol forzado; los tokens admin
+  solo desde `/admin`). Estaba a medias (solo se leyó `auth.py`, **sin cambios de código**) cuando
+  se paró la sesión. También queda: revisar/poner `ADMIN_SECRET`/`INVITE_CODE` en el `.env`, y
+  (pendiente de siempre) rotar `miapi2026`. El resto de la guía de QA (PCAP, subir `.log`,
+  aislamiento por token 404, paginación) quedó sin recorrer.
 
 ---
 
