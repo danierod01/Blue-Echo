@@ -1,19 +1,25 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
-import { Loader2, ArrowLeft } from "lucide-react";
-import { getScanById, getPcapScanById } from "@/api/client";
+import { Loader2, ArrowLeft, FileDown, Share2, ShieldBan, Radar } from "lucide-react";
+import { getScanById, getPcapScanById, downloadScanPdf, downloadScanExport } from "@/api/client";
 import ThreatScore from "@/components/ThreatScore";
 import ResultsTable from "@/components/ResultsTable";
 import AiSummary from "@/components/AiSummary";
 import MitreAttack from "@/components/MitreAttack";
 import GeoMap from "@/components/GeoMap";
 import Pivots from "@/components/Pivots";
+import RulesModal from "@/components/RulesModal";
 import PcapAnalysisView from "@/components/PcapAnalysisView";
+import { useToast } from "@/components/Toast";
 import { formatDate } from "@/lib/utils";
 
 export default function ScanDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [rulesModal, setRulesModal] = useState<"block" | "detection" | null>(null);
   const numId = Number(id);
 
   // Primera consulta: datos básicos (ioc_type, fecha, etc.)
@@ -50,6 +56,32 @@ export default function ScanDetail() {
     );
   }
 
+  async function handleDownloadPdf() {
+    if (!base) return;
+    setDownloadingPdf(true);
+    try {
+      await downloadScanPdf(base.id, base.ioc_value);
+      toast("Informe PDF descargado.", "success");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "No se pudo descargar el PDF.", "error");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  }
+
+  async function handleExport(format: "stix" | "misp") {
+    if (!base) return;
+    try {
+      await downloadScanExport(base.id, format, base.ioc_value);
+      toast(`Exportado a ${format.toUpperCase()}.`, "success");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "No se pudo exportar.", "error");
+    }
+  }
+
+  const btnCls =
+    "flex items-center gap-2 rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-accent/60 hover:text-accent disabled:opacity-50";
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3">
@@ -79,6 +111,24 @@ export default function ScanDetail() {
       {/* Vista IOC normal */}
       {!isPcap && (
         <>
+          <div className="flex flex-wrap justify-end gap-2">
+            <button type="button" onClick={() => handleExport("stix")} className={btnCls} title="Exportar a STIX 2.1">
+              <Share2 size={13} /> STIX
+            </button>
+            <button type="button" onClick={() => handleExport("misp")} className={btnCls} title="Exportar a evento MISP">
+              <Share2 size={13} /> MISP
+            </button>
+            <button type="button" onClick={() => setRulesModal("detection")} className={btnCls} title="Reglas de detección (Sigma/Suricata/YARA)">
+              <Radar size={13} /> Detección
+            </button>
+            <button type="button" onClick={() => setRulesModal("block")} className={btnCls} title="Reglas de bloqueo (iptables/pf/DNS…)">
+              <ShieldBan size={13} /> Bloqueo
+            </button>
+            <button type="button" onClick={handleDownloadPdf} disabled={downloadingPdf} className={btnCls} title="Descargar informe en PDF">
+              {downloadingPdf ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />} Descargar PDF
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             <div className="lg:col-span-1">
               <ThreatScore
@@ -111,6 +161,10 @@ export default function ScanDetail() {
               centerType={base.ioc_type}
               onScan={(ioc) => navigate(`/?ioc=${encodeURIComponent(ioc)}`)}
             />
+          )}
+
+          {rulesModal && (
+            <RulesModal scanId={base.id} kind={rulesModal} onClose={() => setRulesModal(null)} />
           )}
         </>
       )}
