@@ -36,6 +36,11 @@ app = FastAPI(
     description="Plataforma de correlación de IOCs con Threat Intelligence e IA generativa.",
     version="1.0.0",
     lifespan=lifespan,
+    # La doc vive bajo /api/* para que el proxy de Nginx (que solo reenvía /api)
+    # la exponga en http://<host>/api/docs.
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
 )
 
 app.state.limiter = limiter

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Radar, Copy, Check, KeyRound, ShieldOff, RefreshCw } from "lucide-react";
-import { listTokens, revokeToken, type TokenInfo } from "@/api/client";
+import { listTokens, revokeToken, getStoredApiKey, type TokenInfo } from "@/api/client";
 import { useToast } from "@/components/Toast";
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -45,9 +45,16 @@ export default function Invite() {
     setError(null);
     setToken(null);
     try {
+      // Si hay una sesión admin iniciada, su X-API-Key basta para autorizar
+      // (no hace falta el ADMIN_SECRET). El "código" sigue sirviendo de
+      // bootstrap cuando aún no existe ningún token admin.
+      const storedKey = getStoredApiKey();
       const res = await fetch(`${API_BASE}/api/auth/invite`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(storedKey ? { "X-API-Key": storedKey } : {}),
+        },
         body: JSON.stringify({
           admin_secret: secret,
           label,
@@ -99,14 +106,14 @@ export default function Invite() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wider">
-                Código de invitación
+                Código de invitación {getStoredApiKey() ? "(opcional si eres admin)" : ""}
               </label>
               <input
                 type="password"
                 value={secret}
                 onChange={e => setSecret(e.target.value)}
                 placeholder="••••••••••••"
-                required
+                required={!getStoredApiKey()}
                 className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
               />
             </div>
@@ -200,9 +207,9 @@ export default function Invite() {
             </div>
             <button
               onClick={loadTokens}
-              disabled={!secret}
+              disabled={!secret && !getStoredApiKey()}
               className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white disabled:opacity-40 transition"
-              title={secret ? "Cargar tokens" : "Introduce el código de invitación arriba"}
+              title={secret || getStoredApiKey() ? "Cargar tokens" : "Introduce el código de invitación arriba"}
             >
               <RefreshCw size={13} /> Cargar
             </button>
