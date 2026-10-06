@@ -9,6 +9,7 @@ import History from "@/pages/History";
 import ScanDetail from "@/pages/ScanDetail";
 import Login from "@/pages/Login";
 import Invite from "@/pages/Invite";
+import AdminPanel from "@/pages/AdminPanel";
 import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { clearStoredApiKey, getStoredApiKey, getMe } from "@/api/client";
@@ -103,6 +104,8 @@ function UserMenu() {
 
 function Header() {
   const hasSession = !!getStoredApiKey();
+  const me = useQuery({ queryKey: ["me"], queryFn: getMe, enabled: hasSession });
+  const isAdmin = me.data?.role === "admin";
 
   return (
     <header className="border-b border-accent/10 bg-[var(--soc-bg)]/90 backdrop-blur-sm sticky top-0 z-40">
@@ -118,7 +121,13 @@ function Header() {
         {hasSession && (
           <>
             <nav className="flex gap-1">
-              {[{ to: "/", label: "Escaneo", end: true }, { to: "/watchlist", label: "Watchlist" }, { to: "/analytics", label: "Analítica" }, { to: "/history", label: "Historial" }].map(({ to, label, end }) => (
+              {[
+                { to: "/", label: "Escaneo", end: true },
+                { to: "/watchlist", label: "Watchlist" },
+                { to: "/analytics", label: "Analítica" },
+                { to: "/history", label: "Historial" },
+                ...(isAdmin ? [{ to: "/admin", label: "Admin", end: false }] : []),
+              ].map(({ to, label, end }) => (
                 <NavLink key={to} to={to} end={end}
                   className={({ isActive }) => cn(
                     "px-3 py-1 text-sm rounded transition-colors",
@@ -159,6 +168,7 @@ export default function App() {
           <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
           <Route path="/history/:id" element={<ProtectedRoute><ScanDetail /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

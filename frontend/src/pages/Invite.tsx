@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Radar, Copy, Check, KeyRound, ShieldOff, RefreshCw } from "lucide-react";
-import { listTokens, revokeToken, getStoredApiKey, type TokenInfo } from "@/api/client";
+import { Radar, Copy, Check, KeyRound } from "lucide-react";
 import { useToast } from "@/components/Toast";
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -13,31 +12,7 @@ export default function Invite() {
   const [error, setError]     = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied]   = useState(false);
-
-  // Panel de gestión de tokens
-  const [tokens, setTokens] = useState<TokenInfo[] | null>(null);
-  const [manageError, setManageError] = useState<string | null>(null);
   const { toast } = useToast();
-
-  async function loadTokens() {
-    setManageError(null);
-    try {
-      setTokens(await listTokens(secret));
-    } catch (err) {
-      setManageError(err instanceof Error ? err.message : "Error listando tokens.");
-    }
-  }
-
-  async function handleRevoke(id: number) {
-    setManageError(null);
-    try {
-      await revokeToken(secret, id);
-      await loadTokens();
-      toast("Token revocado.", "success");
-    } catch (err) {
-      setManageError(err instanceof Error ? err.message : "Error revocando token.");
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,16 +20,9 @@ export default function Invite() {
     setError(null);
     setToken(null);
     try {
-      // Si hay una sesión admin iniciada, su X-API-Key basta para autorizar
-      // (no hace falta el ADMIN_SECRET). El "código" sigue sirviendo de
-      // bootstrap cuando aún no existe ningún token admin.
-      const storedKey = getStoredApiKey();
       const res = await fetch(`${API_BASE}/api/auth/invite`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(storedKey ? { "X-API-Key": storedKey } : {}),
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           admin_secret: secret,
           label,
@@ -106,14 +74,14 @@ export default function Invite() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wider">
-                Código de invitación {getStoredApiKey() ? "(opcional si eres admin)" : ""}
+                Código de invitación
               </label>
               <input
                 type="password"
                 value={secret}
                 onChange={e => setSecret(e.target.value)}
                 placeholder="••••••••••••"
-                required={!getStoredApiKey()}
+                required
                 className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
               />
             </div>
@@ -195,60 +163,6 @@ export default function Invite() {
                 Guarda este token — no se puede recuperar después. Úsalo como contraseña en la pantalla de login.
               </p>
             </div>
-          )}
-        </div>
-
-        {/* Panel de gestión de tokens (mismo ADMIN_SECRET del formulario) */}
-        <div className="mt-4 rounded-xl border border-white/8 bg-white/[0.03] p-6">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <ShieldOff size={15} className="text-accent" />
-              <h2 className="text-sm font-semibold text-white">Gestionar tokens</h2>
-            </div>
-            <button
-              onClick={loadTokens}
-              disabled={!secret && !getStoredApiKey()}
-              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white disabled:opacity-40 transition"
-              title={secret || getStoredApiKey() ? "Cargar tokens" : "Introduce el código de invitación arriba"}
-            >
-              <RefreshCw size={13} /> Cargar
-            </button>
-          </div>
-
-          {manageError && (
-            <p className="text-xs text-red-400 mb-2">{manageError}</p>
-          )}
-
-          {tokens && tokens.length === 0 && (
-            <p className="text-xs text-gray-600">No hay tokens emitidos.</p>
-          )}
-
-          {tokens && tokens.length > 0 && (
-            <ul className="space-y-1.5">
-              {tokens.map(t => (
-                <li key={t.id} className="flex items-center justify-between gap-2 text-xs border-b border-white/5 pb-1.5">
-                  <div className="min-w-0">
-                    <span className="text-gray-200">{t.label || "(sin nombre)"}</span>
-                    {t.role === "admin" && (
-                      <span className="ml-2 rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wider bg-accent/15 text-accent-soft border border-accent/30">admin</span>
-                    )}
-                    <span className="font-data text-gray-600 ml-2">{t.key_preview}</span>
-                    {!t.active && <span className="ml-2 text-red-400">revocado</span>}
-                    {t.expires_at && t.active && (
-                      <span className="ml-2 text-gray-600">caduca {t.expires_at.slice(0, 10)}</span>
-                    )}
-                  </div>
-                  {t.active && (
-                    <button
-                      onClick={() => handleRevoke(t.id)}
-                      className="shrink-0 text-red-400/80 hover:text-red-400 transition"
-                    >
-                      Revocar
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
           )}
         </div>
 

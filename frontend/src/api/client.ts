@@ -346,25 +346,76 @@ export interface TokenInfo {
   expires_at: string | null;
 }
 
-/** Lista los tokens emitidos (sesión admin por cabecera, o ADMIN_SECRET). */
+/** Lista los tokens emitidos (requiere el ADMIN_SECRET). */
 export async function listTokens(adminSecret: string): Promise<TokenInfo[]> {
   const res = await fetch(`${BASE_URL}/api/auth/tokens`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ admin_secret: adminSecret }),
   });
   if (!res.ok) throw new Error("No autorizado o error listando tokens.");
   return res.json() as Promise<TokenInfo[]>;
 }
 
-/** Revoca (desactiva) un token por id (sesión admin por cabecera, o ADMIN_SECRET). */
+/** Revoca (desactiva) un token por id (requiere el ADMIN_SECRET). */
 export async function revokeToken(adminSecret: string, tokenId: number): Promise<void> {
   const res = await fetch(`${BASE_URL}/api/auth/revoke`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ admin_secret: adminSecret, token_id: tokenId }),
   });
   if (!res.ok) throw new Error("No se pudo revocar el token.");
+}
+
+// ---------------------------------------------------------------------------
+// Panel de administración — autorizado por la SESIÓN admin (cabecera X-API-Key),
+// no por el ADMIN_SECRET. El backend solo lo permite si el token de la sesión
+// tiene rol admin (o es la master key).
+// ---------------------------------------------------------------------------
+
+export async function adminListTokens(): Promise<TokenInfo[]> {
+  const res = await fetch(`${BASE_URL}/api/auth/tokens`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ admin_secret: "" }),
+  });
+  if (!res.ok) throw new Error("No autorizado o error listando tokens.");
+  return res.json() as Promise<TokenInfo[]>;
+}
+
+export async function adminRevokeToken(tokenId: number): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/auth/revoke`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ admin_secret: "", token_id: tokenId }),
+  });
+  if (!res.ok) throw new Error("No se pudo revocar el token.");
+}
+
+export interface CreatedToken {
+  token: string;
+  label: string;
+  role: string;
+}
+
+export async function adminCreateToken(
+  p: { label: string; role: string; expiresInDays?: number | null },
+): Promise<CreatedToken> {
+  const res = await fetch(`${BASE_URL}/api/auth/invite`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({
+      admin_secret: "",
+      label: p.label,
+      role: p.role,
+      expires_in_days: p.expiresInDays ?? null,
+    }),
+  });
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error(d.detail ?? "No se pudo crear el token.");
+  }
+  return res.json() as Promise<CreatedToken>;
 }
 
 export async function verifyApiKey(apiKey: string): Promise<boolean> {
