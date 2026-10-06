@@ -230,7 +230,7 @@ async def _groq_analysis(
 ) -> str:
     from groq import AsyncGroq  # import tardío para no fallar si no está instalado
 
-    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     client = AsyncGroq(api_key=api_key)
     user_prompt = _build_user_prompt(ioc_value, ioc_type, scoring, results)
 
@@ -333,7 +333,7 @@ def _build_pcap_user_prompt(filename: str, stats: dict) -> str:
 async def _groq_pcap_analysis(filename: str, stats: dict, api_key: str) -> str:
     from groq import AsyncGroq
 
-    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     client = AsyncGroq(api_key=api_key)
     response = await client.chat.completions.create(
         model=model,
