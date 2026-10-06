@@ -221,7 +221,8 @@ async def scan(
         )
 
     db_scan, breakdown = await _run_scan(ioc_value, session, current_key)
-    geo = await geolocate(ioc_value, db_scan.ioc_type)
+    # Usa el valor ya normalizado (refanged) que quedó guardado, no el crudo.
+    geo = await geolocate(db_scan.ioc_value, db_scan.ioc_type)
     return _build_scan_response(db_scan, breakdown, geolocation=geo)
 
 
@@ -235,7 +236,7 @@ async def scan_json(
 ) -> ScanResponse:
     """Variante que acepta JSON puro (útil para peticiones desde código)."""
     db_scan, breakdown = await _run_scan(body.ioc, session, current_key)
-    geo = await geolocate(body.ioc, db_scan.ioc_type)
+    geo = await geolocate(db_scan.ioc_value, db_scan.ioc_type)
     return _build_scan_response(db_scan, breakdown, geolocation=geo)
 
 

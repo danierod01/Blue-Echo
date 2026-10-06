@@ -83,7 +83,11 @@ async def geolocate(ioc_value: str, ioc_type: str) -> Optional[GeoLocation]:
         return result
 
     if ioc_type == "url":
-        hostname = urlparse(ioc_value).hostname
+        try:
+            hostname = urlparse(ioc_value).hostname
+        except ValueError:
+            # p. ej. una URL con corchetes (IOC mal formado) rompe urlparse.
+            return None
         if not hostname:
             return None
         ip = await _resolve_ip(hostname)
