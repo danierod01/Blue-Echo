@@ -100,13 +100,20 @@ export default function Watchlist() {
         </button>
       </form>
 
-      {/* Alertas de cambio de veredicto */}
-      {openAlerts.length > 0 && (
-        <div className="soc-panel p-4 border-red-500/30">
+      {/* Alertas de cambio de veredicto — siempre visible (estado vacío incluido) */}
+      <div className={cn("soc-panel p-4", openAlerts.length > 0 ? "border-red-500/30" : "")}>
           <div className="flex items-center gap-2 mb-3">
-            <BellRing size={14} className="text-red-400" />
-            <span className="soc-label text-red-400">Alertas de cambio de veredicto ({openAlerts.length})</span>
+            <BellRing size={14} className={openAlerts.length > 0 ? "text-red-400" : "text-slate-500"} />
+            <span className={cn("soc-label", openAlerts.length > 0 ? "text-red-400" : "text-slate-500")}>
+              Alertas de cambio de veredicto{openAlerts.length > 0 ? ` (${openAlerts.length})` : ""}
+            </span>
           </div>
+          {openAlerts.length === 0 ? (
+            <p className="text-xs text-slate-500 italic">
+              Sin alertas. Se genera una automáticamente cuando el veredicto de un IOC vigilado cambia
+              (p. ej. de limpio a malicioso) en una re-comprobación.
+            </p>
+          ) : (
           <div className="flex flex-col gap-2">
             {openAlerts.map((a: WatchAlert) => (
               <div key={a.id} className="flex items-center gap-3 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2">
@@ -129,8 +136,8 @@ export default function Watchlist() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+          )}
+      </div>
 
       {/* Tabla de IOCs vigilados */}
       <div className="soc-panel p-4">
