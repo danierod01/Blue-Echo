@@ -40,6 +40,10 @@ celery_app.conf.update(
     result_expires=3600,            # los resultados caducan a la hora
     task_always_eager=_truthy(os.getenv("CELERY_TASK_ALWAYS_EAGER", "")),
     task_eager_propagates=True,
+    # Beat guarda su agenda en disco. El contenedor corre como usuario no-root,
+    # cuyo directorio de trabajo no es escribible, así que la fichamos en /tmp
+    # (sí escribible) para que el scheduler no muera al arrancar.
+    beat_schedule_filename=os.getenv("CELERYBEAT_SCHEDULE", "/tmp/celerybeat-schedule"),
 )
 
 # Programación periódica (Celery Beat) — monitorización continua de la watchlist.
