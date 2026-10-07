@@ -291,34 +291,40 @@ curl http://localhost/api/history \
   -H "X-API-Key: tu_clave_secreta_aqui"
 ```
 
-### Invitaciones y tokens personales (multiusuario)
+### Invitaciones, códigos y tokens personales (multiusuario)
 
-Además de la clave maestra, si defines `ADMIN_SECRET` puedes repartir **tokens de
-acceso personales** sin compartir la clave maestra:
+El acceso se reparte con **códigos de invitación de un solo uso**, sin compartir la
+clave maestra:
 
-1. Ve a **http://localhost/invite**, introduce el `ADMIN_SECRET`, un **nombre**, un
-   **rol** y (opcional) una **caducidad en días** → se genera un token.
-2. Cada usuario entra con su token y ve **solo su propio historial** (aislamiento por
+1. **El admin genera un código** en el **panel de administración** (`/admin`, visible
+   solo para sesiones con rol admin): elige el rol que concederá (analista/admin) y una
+   caducidad opcional. Obtiene un código para repartir.
+2. **La persona canjea el código** en **http://localhost/invite**: introduce el código
+   + su **nombre** → se crea su **token** personal. El código es de un solo uso.
+3. Cada usuario entra con su token y ve **solo su propio historial** (aislamiento por
    token; el detalle de un escaneo ajeno responde `404`).
-3. Desde la misma página, "Gestionar tokens" permite **listar y revocar** tokens.
+4. El admin **revoca** tokens o códigos desde `/admin`.
 
 **Roles (control de acceso):**
 
 | Rol | Puede |
 |---|---|
 | `analyst` | Escanear, ver **su** historial, exportar sus escaneos |
-| `admin` | Todo lo anterior **+ administrar tokens** (crear/listar/revocar) |
+| `admin` | Todo lo anterior **+ panel `/admin`**: generar códigos, revocar tokens/códigos |
 
-Las operaciones de administración se autorizan por **cualquiera** de estas vías:
-un token con rol **admin** (o la master key) en la cabecera `X-API-Key`, **o** el
-`ADMIN_SECRET` en el cuerpo (útil como *bootstrap* para crear el primer token admin).
+El panel `/admin` está **oculto y bloqueado** para no-admins (el backend autoriza las
+operaciones de administración por un token con rol **admin** o la master key en la
+cabecera `X-API-Key`; `ADMIN_SECRET` sirve de *bootstrap* opcional). El **canje** en
+`/invite` es público pero **requiere un código válido**.
 
 **Rate limiting por token:** el límite de peticiones se aplica **por token** cuando la
-petición viene autenticada (y por IP en caso contrario), de modo que un token no comparte
-cupo con toda una red detrás de NAT. El login (`/api/auth/verify`) se limita por IP.
+petición viene autenticada (y por IP en caso contrario). El login (`/api/auth/verify`)
+se limita por IP.
 
-Endpoints: `POST /api/auth/invite` (crear, acepta `role`), `POST /api/auth/tokens`
-(listar), `POST /api/auth/revoke` (revocar), `GET /api/auth/me` (nombre + rol de la sesión).
+Endpoints: `POST /api/auth/invite` (canjear código → token), `POST /api/auth/invite-codes/create`
+(admin: generar código), `POST /api/auth/invite-codes/list`, `POST /api/auth/invite-codes/revoke`,
+`POST /api/auth/tokens` (listar tokens), `POST /api/auth/revoke` (revocar token),
+`GET /api/auth/me` (nombre + rol de la sesión).
 
 ---
 

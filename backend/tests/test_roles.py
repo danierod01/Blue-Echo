@@ -39,19 +39,23 @@ def _client(session):
 # Roles + administración por cabecera
 # ---------------------------------------------------------------------------
 
-def test_admin_token_can_invite_via_header(client, session, monkeypatch):
-    # Sin ADMIN_SECRET configurado: un token admin en la cabecera autoriza.
+def test_admin_token_can_create_invite_code_via_header(client, session, monkeypatch):
+    # Sin ADMIN_SECRET configurado: un token admin en la cabecera autoriza
+    # la generación de un código de invitación.
     monkeypatch.delenv("ADMIN_SECRET", raising=False)
     monkeypatch.setenv("BLUE_ECHO_API_KEY", "master")
     create_api_key(session, key="adm-token", label="Jefe", role="admin")
 
-    r = client.post("/api/auth/invite",
-                    json={"label": "Analista", "role": "analyst"},
+    r = client.post("/api/auth/invite-codes/create",
+                    json={"label": "Para Ana", "role": "analyst"},
                     headers={"X-API-Key": "adm-token"})
     assert r.status_code == 200
     assert r.json()["role"] == "analyst"
-    new_token = r.json()["token"]
-    assert get_api_key_role(session, new_token) == "analyst"
+    code = r.json()["code"]
+    # Y ese código se puede canjear para crear un token analista.
+    red = client.post("/api/auth/invite", json={"code": code, "label": "Ana"})
+    assert red.status_code == 200
+    assert get_api_key_role(session, red.json()["token"]) == "analyst"
 
 
 def test_master_key_is_admin(client, session, monkeypatch):
@@ -67,7 +71,7 @@ def test_analyst_token_cannot_administer(client, session, monkeypatch):
     create_api_key(session, key="analyst-token", label="Ana", role="analyst")
 
     # Analyst en cabecera y sin ADMIN_SECRET en el cuerpo → 403.
-    r = client.post("/api/auth/invite",
+    r = client.post("/api/auth/invite-codes/create",
                     json={"label": "X", "role": "analyst"},
                     headers={"X-API-Key": "analyst-token"})
     assert r.status_code == 403
@@ -82,19 +86,20 @@ def test_me_returns_analyst_role(client, session, monkeypatch):
     assert me.json()["name"] == "Ana"
 
 
-def test_invite_invalid_role_422(client, session, monkeypatch):
+def test_invite_code_invalid_role_422(client, session, monkeypatch):
     monkeypatch.setenv("ADMIN_SECRET", "s3cr3t")
     monkeypatch.setenv("BLUE_ECHO_API_KEY", "master")
-    r = client.post("/api/auth/invite",
+    r = client.post("/api/auth/invite-codes/create",
                     json={"admin_secret": "s3cr3t", "label": "X", "role": "root"})
     assert r.status_code == 422
 
 
 def test_admin_secret_still_works_as_bootstrap(client, session, monkeypatch):
-    # Vía clásica (ADMIN_SECRET en el cuerpo) sigue funcionando.
+    # Vía clásica (ADMIN_SECRET en el cuerpo) sigue autorizando operaciones admin.
     monkeypatch.setenv("ADMIN_SECRET", "s3cr3t")
     monkeypatch.setenv("BLUE_ECHO_API_KEY", "master")
-    r = client.post("/api/auth/invite", json={"admin_secret": "s3cr3t", "label": "Bootstrap"})
+    r = client.post("/api/auth/invite-codes/create",
+                    json={"admin_secret": "s3cr3t", "label": "Bootstrap", "role": "admin"})
     assert r.status_code == 200
 
 

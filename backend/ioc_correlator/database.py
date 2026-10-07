@@ -21,6 +21,21 @@ class ApiKey(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class InviteCode(SQLModel, table=True):
+    """Código de invitación de un solo uso. El admin lo genera y lo reparte; la
+    persona lo canjea en /invite (con su nombre) para crear su propio token."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    code: str = Field(index=True, unique=True)
+    role: str = Field(default="analyst")                  # rol que concede el token canjeado
+    label: str = Field(default="")                        # nota del admin (para quién/para qué)
+    active: bool = Field(default=True)                     # revocación por el admin
+    used: bool = Field(default=False)                      # de un solo uso
+    used_by: str = Field(default="")                       # nombre con el que se canjeó
+    used_at: Optional[datetime] = Field(default=None)
+    expires_at: Optional[datetime] = Field(default=None)  # caducidad opcional (None = no caduca)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 class ScanResult(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
@@ -281,6 +296,62 @@ def list_api_keys(session: Session) -> list[ApiKey]:
 def revoke_api_key(session: Session, token_id: int) -> bool:
     """Marca un token como inactivo. Devuelve False si no existe."""
     obj = session.get(ApiKey, token_id)
+    if obj is None:
+        return False
+    obj.active = False
+    session.add(obj)
+    session.commit()
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Códigos de invitación (generados por el admin, canjeados en /invite)
+# ---------------------------------------------------------------------------
+
+def create_invite_code(
+    session: Session,
+    code: str,
+    role: str = "analyst",
+    label: str = "",
+    expires_at: Optional[datetime] = None,
+) -> InviteCode:
+    obj = InviteCode(code=code, role=role, label=label, expires_at=expires_at)
+    session.add(obj)
+    session.commit()
+    session.refresh(obj)
+    return obj
+
+
+def list_invite_codes(session: Session) -> list[InviteCode]:
+    """Todos los códigos de invitación, más recientes primero."""
+    return list(
+        session.exec(select(InviteCode).order_by(InviteCode.created_at.desc())).all()
+    )
+
+
+def redeem_invite_code(session: Session, code: str, used_by: str) -> Optional[InviteCode]:
+    """Valida y consume un código de invitación (de un solo uso).
+
+    Devuelve el InviteCode si es válido (lo marca usado); None si no existe, está
+    revocado, ya se usó o ha caducado.
+    """
+    obj = session.exec(select(InviteCode).where(InviteCode.code == code)).first()
+    if obj is None or not obj.active or obj.used:
+        return None
+    if obj.expires_at is not None and _as_utc(obj.expires_at) <= datetime.now(timezone.utc):
+        return None
+    obj.used = True
+    obj.used_by = used_by
+    obj.used_at = datetime.now(timezone.utc)
+    session.add(obj)
+    session.commit()
+    session.refresh(obj)
+    return obj
+
+
+def revoke_invite_code(session: Session, code_id: int) -> bool:
+    """Marca un código de invitación como inactivo. False si no existe."""
+    obj = session.get(InviteCode, code_id)
     if obj is None:
         return False
     obj.active = False

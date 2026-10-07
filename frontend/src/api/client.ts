@@ -392,16 +392,25 @@ export async function adminRevokeToken(tokenId: number): Promise<void> {
   if (!res.ok) throw new Error("No se pudo revocar el token.");
 }
 
-export interface CreatedToken {
-  token: string;
-  label: string;
+// --- Códigos de invitación ---
+
+export interface InviteCodeInfo {
+  id: number;
+  code: string;
   role: string;
+  label: string;
+  active: boolean;
+  used: boolean;
+  used_by: string;
+  expires_at: string | null;
+  created_at: string;
 }
 
-export async function adminCreateToken(
+/** Genera un código de invitación para repartir (admin). */
+export async function adminCreateInviteCode(
   p: { label: string; role: string; expiresInDays?: number | null },
-): Promise<CreatedToken> {
-  const res = await fetch(`${BASE_URL}/api/auth/invite`, {
+): Promise<InviteCodeInfo> {
+  const res = await fetch(`${BASE_URL}/api/auth/invite-codes/create`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({
@@ -413,9 +422,28 @@ export async function adminCreateToken(
   });
   if (!res.ok) {
     const d = await res.json().catch(() => ({}));
-    throw new Error(d.detail ?? "No se pudo crear el token.");
+    throw new Error(d.detail ?? "No se pudo crear el código.");
   }
-  return res.json() as Promise<CreatedToken>;
+  return res.json() as Promise<InviteCodeInfo>;
+}
+
+export async function adminListInviteCodes(): Promise<InviteCodeInfo[]> {
+  const res = await fetch(`${BASE_URL}/api/auth/invite-codes/list`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ admin_secret: "" }),
+  });
+  if (!res.ok) throw new Error("No autorizado o error listando códigos.");
+  return res.json() as Promise<InviteCodeInfo[]>;
+}
+
+export async function adminRevokeInviteCode(codeId: number): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/auth/invite-codes/revoke`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ admin_secret: "", code_id: codeId }),
+  });
+  if (!res.ok) throw new Error("No se pudo revocar el código.");
 }
 
 export async function verifyApiKey(apiKey: string): Promise<boolean> {

@@ -60,38 +60,45 @@ def client_fixture(session: Session, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# POST /api/auth/invite
+# POST /api/auth/invite  (canje PÚBLICO de un código de invitación)
 # ---------------------------------------------------------------------------
 
-def test_invite_returns_503_when_not_configured(client, monkeypatch):
-    monkeypatch.delenv("ADMIN_SECRET", raising=False)
-    r = client.post("/api/auth/invite", json={"admin_secret": "x", "label": "Ana"})
-    assert r.status_code == 503
+from ioc_correlator.database import create_invite_code  # noqa: E402
 
 
-def test_invite_wrong_secret_returns_403(client, monkeypatch):
-    monkeypatch.setenv("ADMIN_SECRET", "s3cr3t")
-    r = client.post("/api/auth/invite", json={"admin_secret": "malo", "label": "Ana"})
-    assert r.status_code == 403
-
-
-def test_invite_requires_label(client, monkeypatch):
-    monkeypatch.setenv("ADMIN_SECRET", "s3cr3t")
-    r = client.post("/api/auth/invite", json={"admin_secret": "s3cr3t", "label": "   "})
+def test_invite_requires_label(client):
+    r = client.post("/api/auth/invite", json={"code": "x", "label": "   "})
     assert r.status_code == 422
 
 
-def test_invite_success_returns_usable_token(client, monkeypatch):
-    monkeypatch.setenv("ADMIN_SECRET", "s3cr3t")
+def test_invite_requires_code(client):
+    r = client.post("/api/auth/invite", json={"code": "", "label": "Ana"})
+    assert r.status_code == 422
+
+
+def test_invite_invalid_code_returns_403(client):
+    r = client.post("/api/auth/invite", json={"code": "no-existe", "label": "Ana"})
+    assert r.status_code == 403
+
+
+def test_invite_redeem_success_returns_usable_token(client, session, monkeypatch):
     monkeypatch.setenv("BLUE_ECHO_API_KEY", "master")  # activa la auth
-    r = client.post("/api/auth/invite", json={"admin_secret": "s3cr3t", "label": "Ana"})
+    create_invite_code(session, code="INV-123", role="analyst", label="Para Ana")
+    r = client.post("/api/auth/invite", json={"code": "INV-123", "label": "Ana"})
     assert r.status_code == 200
-    token = r.json()["token"]
-    assert token and r.json()["label"] == "Ana"
+    body = r.json()
+    assert body["token"] and body["label"] == "Ana" and body["role"] == "analyst"
     # El token recién creado debe ser válido para acceder a rutas protegidas
-    me = client.get("/api/auth/me", headers={"X-API-Key": token})
+    me = client.get("/api/auth/me", headers={"X-API-Key": body["token"]})
     assert me.status_code == 200
     assert me.json()["name"] == "Ana"
+
+
+def test_invite_code_is_single_use(client, session):
+    create_invite_code(session, code="ONE", role="analyst")
+    assert client.post("/api/auth/invite", json={"code": "ONE", "label": "A"}).status_code == 200
+    # El segundo canje del mismo código falla (de un solo uso)
+    assert client.post("/api/auth/invite", json={"code": "ONE", "label": "B"}).status_code == 403
 
 
 # ---------------------------------------------------------------------------
@@ -174,10 +181,10 @@ def test_future_token_is_valid(session):
     assert is_valid_api_key(session, "tok-vigente") is True
 
 
-def test_invite_negative_expiry_is_422(client, monkeypatch):
+def test_invite_code_negative_expiry_is_422(client, monkeypatch):
     monkeypatch.setenv("ADMIN_SECRET", "s3cr3t")
-    r = client.post("/api/auth/invite",
-                    json={"admin_secret": "s3cr3t", "label": "Ana", "expires_in_days": -3})
+    r = client.post("/api/auth/invite-codes/create",
+                    json={"admin_secret": "s3cr3t", "role": "analyst", "expires_in_days": -3})
     assert r.status_code == 422
 
 

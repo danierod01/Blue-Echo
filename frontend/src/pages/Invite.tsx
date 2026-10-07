@@ -4,10 +4,8 @@ import { useToast } from "@/components/Toast";
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export default function Invite() {
-  const [secret, setSecret]   = useState("");
+  const [code, setCode]       = useState("");
   const [label, setLabel]     = useState("");
-  const [role, setRole]       = useState("analyst");
-  const [expiresDays, setExpiresDays] = useState("");
   const [token, setToken]     = useState<string | null>(null);
   const [error, setError]     = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,16 +21,11 @@ export default function Invite() {
       const res = await fetch(`${API_BASE}/api/auth/invite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          admin_secret: secret,
-          label,
-          role,
-          expires_in_days: expiresDays ? Number(expiresDays) : null,
-        }),
+        body: JSON.stringify({ code, label }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail ?? "Error al generar el token.");
+        throw new Error(data.detail ?? "Error al canjear el código.");
       }
       const data = await res.json();
       setToken(data.token);
@@ -77,10 +70,10 @@ export default function Invite() {
                 Código de invitación
               </label>
               <input
-                type="password"
-                value={secret}
-                onChange={e => setSecret(e.target.value)}
-                placeholder="••••••••••••"
+                type="text"
+                value={code}
+                onChange={e => setCode(e.target.value)}
+                placeholder="El código que te han dado"
                 required
                 className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
               />
@@ -99,36 +92,8 @@ export default function Invite() {
                 className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
               />
               <p className="text-[11px] text-gray-600 mt-1.5">
-                Aparecerá en la sesión de quien use este token.
+                Aparecerá en tu sesión.
               </p>
-            </div>
-
-            <div>
-              <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wider">
-                Rol
-              </label>
-              <select
-                value={role}
-                onChange={e => setRole(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
-              >
-                <option value="analyst">Analista (solo escanear y ver lo suyo)</option>
-                <option value="admin">Administrador (además, gestionar tokens)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wider">
-                Caducidad (días) — opcional
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={expiresDays}
-                onChange={e => setExpiresDays(e.target.value)}
-                placeholder="Sin caducidad"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
-              />
             </div>
 
             {error && (
@@ -142,7 +107,7 @@ export default function Invite() {
               disabled={loading}
               className="w-full rounded-lg bg-accent hover:bg-accent-soft disabled:opacity-50 px-4 py-2.5 text-sm font-semibold text-black transition"
             >
-              {loading ? "Generando…" : "Generar token"}
+              {loading ? "Canjeando…" : "Obtener acceso"}
             </button>
           </form>
 

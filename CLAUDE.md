@@ -850,6 +850,27 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   se paró la sesión. También queda: revisar/poner `ADMIN_SECRET`/`INVITE_CODE` en el `.env`, y
   (pendiente de siempre) rotar `miapi2026`. El resto de la guía de QA (PCAP, subir `.log`,
   aislamiento por token 404, paginación) quedó sin recorrer.
+- **2026-10-07** (cloud, `feat/detection-response`) **Sistema de invitaciones rehecho a
+  CÓDIGOS (lo que el usuario quería).** Modelo final: el **admin genera códigos de
+  invitación** (de un solo uso) y los reparte; la persona **canjea el código en `/invite`**
+  con su nombre y se crea **su token** (rol del código, por defecto analista). La gestión
+  (generar códigos, revocar tokens/códigos) vive en el **panel `/admin`**, oculto y
+  bloqueado para no-admins. Backend: nuevo modelo `InviteCode` (code/role/label/active/
+  used/used_by/expires) + helpers (`create_invite_code`, `list_invite_codes`,
+  `redeem_invite_code` [un solo uso], `revoke_invite_code`) en `database.py`; `/auth/invite`
+  pasa a **canje público** (`{code,label}` → 403 si inválido/caducado/usado, 422 sin
+  código/nombre); nuevos endpoints admin `/auth/invite-codes/create|list|revoke`
+  (autorizados por sesión admin o `ADMIN_SECRET`). Reescritos los tests que probaban el
+  modelo viejo (invite creaba tokens) + nuevo `test_invite_codes.py`. **Suite backend 384
+  verdes.** Frontend: `Invite.tsx` = canje (código + nombre); `AdminPanel.tsx` = generar
+  código (rol/caducidad) + lista de códigos (estado disponible/usado/revocado + revocar) +
+  lista de tokens (revocar); cliente con `adminCreateInviteCode`/`List`/`Revoke` +
+  `InviteCodeInfo`. Build FE OK + 8 tests. README (.env.example) actualizados: ya **no se
+  usa `INVITE_CODE`** (los códigos son dinámicos); `ADMIN_SECRET` queda como bootstrap
+  opcional (la master key es admin). **⚠️ MIGRACIÓN BD:** tabla nueva `invitecode` → recrear
+  BD (`down -v`) al desplegar. **Pendiente (tú):** probar en Kali el flujo completo
+  (admin genera código en `/admin` → canje en `/invite` → login con el token nuevo → que un
+  analista no vea `/admin`).
 
 ---
 
