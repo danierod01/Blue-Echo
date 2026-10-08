@@ -183,6 +183,53 @@ def test_scan_form_no_input_returns_422(client):
 
 
 # ---------------------------------------------------------------------------
+# Tests de POST /api/extract (extraer todos los IOCs de un fichero sin escanear)
+# ---------------------------------------------------------------------------
+
+def test_extract_multiple_iocs(client):
+    log_content = (
+        b"BLOCK SRC=185.220.101.45 DPT=22\n"
+        b"DROP SRC=45.137.21.9 DPT=3389\n"
+        b"GET http://malicious-example-domain.ru/payload.bin\n"
+        b"query evil-c2-server.xyz IN A\n"
+        b"hash=44d88612fea8a8f36de82e1278abb02f\n"
+    )
+    r = client.post(
+        "/api/extract",
+        files={"file": ("demo.log", log_content, "text/plain")},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    values = {i["value"] for i in body["iocs"]}
+    # Debe sacar TODOS los IOCs, no solo el primero
+    assert "185.220.101.45" in values
+    assert "45.137.21.9" in values
+    assert "http://malicious-example-domain.ru/payload.bin" in values
+    assert "evil-c2-server.xyz" in values
+    assert "44d88612fea8a8f36de82e1278abb02f" in values
+    assert body["count"] == len(body["iocs"]) >= 5
+
+
+def test_extract_includes_ioc_types(client):
+    r = client.post(
+        "/api/extract",
+        files={"file": ("demo.log", b"conexion desde 8.8.8.8", "text/plain")},
+    )
+    assert r.status_code == 200
+    item = r.json()["iocs"][0]
+    assert item["value"] == "8.8.8.8"
+    assert item["ioc_type"] == "ipv4"
+
+
+def test_extract_no_iocs_returns_422(client):
+    r = client.post(
+        "/api/extract",
+        files={"file": ("empty.log", b"sin indicadores aqui", "text/plain")},
+    )
+    assert r.status_code == 422
+
+
+# ---------------------------------------------------------------------------
 # Tests de GET /api/history y GET /api/history/{id}
 # ---------------------------------------------------------------------------
 

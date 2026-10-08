@@ -18,6 +18,8 @@ from ioc_correlator.api.schemas import (
     HistoryPage,
     MitreTechnique,
     PivotEntity,
+    ExtractedIocItem,
+    ExtractResponse,
     ExtractedObject,
     PcapIocItem,
     PcapScanResponse,
@@ -208,7 +210,9 @@ async def scan(
                 status_code=422,
                 detail="No se encontraron IOCs válidos en el fichero.",
             )
-        # Escanea el primer IOC extraído. Multi-IOC se implementa en el frontend.
+        # Conveniencia para clientes de API: escanea el primer IOC extraído.
+        # El frontend usa POST /api/extract para sacar TODOS los IOCs del
+        # fichero y escanearlos en bloque (escaneo masivo).
         ioc_value = extracted[0].value
     elif ioc:
         if len(ioc) > 2048:
@@ -238,6 +242,44 @@ async def scan_json(
     db_scan, breakdown = await _run_scan(body.ioc, session, current_key)
     geo = await geolocate(db_scan.ioc_value, db_scan.ioc_type)
     return _build_scan_response(db_scan, breakdown, geolocation=geo)
+
+
+@router.post("/extract", response_model=ExtractResponse)
+@limiter.limit(os.getenv("RATE_LIMIT_DEFAULT", "60/minute"))
+async def extract(
+    request: Request,
+    file: UploadFile = File(...),
+    current_key: str = Depends(require_api_key),
+) -> ExtractResponse:
+    """Extrae los IOCs únicos de un fichero de logs SIN escanearlos.
+
+    El frontend sube aquí un .log/.txt/.csv/.json, recibe la lista de IOCs
+    detectados y los lanza por el flujo de escaneo masivo. Así se escanea
+    todo el fichero (no solo el primer IOC como hace POST /api/scan).
+    """
+    content = await file.read()
+    max_bytes = int(os.getenv("MAX_UPLOAD_SIZE_MB", "10")) * 1024 * 1024
+    if len(content) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Fichero demasiado grande. Máximo permitido: {max_bytes // (1024 * 1024)} MB.",
+        )
+    if is_pcap(content):
+        raise HTTPException(
+            status_code=422,
+            detail="Fichero PCAP detectado. Usa el endpoint /api/scan/pcap para analizar capturas de red.",
+        )
+    extracted = extract_iocs_from_bytes(content)
+    if not extracted:
+        raise HTTPException(
+            status_code=422,
+            detail="No se encontraron IOCs válidos en el fichero.",
+        )
+    items = [
+        ExtractedIocItem(value=e.value, ioc_type=e.ioc_type.value)
+        for e in extracted
+    ]
+    return ExtractResponse(iocs=items, count=len(items))
 
 
 @router.post("/scan/pcap", response_model=PcapScanResponse)

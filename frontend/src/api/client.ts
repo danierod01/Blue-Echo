@@ -190,6 +190,28 @@ export async function scanFile(file: File): Promise<ScanResponse> {
   return handleResponse<ScanResponse>(res);
 }
 
+export interface ExtractedIocItem {
+  value: string;
+  ioc_type: string;
+}
+
+export interface ExtractResponse {
+  iocs: ExtractedIocItem[];
+  count: number;
+}
+
+/** Extrae (sin escanear) los IOCs únicos de un fichero de logs subido. */
+export async function extractIocsFromFile(file: File): Promise<ExtractResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE_URL}/api/extract`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: form,
+  });
+  return handleResponse<ExtractResponse>(res);
+}
+
 export async function getHistory(params: HistoryParams = {}): Promise<HistoryPage> {
   const q = new URLSearchParams();
   if (params.limit   !== undefined) q.set("limit",    String(params.limit));

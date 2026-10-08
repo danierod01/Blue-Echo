@@ -449,7 +449,8 @@ La primera vez que accedes al panel verás un formulario de login. Introduce la 
 
 1. Pulsa el botón **Subir fichero** o arrastra el fichero sobre la barra de búsqueda (máx. 10 MB)
 2. Formatos soportados: Apache/Nginx access log, syslog, CSV de Windows Event Log, JSON lines, texto libre
-3. La herramienta extrae automáticamente los IOCs únicos y escanea el primero encontrado
+3. La herramienta extrae automáticamente **todos** los IOCs únicos del fichero (vía `POST /api/extract`), pasa al modo **Masivo** y los escanea en bloque, mostrando una tabla con el score y veredicto de cada uno
+4. El endpoint `POST /api/scan` con fichero también existe para clientes de API, pero escanea solo el primer IOC extraído (el frontend usa el flujo masivo de arriba)
 
 ### Escaneo masivo (hasta 20 IOCs)
 

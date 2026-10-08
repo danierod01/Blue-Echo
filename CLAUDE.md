@@ -871,6 +871,22 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   BD (`down -v`) al desplegar. **Pendiente (tú):** probar en Kali el flujo completo
   (admin genera código en `/admin` → canje en `/invite` → login con el token nuevo → que un
   analista no vea `/admin`).
+- **2026-10-08** (cloud, `feat/detection-response`) **QA en Kali + FIX del extractor de logs.**
+  Durante la QA guiada el usuario subió un `.log` con varios IOCs (IPs/dominios/URL/hashes) y
+  **solo se escaneaba uno** (la URL). Causa: `POST /api/scan` con fichero extraía todos los IOCs
+  pero escaneaba solo `extracted[0]` (y el extractor saca las URLs primero → por eso salía la
+  URL). **Arreglado reusando el flujo de escaneo masivo:** nuevo endpoint **`POST /api/extract`**
+  (schemas `ExtractedIocItem`/`ExtractResponse`) que extrae TODOS los IOCs del fichero **sin
+  escanear** (reusa `extract_iocs_from_bytes`, mismo límite de tamaño + guardas PCAP). Cliente:
+  `extractIocsFromFile`. Frontend: al subir un `.log`/`.txt`/`.csv`/`.json`, el Dashboard llama a
+  `/api/extract`, cambia a modo **Masivo** y pasa los IOCs como `seed` al `BulkScanPanel`, que
+  precarga la lista y **los escanea todos** (toast con el nº extraído). `BulkScanPanel` ganó props
+  `seed`/`onSeedConsumed` + `handleStart(explicit?)`; el `POST /api/scan` con fichero se queda
+  como conveniencia de 1 IOC para clientes de API. +3 tests (`test_scan_endpoint.py`:
+  multi-IOC, tipos, 422 sin IOCs) → **suite backend 387 verdes**; build FE OK + 8 tests FE.
+  **Sin migración de BD** (solo lógica nueva). **Pendiente (tú):** reconstruir y volver a probar
+  en Kali subir el `.log` (ahora salen todos en la tabla de escaneo masivo). Resto de QA sin
+  recorrer aún: PCAP, aislamiento por token (404), paginación.
 
 ---
 

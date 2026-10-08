@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Loader2, Play, RotateCcw, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 import { scanIoc, type ScanResponse } from "@/api/client";
@@ -13,6 +13,10 @@ interface BulkResult {
 
 interface Props {
   onComplete?: () => void;
+  /** IOCs precargados (p. ej. extraídos de un fichero de logs) que se escanean al recibirlos. */
+  seed?: string[] | null;
+  /** Se llama una vez consumida la semilla, para que el padre la limpie. */
+  onSeedConsumed?: () => void;
 }
 
 const DELAY_MS = 2000;
@@ -25,7 +29,7 @@ const VERDICT_LABEL: Record<string, string> = {
   critical: "Crítico",
 };
 
-export default function BulkScanPanel({ onComplete }: Props) {
+export default function BulkScanPanel({ onComplete, seed, onSeedConsumed }: Props) {
   const [text, setText] = useState("");
   const [results, setResults] = useState<BulkResult[]>([]);
   const [running, setRunning] = useState(false);
@@ -40,13 +44,28 @@ export default function BulkScanPanel({ onComplete }: Props) {
   const done = results.filter((r) => r.status === "done" || r.status === "error").length;
   const currentIoc = results.find((r) => r.status === "running")?.ioc ?? "";
 
-  async function handleStart() {
-    if (!iocList.length) return;
+  // Semilla desde fuera (IOCs extraídos de un fichero de logs): precargar y escanear.
+  useEffect(() => {
+    if (seed && seed.length) {
+      const list = Array.from(new Set(seed.map((s) => s.trim()).filter(Boolean))).slice(0, MAX_IOCS);
+      setText(list.join("\n"));
+      onSeedConsumed?.();
+      handleStart(list);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed]);
+
+  async function handleStart(explicit?: string[]) {
+    const list = (explicit ?? iocList)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, MAX_IOCS);
+    if (!list.length) return;
     abortRef.current = false;
     setRunning(true);
-    setResults(iocList.map((ioc) => ({ ioc, status: "pending" })));
+    setResults(list.map((ioc) => ({ ioc, status: "pending" })));
 
-    for (let i = 0; i < iocList.length; i++) {
+    for (let i = 0; i < list.length; i++) {
       if (abortRef.current) break;
 
       setResults((prev) =>
@@ -54,7 +73,7 @@ export default function BulkScanPanel({ onComplete }: Props) {
       );
 
       try {
-        const data = await scanIoc(iocList[i]);
+        const data = await scanIoc(list[i]);
         setResults((prev) =>
           prev.map((r, idx) => (idx === i ? { ...r, status: "done", data } : r))
         );
@@ -66,7 +85,7 @@ export default function BulkScanPanel({ onComplete }: Props) {
         );
       }
 
-      if (i < iocList.length - 1) {
+      if (i < list.length - 1) {
         await new Promise((res) => setTimeout(res, DELAY_MS));
       }
     }
@@ -133,7 +152,7 @@ export default function BulkScanPanel({ onComplete }: Props) {
                 : ""}
             </span>
             <button
-              onClick={handleStart}
+              onClick={() => handleStart()}
               disabled={iocList.length === 0}
               className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black hover:bg-accent-soft disabled:opacity-40 disabled:cursor-not-allowed transition"
             >

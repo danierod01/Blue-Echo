@@ -19,7 +19,7 @@ import SourcesStatus from "@/components/SourcesStatus";
 import { useToast } from "@/components/Toast";
 import PcapAnalysisView from "@/components/PcapAnalysisView";
 import { cn } from "@/lib/utils";
-import { scanIoc, scanFile, scanPcap, getHistory, getScanById, getPcapScanById, downloadScanPdf, downloadScanExport, type ScanResponse, type PcapScanResponse, type HistoryItem } from "@/api/client";
+import { scanIoc, scanPcap, extractIocsFromFile, getHistory, getScanById, getPcapScanById, downloadScanPdf, downloadScanExport, type ScanResponse, type PcapScanResponse, type HistoryItem } from "@/api/client";
 
 type ScanMode = "single" | "bulk";
 
@@ -30,6 +30,8 @@ export default function Dashboard() {
   const [errorMsg, setError]        = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [rulesModal, setRulesModal] = useState<"block" | "detection" | null>(null);
+  const [bulkSeed, setBulkSeed] = useState<string[] | null>(null);
+  const [extracting, setExtracting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     try { return localStorage.getItem("be_sidebar") !== "0"; } catch { return true; }
   });
@@ -83,9 +85,34 @@ export default function Dashboard() {
   });
   const history = historyPage?.items ?? [];
 
+  // Subir un fichero de logs: extrae TODOS los IOCs y los escanea en bloque
+  // (escaneo masivo), en vez de escanear solo el primero.
+  async function handleScanFile(file: File) {
+    setExtracting(true);
+    setError(null);
+    try {
+      const { iocs, count } = await extractIocsFromFile(file);
+      if (!count) {
+        toast("No se encontraron IOCs en el fichero.", "error");
+        return;
+      }
+      setResult(null);
+      setPcapResult(null);
+      setBulkSeed(iocs.map((i) => i.value));
+      setMode("bulk");
+      toast(
+        `${count} IOC${count > 1 ? "s" : ""} extraído${count > 1 ? "s" : ""} del fichero — escaneando…`,
+        "success",
+      );
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "No se pudo procesar el fichero.", "error");
+    } finally {
+      setExtracting(false);
+    }
+  }
+
   const mutation = useMutation({
-    mutationFn: async (input: { ioc?: string; file?: File }) =>
-      input.file ? scanFile(input.file) : scanIoc(input.ioc!),
+    mutationFn: async (input: { ioc: string }) => scanIoc(input.ioc),
     onSuccess: (data) => {
       setResult(data);
       setPcapResult(null);
@@ -130,7 +157,7 @@ export default function Dashboard() {
     }
   }
 
-  const loading = mutation.isPending || pcapMutation.isPending;
+  const loading = mutation.isPending || pcapMutation.isPending || extracting;
 
   return (
     <div className="flex gap-6">
@@ -179,11 +206,13 @@ export default function Dashboard() {
           <SearchBar
             loading={loading}
             onScanIoc={(ioc) => mutation.mutate({ ioc })}
-            onScanFile={(file) => mutation.mutate({ file })}
+            onScanFile={handleScanFile}
             onScanPcap={(file) => pcapMutation.mutate(file)}
           />
         ) : (
           <BulkScanPanel
+            seed={bulkSeed}
+            onSeedConsumed={() => setBulkSeed(null)}
             onComplete={() => queryClient.invalidateQueries({ queryKey: ["history"] })}
           />
         )}

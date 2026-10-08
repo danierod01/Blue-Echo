@@ -84,6 +84,21 @@ class TriageUpdate(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Extracción de IOCs desde fichero (sin escanear)
+# ---------------------------------------------------------------------------
+
+class ExtractedIocItem(BaseModel):
+    value: str
+    ioc_type: str
+
+
+class ExtractResponse(BaseModel):
+    """IOCs únicos extraídos de un fichero de logs, listos para escanear en bloque."""
+    iocs: list[ExtractedIocItem]
+    count: int
+
+
+# ---------------------------------------------------------------------------
 # History
 # ---------------------------------------------------------------------------
 
