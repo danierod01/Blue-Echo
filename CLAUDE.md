@@ -469,9 +469,9 @@ Estado a fecha 2026-09-28 (rama `feat/invite-tokens`):
 - [ ] Antes de entregar: tag `v1.0-practica3`.
 - [ ] Cerrar en prod: `CORS_ORIGINS=https://blueecho.es` en el `.env` del VPS.
 - [~] **Secretos en historial git** (2026-09-29): escaneado (`.env`, claves privadas,
-      `.db/.pem/.key`, valores de API keys) → **limpio**, salvo que la clave `miapi2026`
+      `.db/.pem/.key`, valores de API keys) → **limpio**, salvo que la clave `<clave-dev-antigua>`
       aparecía en una nota de Obsidian (ya **redactada** en HEAD, pero **sigue en el
-      historial** de la rama). ACCIÓN [tú]: si `miapi2026` es/era una clave real,
+      historial** de la rama). ACCIÓN [tú]: si `<clave-dev-antigua>` es/era una clave real,
       **cámbiala en el `.env` del VPS**; si quieres un historial 100% limpio, reescribir
       historial (git filter-repo) antes del tag — para una clave dev débil, rotar suele bastar.
 
@@ -565,7 +565,7 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   columna `api_key`; [entrega] revisar historial git por secretos + tag `v1.0-practica3`.
 - **2026-09-29** (cloud, `feat/invite-tokens`): decisión de dejar la app "a nivel
   producción" (última entrega, hay días). Escaneado historial git de secretos → limpio
-  (salvo `miapi2026` redactado). Empezado el pulido en tandas ("todo, yo ordeno").
+  (salvo `<clave-dev-antigua>` redactado). Empezado el pulido en tandas ("todo, yo ordeno").
   **Tanda 1 (seguridad, gestión de tokens):** revocación + caducidad opcional de tokens.
   Backend: `ApiKey.active`/`expires_at`, `is_valid_api_key` valida estado+caducidad,
   `list_api_keys`/`revoke_api_key`, endpoints `POST /auth/tokens` (listar, key
@@ -848,7 +848,7 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   a la persona **autorregistrarse en `/invite` como ANALISTA** (rol forzado; los tokens admin
   solo desde `/admin`). Estaba a medias (solo se leyó `auth.py`, **sin cambios de código**) cuando
   se paró la sesión. También queda: revisar/poner `ADMIN_SECRET`/`INVITE_CODE` en el `.env`, y
-  (pendiente de siempre) rotar `miapi2026`. El resto de la guía de QA (PCAP, subir `.log`,
+  (pendiente de siempre) rotar `<clave-dev-antigua>`. El resto de la guía de QA (PCAP, subir `.log`,
   aislamiento por token 404, paginación) quedó sin recorrer.
 - **2026-10-07** (cloud, `feat/detection-response`) **Sistema de invitaciones rehecho a
   CÓDIGOS (lo que el usuario quería).** Modelo final: el **admin genera códigos de
@@ -903,7 +903,7 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   documenta cómo correr tests ✅, todas las vars de código en `.env.example` ✅ (salvo
   `CELERY_TASK_ALWAYS_EAGER`, que es solo para tests y no debe ir al `.env` de despliegue).
   Build FE OK + 8 tests; backend 387. **NO es código (pendiente del usuario) para la entrega:**
-  (a) rotar/elegir una `BLUE_ECHO_API_KEY` nueva para la demo (hoy `miapi2026`, clave dev débil
+  (a) rotar/elegir una `BLUE_ECHO_API_KEY` nueva para la demo (hoy `<clave-dev-antigua>`, clave dev débil
   que además aparece en el historial git redactada); (b) `CORS_ORIGINS` al dominio en el `.env`
   de prod; (c) decidir rama final y **mergear a `main`** antes del tag; (d) tag
   `v1.0-practica3` sobre el commit congelado; (e) entregables manuales: capturas (casi todas ya
@@ -916,7 +916,7 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   y **387 tests backend verdes** sobre `main`. Pusheado a `origin/main`. **La rama de entrega es
   ahora `main`.** **PENDIENTE del usuario (no código):** (a) tag `v1.0-practica3` sobre el commit
   final congelado en `main`; (b) rotar/elegir `BLUE_ECHO_API_KEY` nueva para la demo (hoy
-  `miapi2026`); (c) `CORS_ORIGINS` al dominio en el `.env` de prod; (d) entregables: vídeo ≥10 min
+  `<clave-dev-antigua>`); (c) `CORS_ORIGINS` al dominio en el `.env` de prod; (d) entregables: vídeo ≥10 min
   + memoria PDF (13 apartados) desde Obsidian. El código queda **congelado y listo para taggear**.
 
 ---
