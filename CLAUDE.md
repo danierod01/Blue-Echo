@@ -908,6 +908,16 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   de prod; (c) decidir rama final y **mergear a `main`** antes del tag; (d) tag
   `v1.0-practica3` sobre el commit congelado; (e) entregables manuales: capturas (casi todas ya
   hechas en la QA), vídeo ≥10 min y maquetar la memoria PDF (13 apartados) desde Obsidian.
+- **2026-10-08** (cloud, `main`) **MERGE A `main` HECHO.** El usuario dio luz verde a mergear.
+  `feat/detection-response` era la punta que contiene TODO (features + diseño SOC + fixes de QA);
+  `main` era ancestro directo (0 commits propios divergentes), así que el merge fue un
+  **fast-forward limpio**: `main` avanza a `fef670b` trayendo todos los commits (historial
+  íntegro, nada perdido, sin conflictos). Verificado: `main` idéntico a `feat/detection-response`
+  y **387 tests backend verdes** sobre `main`. Pusheado a `origin/main`. **La rama de entrega es
+  ahora `main`.** **PENDIENTE del usuario (no código):** (a) tag `v1.0-practica3` sobre el commit
+  final congelado en `main`; (b) rotar/elegir `BLUE_ECHO_API_KEY` nueva para la demo (hoy
+  `miapi2026`); (c) `CORS_ORIGINS` al dominio en el `.env` de prod; (d) entregables: vídeo ≥10 min
+  + memoria PDF (13 apartados) desde Obsidian. El código queda **congelado y listo para taggear**.
 
 ---
 
@@ -1050,8 +1060,12 @@ Memoria: apartados completos y en orden · portada con integrantes + enlaces · 
 > **Actualizar esta sección al final de cada sesión.**
 
 ### Rama activa
-`feat/invite-tokens` — sistema multiusuario en pruebas. Se mergeará a `main` cuando
-pasen los tests y el build en Kali. El resto del desarrollo está en `main`.
+`main` — **rama de entrega**. El 2026-10-08 se fusionó (fast-forward) toda la cadena de
+desarrollo (`feat/invite-tokens` → `design-soc-dashboard` → `feat/soc-watchlist-analytics` →
+`feat/detection-response`) a `main`. `main` contiene TODO: P1 + P2 + sistema multiusuario +
+roadmap completo (R2/R3/I2/I3) + seguridad (RBAC, rate limit por token, códigos de invitación,
+panel admin) + pivoting + watchlist/analítica/triaje + detección/respuesta + diseño SOC teal.
+387 tests backend + 8 frontend verdes. **Pendiente: tag `v1.0-practica3`** sobre el commit final.
 
 ### Qué hay implementado
 
