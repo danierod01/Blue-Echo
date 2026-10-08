@@ -233,7 +233,7 @@ curl http://localhost:8000/api/health
 
 #### Ejecutar los tests
 
-**Backend** (pytest — 281 tests):
+**Backend** (pytest — 387 tests):
 
 ```bash
 cd backend

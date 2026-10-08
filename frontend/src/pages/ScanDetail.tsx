@@ -50,9 +50,14 @@ export default function ScanDetail() {
 
   if (baseError || !base) {
     return (
-      <p className="text-center text-sm text-red-400 py-8">
-        No se pudo cargar el escaneo.
-      </p>
+      <div className="py-10 text-center">
+        <p className="text-sm text-red-400">
+          Escaneo no encontrado o sin acceso.
+        </p>
+        <p className="mt-1 text-xs text-gray-500">
+          No existe o pertenece a otro usuario — cada sesión solo puede ver sus propios escaneos.
+        </p>
+      </div>
     );
   }
 

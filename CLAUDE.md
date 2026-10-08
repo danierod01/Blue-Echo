@@ -887,6 +887,27 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   **Sin migración de BD** (solo lógica nueva). **Pendiente (tú):** reconstruir y volver a probar
   en Kali subir el `.log` (ahora salen todos en la tabla de escaneo masivo). Resto de QA sin
   recorrer aún: PCAP, aislamiento por token (404), paginación.
+- **2026-10-08** (cloud, `feat/detection-response`) **QA COMPLETA en Kali (TODOS los bloques
+  verdes) + repaso del enunciado.** Recorridos con el usuario los bloques que faltaban, todo
+  OK en navegador: **N** extractor de logs (subir `.log` → escanea los 7 IOCs en masivo, ya
+  con el fix); **O** aislamiento por token (historial ajeno vacío + ID ajeno por URL → 404);
+  **P** PCAP con un Emotet epoch4 real (10.410 pkts, IA de Groq que **identifica Emotet**,
+  payload `4bpWddqv.dll` extraído y marcado sospechoso, 18 IOCs); **Q** paginación (32
+  resultados, 2 páginas, filtros+buscador). Con esto el **criterio del 30% (funcional, instala
+  por README, flujos end-to-end, casos de error) queda demostrado y capturado**.
+  **Pulidos de esta sesión (commiteados):** (1) mensaje de escaneo ajeno en `ScanDetail.tsx`:
+  de *"No se pudo cargar el escaneo"* → **"Escaneo no encontrado o sin acceso"** + línea
+  explicando el aislamiento. (2) README: nº de tests 281→**387**. (3) `.env.example`: añadida
+  `CELERYBEAT_SCHEDULE` (completitud; el enunciado pide todas las variables). **Repaso del
+  enunciado (código):** `.env` ignorado y no trackeado ✅, `!.env.example` presente ✅, README
+  documenta cómo correr tests ✅, todas las vars de código en `.env.example` ✅ (salvo
+  `CELERY_TASK_ALWAYS_EAGER`, que es solo para tests y no debe ir al `.env` de despliegue).
+  Build FE OK + 8 tests; backend 387. **NO es código (pendiente del usuario) para la entrega:**
+  (a) rotar/elegir una `BLUE_ECHO_API_KEY` nueva para la demo (hoy `miapi2026`, clave dev débil
+  que además aparece en el historial git redactada); (b) `CORS_ORIGINS` al dominio en el `.env`
+  de prod; (c) decidir rama final y **mergear a `main`** antes del tag; (d) tag
+  `v1.0-practica3` sobre el commit congelado; (e) entregables manuales: capturas (casi todas ya
+  hechas en la QA), vídeo ≥10 min y maquetar la memoria PDF (13 apartados) desde Obsidian.
 
 ---
 
