@@ -75,6 +75,9 @@ Thumbs.db
 # Claude Code
 # ============================================================
 .claude/settings.local.json
+# Memoria de desarrollo del agente (notas internas + infra) — no es parte del
+# producto y no debe entregarse. Se conserva en el historial y en ramas de dev.
+CLAUDE.md
 
 # ============================================================
 # Obsidian
