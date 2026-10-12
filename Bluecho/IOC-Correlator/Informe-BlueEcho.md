@@ -12,7 +12,7 @@
 <strong>Fecha de entrega:</strong> 25 de mayo de 2026<br>
 <strong>Línea de trabajo:</strong> Blue Team — Defensa y Monitorización<br>
 <strong>Repositorio:</strong> https://github.com/danierod01/Blue-Echo<br>
-<strong>Herramienta desplegada:</strong> http://138.199.205.221
+<strong>Herramienta desplegada:</strong> https://blueecho.es
 </p>
 
 </div>
