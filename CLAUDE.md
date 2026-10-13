@@ -936,6 +936,13 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   Estado de hoy: `main` en `de04980` (antes de revertir el untrack); tras esta sesión, un commit más que
   **vuelve a trackear `CLAUDE.md`**. Código congelado y verificado (387 backend + 8 frontend verdes).
 
+- **2026-10-13** (cloud, `main`) **Fix: Swagger UI en blanco en `/api/docs`.** La CSP estricta de
+  Nginx (`script-src 'self'`) bloqueaba el JS/CSS que Swagger/ReDoc cargan desde el CDN jsdelivr, por
+  lo que la página salía en blanco (el OpenAPI JSON sí cargaba). Solución sin relajar la CSP de la app:
+  una `location ~ ^/api/(docs|redoc)/?$` con CSP propia que permite jsdelivr (script/style/img/font) +
+  worker-src blob, en `nginx.dev.conf` y `nginx.conf` (prod con HSTS). En dev el conf va montado →
+  basta `restart frontend`. Commit `22cef2b`. Afecta a la demo de I1 (API documentada, Escena 14).
+
 ---
 
 ## Práctica 3 — "Del prototipo al producto" · ENTREGA 16/10/2026
