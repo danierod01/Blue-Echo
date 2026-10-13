@@ -86,6 +86,11 @@ Bluecho/.obsidian/workspace.json
 # ============================================================
 *.pdf
 
+# Entregables maquetados (memoria): se generan y entregan aparte (PDF),
+# no forman parte del código del repo.
+*.docx
+P3_Memoria_BlueEcho.docx
+
 # ============================================================
 # Certificados y claves SSH
 # ============================================================
