@@ -35,7 +35,7 @@ const META: Record<Kind, { title: string; icon: typeof ShieldBan; blurb: string 
   detection: {
     title: "Reglas de detección",
     icon: Radar,
-    blurb: "Convierte el IOC en detección desplegable (Sigma / Suricata / YARA).",
+    blurb: "Convierte el IOC en reglas de detección desplegables. El formato depende del tipo: Sigma e IDS (Suricata) para IP, dominio y URL; Sigma y YARA para hashes.",
   },
 };
 
