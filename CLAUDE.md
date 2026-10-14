@@ -969,6 +969,19 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   grabar» actualizadas (formato de matriz de 6 columnas; comprobar que todos los PR tienen evidencia;
   PR-18 latencia = Parcial). Sin cambios de código ni de producto; solo el `.docx` del guion.
 
+- **2026-10-14** (cloud, `main`) **Fix (2.º intento) Swagger `/api/docs` en blanco.** El fix del
+  13/10 (permitir jsdelivr en la CSP de `/api/(docs|redoc)`) NO bastó: seguía en blanco. Causa real:
+  **swagger-ui-bundle@5 ejecuta código con `Function()`/`eval` al inicializar**, y la CSP de esas
+  rutas no tenía `'unsafe-eval'` → el navegador abortaba el script (el JS/CSS de jsdelivr sí
+  cargaban, por eso parecía resuelto). Cotejado el HTML real que genera FastAPI 0.141.1
+  (`get_swagger_ui_html`): solo carga css+js de `cdn.jsdelivr.net/npm/swagger-ui-dist@5`, un script
+  inline (`SwaggerUIBundle`) y el favicon de `fastapi.tiangolo.com`. Solución: añadido `'unsafe-eval'`
+  a `script-src` y `https://fastapi.tiangolo.com` a `img-src` **solo en la location de docs**, en
+  `nginx.conf` y `nginx.dev.conf`. La CSP estricta de la app no se toca. Commit `76f4db6`.
+  **PARA QUE SE VEA (tú):** en DEV el conf va montado → `restart frontend` (o `up` sin servicio); en
+  PROD el `nginx.conf` se hornea en la imagen → hace falta **`up -d --build frontend`**. Luego
+  **recarga forzada / incógnito** (el navegador puede haber cacheado la página en blanco).
+
 ---
 
 ## Práctica 3 — "Del prototipo al producto" · ENTREGA 16/10/2026
