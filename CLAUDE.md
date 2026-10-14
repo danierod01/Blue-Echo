@@ -959,6 +959,16 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   (d) fichero exportado PDF/STIX/MISP (§6.7). Y rellenar: nombre/correo del alumno (portada y §11),
   enlace del vídeo, horas (§11), y el minuto de cada escena en la columna «vídeo __:__» de la matriz.
 
+- **2026-10-14** (cloud, `main`) **Guion v2 (el usuario va a re-grabar el vídeo):** integrado en el
+  guion lo nuevo de la matriz. Generador: `scratchpad/guion.js` → `P3_Guion_Video_BlueEcho.docx`
+  (también en el working dir, no trackeado). (1) Cada escena muestra ahora, junto a los requisitos
+  que demuestra, los **casos de prueba PR-xx** del apartado 8.5 de la memoria (campo `pr` en `escena`,
+  renderizado en la línea `meta` como «Casos: …»). (2) Nueva **sección 7 «Escena → caso de prueba»**:
+  tabla que mapea cada PR-01…PR-18 a la escena del vídeo donde se demuestra, para rellenar la columna
+  «Evidencia» de la matriz (ahora 6 columnas) de forma mecánica. (3) Intro y sección 6 «Después de
+  grabar» actualizadas (formato de matriz de 6 columnas; comprobar que todos los PR tienen evidencia;
+  PR-18 latencia = Parcial). Sin cambios de código ni de producto; solo el `.docx` del guion.
+
 ---
 
 ## Práctica 3 — "Del prototipo al producto" · ENTREGA 16/10/2026
