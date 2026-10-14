@@ -993,6 +993,13 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   exportado PDF/STIX/MISP (§6.7). Memoria regenerada, validada (XML OK) y entregada. Solo `.docx` +
   PNG (no se trackea nada; la memoria va por `.gitignore`).
 
+- **2026-10-14** (cloud, `main`) **Memoria COMPLETA en capturas (0 placeholders).** El usuario pasó las
+  2 capturas que faltaban (bloque MITRE `images/71.png` §6.1, export STIX `images/72.png` §6.7).
+  Insertadas en `memoria.js` → **27 figuras embebidas, 0 «PENDIENTE DE INSERTAR»**. Memoria regenerada,
+  validada (XML OK) y entregada. **Lo único que falta ya es texto del usuario:** nombre/correo (portada
+  y §11), horas (§11), enlace del vídeo (portada) y los minutos en la columna «Evidencia» de la matriz;
+  luego exportar a PDF como `P3_GrupoXX_Memoria.pdf`. (Memoria no trackeada: `.gitignore`.)
+
 ---
 
 ## Práctica 3 — "Del prototipo al producto" · ENTREGA 16/10/2026
