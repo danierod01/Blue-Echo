@@ -943,6 +943,22 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   worker-src blob, en `nginx.dev.conf` y `nginx.conf` (prod con HSTS). En dev el conf va montado →
   basta `restart frontend`. Commit `22cef2b`. Afecta a la demo de I1 (API documentada, Escena 14).
 
+- **2026-10-14** (cloud, `main`) **Memoria v2: arreglada la matriz + reestructuradas las pruebas**
+  (tras repasar el enunciado P3 completo; la memoria vive solo como `.docx` en el working dir, no se
+  trackea — `*.docx` en `.gitignore`). Generador: `scratchpad/memoria.js` → `P3_Memoria_BlueEcho.docx`.
+  (1) **Matriz (apartado 9)** pasada al formato exigido por el enunciado de **6 columnas**:
+  `Requisito | Descripción | Estado final | Implementación | Prueba | Evidencia` (antes 4). (2) **Nueva
+  tabla de casos de prueba (apartado 8.5)** en formato `ID | Requisito | Pasos | Resultado esperado |
+  Resultado obtenido | Estado` con **18 casos PR-01…PR-18** mapeados a requisitos; se quitó la tabla
+  informal «Caso|Resultado» de 8.3 (la formal la sustituye). La columna «Prueba» de la matriz ahora
+  **referencia esos PR-IDs** + fichero de test. (3) Ambas tablas anchas van en una **sección apaisada**
+  (8.5 + 9); el resto sigue en vertical. docx validado (XML OK, 23 capturas embebidas, 5 secciones).
+  **PENDIENTE del usuario (capturas que aún faltan — los 4 placeholders del docx):** (a) diagrama de
+  arquitectura de componentes (§5.1, renderizar el mermaid de la nota «02 - Arquitectura Técnica»);
+  (b) diagrama de secuencia (§5.1, misma nota); (c) bloque MITRE ATT&CK de un escaneo (§6.1);
+  (d) fichero exportado PDF/STIX/MISP (§6.7). Y rellenar: nombre/correo del alumno (portada y §11),
+  enlace del vídeo, horas (§11), y el minuto de cada escena en la columna «vídeo __:__» de la matriz.
+
 ---
 
 ## Práctica 3 — "Del prototipo al producto" · ENTREGA 16/10/2026
