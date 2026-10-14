@@ -982,6 +982,17 @@ El "grupo" de esta práctica es **una sola persona**. Implicaciones:
   PROD el `nginx.conf` se hornea en la imagen → hace falta **`up -d --build frontend`**. Luego
   **recarga forzada / incógnito** (el navegador puede haber cacheado la página en blanco).
 
+- **2026-10-14** (cloud, `main`) **Diagramas de la memoria renderizados e insertados.** El usuario
+  preguntó cómo renderizar el mermaid de la nota «02 - Arquitectura Técnica». En vez de que lo hiciera
+  a mano, se renderizaron aquí con **mermaid-cli (mmdc) + el Chromium preinstalado** (Playwright,
+  `/opt/pw-browsers/chromium-1194`). Generados `arquitectura.png` y `secuencia.png` (en scratchpad e
+  `images/`), **actualizados al estado real de la P3** (BD PostgreSQL/SQLite y motor de IA en cascada
+  Groq→Claude→local; la nota antigua aún ponía SQLite + Claude). Insertados en `memoria.js` (§5.1)
+  sustituyendo 2 de los 4 placeholders → la memoria ya lleva **25 diagramas/capturas embebidas**.
+  **Capturas que AÚN faltan (2, del usuario):** bloque MITRE ATT&CK de un escaneo (§6.1) y un fichero
+  exportado PDF/STIX/MISP (§6.7). Memoria regenerada, validada (XML OK) y entregada. Solo `.docx` +
+  PNG (no se trackea nada; la memoria va por `.gitignore`).
+
 ---
 
 ## Práctica 3 — "Del prototipo al producto" · ENTREGA 16/10/2026
