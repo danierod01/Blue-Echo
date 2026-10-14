@@ -100,3 +100,7 @@ P3_Memoria_BlueEcho.docx
 *.p12
 id_rsa
 id_ed25519
+
+# Notas internas de desarrollo (no forman parte del producto entregable)
+CLAUDE.md
+CLAUDE.md.bak
